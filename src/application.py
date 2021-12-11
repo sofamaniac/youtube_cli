@@ -74,6 +74,9 @@ class Application():
         self.playerWindow = Window(self.scr.playerWin, "Player Information", lambda x, **kwargs:None, screen.PLAYER_HEIGHT-2)
         self.playerWindow.selected = -1
 
+        self.optionWindow = Window(self.scr.optionWin, "Options", lambda x, **kwargs:None, screen.OPTION_HEIGHT-2)
+        self.optionWindow.selected = -1
+
         self.windowsList = [self.playlistWindow, self.contentWindow]
         self.currentWindow = 0
 
@@ -94,8 +97,16 @@ class Application():
         for i, w in enumerate(self.windowsList):
             w.update(i == self.currentWindow)
         self.drawPlayer()
+        self.drawOptions()
 
         self.scr.update()
+    
+    def drawOptions(self):
+        content = []
+        content.append(["", "Auto : {}\t Repeat: {}".format(self.inPlaylist, self.inRepeat)])
+        content.append(["", "Volume : {:02d} / 100".format(self.volume)])
+        self.optionWindow.content = content
+        self.optionWindow.update(drawSelect=False)
 
     def drawPlayer(self):
         currContent = ["", self.player._get_property("media-title"), self.player._get_property("duration")]
@@ -109,11 +120,18 @@ class Application():
 
         t = t if time_pos else "00:00:00"
         d = d if dur else "00:00:00"
-        content = []
+        content = [["", "{} - {}/{}".format(title, t, d)]]
 
-        content.append(["", "{} - {}/{}".format(title, t, d)])
-        content.append(["", "Auto : {}\t Repeat: {}".format(self.inPlaylist, self.inRepeat)])
-        content.append(["", "Volume : {:02d} / 100".format(self.volume)])
+        # drawing progress bar
+        time_pos = time_pos if time_pos else 0
+        dur = dur if dur else 0
+        frac_time = time_pos / (dur+1)
+        width = screen.PLAYER_WIDTH - 5 - len(" {}/{}".format(t, d))
+        bar = "\u2588"*int(frac_time*width)
+        space = "-"*(width - len(bar))
+        progress = "|" + bar + space + "|" + " {}/{}".format(t, d)
+        content.append(["", progress])
+
         self.playerWindow.content = content
         self.playerWindow.update(drawSelect=False)
 
