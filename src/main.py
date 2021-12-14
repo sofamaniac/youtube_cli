@@ -15,6 +15,7 @@ def main(stdscr):
     app = Application(stdscr)
     listener = Listener(app)
     listener.start()
+    last_event = None
     while True:
         c = app.scr.stdscr.getch()
         if c == ord('q'):
@@ -53,10 +54,16 @@ def main(stdscr):
             app.increaseVolume(-5)
         elif c == ord('f'):
             app.increaseVolume(5)
+        elif c == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
+            # for some reason we need to resize two times in order for the effects be felt
+            app.scr.resize()
+            app.scr.resize()
+        last_event = c
 
 
         app.update()
     listener.stop()
+    app.quit()
 
 
 if __name__ == "__main__":

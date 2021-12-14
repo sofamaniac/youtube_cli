@@ -6,6 +6,8 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 import json
+import threading
+import time
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 data_path = "../data/"
@@ -16,13 +18,16 @@ cache_path = data_path + "cache.json"
 
 MAX_RESULTS = 50
 
-class YoutbeHandler():
+class YoutbeHandler(threading.Thread):
 
     def __init__(self):
+        threading.Thread.__init__(self)
         self.youtube = get_authenticated_service()
         self.playlists_list = [["", "Liked Videos"]]
         self.currentContent = []
         self.cache = {}
+        self.to_fullfill = []
+        self._terminate = False
         with open(cache_path, 'r') as f:
             self.cache = json.load(f)
 
@@ -36,8 +41,20 @@ class YoutbeHandler():
         with open(cache_path, "w") as f:
             json.dump(self.cache, f)
 
-    def getPlaylist(self, page=None, **kwargs):
-        result = []
+    def run(self):
+        while not self._terminate:
+            while self.to_fullfill:
+                r = self.to_fullfill.pop()
+                r["fetch"](page=r["page"], result=r["result"], **r["kwargs"])
+            time.sleep(1/30)
+
+    def terminate(self):
+        self._terminate = True
+
+    def request(self, fetcher, page=None, result=[], **kwargs):
+        self.to_fullfill.append({"fetch": fetcher, "page":page, "result": result, "kwargs":kwargs})
+
+    def getPlaylist(self, page=None, result=[], **kwargs):
         response = None
         page = page
         def aux():
@@ -56,7 +73,8 @@ class YoutbeHandler():
                     # exclude video that are not available to watch (hopefully)
                     if v["status"]["privacyStatus"] != "public":  # this condition is maybe too strong as it excludes non-repertoriated
                         continue
-                    result.append([v["id"], v["snippet"]["title"]])
+                    result.append({"id": v["id"], "content": v["snippet"]["title"], "description": v["snippet"]["description"],
+                        "publishedBy": v["snippet"]["channelTitle"]})
             else:
                 request = self.youtube.playlistItems().list(
                         part=to_request,
@@ -69,12 +87,16 @@ class YoutbeHandler():
                     # exclude video that are not available to watch (hopefully)
                     if v["status"]["privacyStatus"] != "public":  # this condition is maybe too strong as it excludes non-repertoriated
                         continue
-                    result.append([v["snippet"]["resourceId"]["videoId"], v["snippet"]["title"]])
+                    result.append({"id": v["snippet"]["resourceId"]["videoId"],"content": v["snippet"]["title"], 
+                        "description": v["snippet"]["description"],
+                        "publishedBy": v["snippet"]["channelTitle"]})
             _, page = YoutbeHandler.getPagesToken(response)
         aux()
         tmp = self.checkInCache(kwargs["id"], response["etag"])
         etag = response["etag"]
         if tmp:
+            for e in tmp:
+                result.append(e)
             return tmp
         else:
             while "nextPageToken" in response:
@@ -82,8 +104,8 @@ class YoutbeHandler():
             self.writeToCache(kwargs["id"], result, etag)
         return result
 
-    def getPlaylistList(self, page=None, **kwargs):
-        result = [["Liked", "Liked"]]
+    def getPlaylistList(self, page=None, result=[], **kwargs):
+        result.append({"id": "Liked", "content": "Liked"})
         response = None
         page = page
         def aux():
@@ -96,7 +118,7 @@ class YoutbeHandler():
             )
             response = request.execute()
             for p in response["items"]:
-                result.append([p["id"], p["snippet"]["title"]])
+                result.append({"id": p["id"], "content": p["snippet"]["title"]})
             _, page = YoutbeHandler.getPagesToken(response)
         aux()
         while "nextPageToken" in response:

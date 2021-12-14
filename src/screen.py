@@ -1,5 +1,6 @@
 import curses
 from enum import Enum
+import sys
 
 class Directions(Enum):
     Up = 0
@@ -23,6 +24,7 @@ PLAYER_WIDTH = -1
 PLAYER_HEIGHT = 5
 CONTENT_HEIGHT = -1
 OPTION_HEIGHT = 5
+INFO_HEIGHT = 5
 
 class Screen:
 
@@ -35,13 +37,12 @@ class Screen:
         self.stdscr = stdscr
 
         self.initSizes()
-        self.y, self.x = self.stdscr.getmaxyx()
 
-        self.playerWin = curses.newwin(PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
-        self.playlistsWin = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 1)
-        self.contentWin = curses.newwin(CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH + 1)
-        self.informationWin = curses.newwin(CONTENT_HEIGHT - PLAYER_HEIGHT, PLAYLIST_WIDTH, PLAYER_HEIGHT, 1)
-        self.optionWin = curses.newwin(OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1, 1)
+        self.playerWin      = curses.newwin(PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
+        self.playlistsWin   = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 1)
+        self.contentWin     = curses.newwin(CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH + 1)
+        self.optionWin      = curses.newwin(OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1, 1)
+        self.informationWin = curses.newwin(INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT+1+OPTION_HEIGHT+1, 1)
 
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)
@@ -52,36 +53,34 @@ class Screen:
 
 
     def update(self):
-        self.checkResize
         curses.doupdate()
 
     def initSizes(self):
-        global PLAYER_WIDTH, PLAYER_HEIGHT, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, CONTENT_WIDTH, CONTENT_HEIGHT
+        global PLAYER_WIDTH, PLAYER_HEIGHT, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, CONTENT_WIDTH, CONTENT_HEIGHT, OPTION_HEIGHT, INFO_HEIGHT
 
         PLAYER_WIDTH = curses.COLS - 2
         PLAYER_HEIGHT = 5
-        PLAYLIST_WIDTH = curses.COLS // 5
+        PLAYLIST_WIDTH = max(1, curses.COLS // 5)
         PLAYLIST_HEIGHT = 15
         CONTENT_WIDTH = curses.COLS -1 - PLAYLIST_WIDTH -1
-        CONTENT_HEIGHT = curses.LINES - PLAYER_HEIGHT
+        CONTENT_HEIGHT = curses.LINES - PLAYER_HEIGHT -1
         OPTION_HEIGHT = 5
+        INFO_HEIGHT = 5
 
     def resizeWindows(self):
         def aux(window, size_y, size_x, start_y, start_x):
+            window.resize(1, 1)
+            window.mvwin(start_y, start_x)
             window.resize(size_y, size_x)
-            window.move(start_y, start_x)
-        aux(self.playerWin,PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
         aux(self.playlistsWin, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 1)
-        aux(self.contentWin, CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH + 1)
-        aux(self.informationWin, CONTENT_HEIGHT - PLAYER_HEIGHT, PLAYLIST_WIDTH, PLAYER_HEIGHT, 1)
         aux(self.optionWin, OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1, 1)
+        aux(self.informationWin, INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT+1+OPTION_HEIGHT+1, 1)
+        aux(self.contentWin, CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH+1)
+        aux(self.playerWin, PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
 
-    def checkResize(self):
-        wasResized = self.stdscr.is_term_resized(self.y, self.x)
-        if wasResized:
-            self.initSizes()
-            self.resizeWindows()
-            self.y, self.x = self.stdscr.getmaxyx()
-
-
+    def resize(self):
+        self.initSizes()
+        self.resizeWindows()
+        curses.resizeterm(*self.stdscr.getmaxyx())
+        self.stdscr.erase()
 
