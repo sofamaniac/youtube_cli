@@ -8,6 +8,8 @@ import mpv
 import time
 import sys
 
+import locale
+
 class Window():
 
     def __init__(self, win, title, fetcher, page_size, yt):
@@ -31,8 +33,9 @@ class Window():
         color = kwargs.pop("color", screen.COLOR_TEXT)
         
         # ensuring the string fit in the window
+        s = s.encode('utf-8')
         if len(s) > width:
-            s = s[:width - 3] + "..."
+            s = s[:width - 3] + b"..."
 
         self.win.addstr(y, x, s, attr | curses.color_pair(color))
     
@@ -43,7 +46,7 @@ class Window():
 
         off = self.page*self.page_size
 
-        self.addstr(0, 1, self.title + "({})".format(self.win.getmaxyx()[1]), attr=curses.A_BOLD)
+        self.addstr(0, 1, self.title, attr=curses.A_BOLD)
 
         for i in range(min(abs(len(self.content) - off), self.page_size)):
             if i+off == self.selected and drawSelect:
@@ -118,6 +121,8 @@ class Application():
         self.volume = 100
         self.isMuted = False
 
+        locale.setlocale(locale.LC_ALL, '')
+
     def update(self):
 
         for i, w in enumerate(self.windowsList):
@@ -135,7 +140,7 @@ class Application():
             currSelection = {"content": "None", "Duration": 0, "publishedBy": "None"}
         content = []
         content.append({"content": "Title: {}".format(currSelection["content"])})
-        content.append({"content": "Duration: {}".format("This is the duration")})
+        content.append({"content": "Duration: {}".format(len(currSelection["content"]))})
         content.append({"content": "Author: {}".format(currSelection["publishedBy"])})
         self.informationWindow.content = content
         self.informationWindow.update(drawSelect=False)
@@ -143,7 +148,8 @@ class Application():
     
     def drawOptions(self):
         content = []
-        content.append({"content": "Auto : {}\t Repeat: {}".format(self.inPlaylist, self.inRepeat)})
+        content.append({"content": "Auto : {}".format(self.inPlaylist)})
+        content.append({"content": "Repeat: {}".format(self.inRepeat)})
         content.append({"content": "Volume : {:02d} / 100".format(self.volume)})
         self.optionWindow.content = content
         self.optionWindow.update(drawSelect=False)

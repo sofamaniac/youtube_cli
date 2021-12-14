@@ -59,17 +59,21 @@ class Screen:
         global PLAYER_WIDTH, PLAYER_HEIGHT, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, CONTENT_WIDTH, CONTENT_HEIGHT, OPTION_HEIGHT, INFO_HEIGHT
 
         PLAYER_WIDTH = curses.COLS - 2
-        PLAYER_HEIGHT = 5
+        PLAYER_HEIGHT = 4
+
         PLAYLIST_WIDTH = max(1, curses.COLS // 5)
         PLAYLIST_HEIGHT = 15
+
         CONTENT_WIDTH = curses.COLS -1 - PLAYLIST_WIDTH -1
         CONTENT_HEIGHT = curses.LINES - PLAYER_HEIGHT -1
+
         OPTION_HEIGHT = 5
+
         INFO_HEIGHT = 5
 
     def resizeWindows(self):
         def aux(window, size_y, size_x, start_y, start_x):
-            window.resize(1, 1)
+            window.resize(1, 1)  # avoid moving windows that are too big in the next instruction
             window.mvwin(start_y, start_x)
             window.resize(size_y, size_x)
         aux(self.playlistsWin, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 1)
