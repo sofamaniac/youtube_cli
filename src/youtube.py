@@ -8,7 +8,6 @@ import googleapiclient.errors
 import json
 import threading
 import time
-from pytube import YouTube, Playlist
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 data_path = "../data/"
