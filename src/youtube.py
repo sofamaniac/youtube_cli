@@ -8,6 +8,7 @@ import googleapiclient.errors
 import json
 import threading
 import time
+from pytube import YouTube, Playlist
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 data_path = "../data/"
@@ -46,7 +47,7 @@ class YoutbeHandler(threading.Thread):
             while self.to_fullfill:
                 r = self.to_fullfill.pop()
                 r["fetch"](page=r["page"], result=r["result"], **r["kwargs"])
-            time.sleep(1/30)
+            time.sleep(1/10)
 
     def terminate(self):
         self._terminate = True
@@ -89,7 +90,8 @@ class YoutbeHandler(threading.Thread):
                         continue
                     result.append({"id": v["snippet"]["resourceId"]["videoId"],"content": v["snippet"]["title"], 
                         "description": v["snippet"]["description"],
-                        "publishedBy": v["snippet"]["channelTitle"]})
+                        "publishedBy": v["snippet"]["channelTitle"],})
+
             _, page = YoutbeHandler.getPagesToken(response)
         aux()
         tmp = self.checkInCache(kwargs["id"], response["etag"])
