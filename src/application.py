@@ -3,6 +3,7 @@ import screen
 
 from screen import Directions
 import curses
+import curses.textpad
 import mpv
 
 import time
@@ -120,7 +121,12 @@ class Application():
         self.windowsList = [self.playlistWindow, self.contentWindow]
         self.currentWindow = 0
 
-        self.player = mpv.MPV(video=False, ytdl=True)#,script_opts="ytdl_hook-ytdl_path=yt-dlp")
+        self.searchWindow = Window(self.scr.searchWin, "Search", lambda x,**kwargs:None, 3, None)
+        self.textWindow = self.searchWindow.win.subwin(1, 78, 11, 11)  # begin_x/y are relative to the SCREEN not the parent window
+        self.inSearch = False
+        self.textbox = curses.textpad.Textbox(self.textWindow)
+
+        self.player = mpv.MPV(video=False, ytdl=True)
         self.playing = {'title': 'None', 'id': ''}
 
         self.playlistWindow.fetch(id="")
@@ -152,6 +158,20 @@ class Application():
         # checking if there is something playing
         if self.inPlaylist and not self.player._get_property("media-title"): # the current song has finished
             self.next()
+
+        def aux(x):
+            if x == 10:  # check if enter is pressed
+                return curses.ascii.BEL
+            else:
+                return x
+        
+        if self.inSearch:
+            self.textbox.edit(aux)
+            self.searchWindow.content = [{"content": self.textbox.gather()}]
+            self.inSearch = False
+            self.searchWindow.update()
+            
+
 
     def getUrl(self, video):
         command = f"yt-dlp --no-warnings --format bestaudio/best --print urls --no-playlist https://youtu.be/{video['id']}"

@@ -58,8 +58,8 @@ class YoutbeHandler(threading.Thread):
     def getPlaylist(self, page=None, result=[], **kwargs):
         response = None
         page = page
-        def aux():
-            nonlocal result, page, response
+        def aux(page):
+            nonlocal result, response
             to_request = "id, snippet, status"
             # since liked video playlist has no id we must have a special request
             if kwargs["id"] == "Liked":
@@ -74,7 +74,7 @@ class YoutbeHandler(threading.Thread):
                     # exclude video that are not available to watch (hopefully)
                     if v["status"]["privacyStatus"] != "public":  # this condition is maybe too strong as it excludes non-repertoriated
                         continue
-                    result.append({"id": v["id"], "content": v["snippet"]["title"], "description": v["snippet"]["description"],
+                    result.append({"id": v["id"], "content": v["snippet"]["title"], 
                         "publishedBy": v["snippet"]["channelTitle"]})
             else:
                 request = self.youtube.playlistItems().list(
@@ -89,11 +89,10 @@ class YoutbeHandler(threading.Thread):
                     if v["status"]["privacyStatus"] != "public":  # this condition is maybe too strong as it excludes non-repertoriated
                         continue
                     result.append({"id": v["snippet"]["resourceId"]["videoId"],"content": v["snippet"]["title"], 
-                        "description": v["snippet"]["description"],
                         "publishedBy": v["snippet"]["channelTitle"],})
 
             _, page = YoutbeHandler.getPagesToken(response)
-        aux()
+        aux(page)
         tmp = self.checkInCache(kwargs["id"], response["etag"])
         etag = response["etag"]
         if tmp:
@@ -102,7 +101,7 @@ class YoutbeHandler(threading.Thread):
             return tmp
         else:
             while "nextPageToken" in response:
-                aux()
+                aux(response["nextPageToken"])
             self.writeToCache(kwargs["id"], result, etag)
         return result
 

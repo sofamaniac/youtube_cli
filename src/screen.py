@@ -43,6 +43,7 @@ class Screen:
         self.contentWin     = curses.newwin(CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH + 1)
         self.optionWin      = curses.newwin(OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1, 1)
         self.informationWin = curses.newwin(INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT+1+OPTION_HEIGHT+1, 1)
+        self.searchWin      = curses.newwin(3, 80, 10, 10)
 
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)

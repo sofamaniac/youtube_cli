@@ -58,6 +58,8 @@ def main(stdscr):
             # for some reason we need to resize two times in order for the effects be felt
             app.scr.resize()
             app.scr.resize()
+        elif c == ord('s'):
+            app.inSearch = True
         last_event = c
 
 
