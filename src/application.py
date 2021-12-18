@@ -10,6 +10,9 @@ import sys
 
 import locale
 
+import subprocess
+import shlex
+
 class Window():
 
     def __init__(self, win, title, fetcher, page_size, yt):
@@ -33,9 +36,9 @@ class Window():
         color = kwargs.pop("color", screen.COLOR_TEXT)
         
         # ensuring the string fit in the window
-        s = s.encode('utf-8')
+        #s = s.encode('utf-8')
         if len(s) > width:
-            s = s[:width - 3] + b"..."
+            s = s[:width - 3] + "..."
 
         self.win.addstr(y, x, s, attr | curses.color_pair(color))
     
@@ -107,15 +110,17 @@ class Application():
         self.windowsList = [self.playlistWindow, self.contentWindow]
         self.currentWindow = 0
 
-        self.player = mpv.MPV(video=False, ytdl=True)
-        self.playingId = ""
+        self.player = mpv.MPV(video=False, ytdl=True)#,script_opts="ytdl_hook-ytdl_path=yt-dlp")
+        self.playing = {'title': 'None', 'id': ''}
 
         self.playlistWindow.fetch(id="")
         while self.playlistWindow.content == []:
             time.sleep(0.1)
         self.getPlaylist()
-
+        
         self.inPlaylist = False
+        self.playlist = []
+        self.playlistIndex = 0
         self.inRepeat = False
 
         self.volume = 100
@@ -125,6 +130,7 @@ class Application():
 
     def update(self):
 
+        # Drawing all the windows
         for i, w in enumerate(self.windowsList):
             w.update(i == self.currentWindow)
         self.drawPlayer()
@@ -133,14 +139,28 @@ class Application():
 
         self.scr.update()
 
+        # checking if there is something playing
+        if self.inPlaylist and not self.player._get_property("media-title"): # the current song has finished
+            self.next()
+
+    def getUrl(self, video):
+        command = f"yt-dlp --no-warnings --format bestaudio/best --print urls --no-playlist https://youtu.be/{video['id']}"
+        urls = subprocess.run(shlex.split(command),
+                capture_output=True, text=True)
+        urls = urls.stdout.splitlines()
+        if urls:
+            return urls[0]
+        else:
+            return ""
+
     def drawInfo(self):
         if self.contentWindow.selected < len(self.contentWindow.content):
             currSelection = self.contentWindow.content[self.contentWindow.selected]
         else:
-            currSelection = {"content": "None", "Duration": 0, "publishedBy": "None"}
+            currSelection = {"content": "None", "Duration": 0, "publishedBy": "None", "id": "NoneID"}
         content = []
         content.append({"content": "Title: {}".format(currSelection["content"])})
-        content.append({"content": "Duration: {}".format(len(currSelection["content"]))})
+        content.append({"content": "Duration: {}".format(currSelection["id"])})
         content.append({"content": "Author: {}".format(currSelection["publishedBy"])})
         self.informationWindow.content = content
         self.informationWindow.update(drawSelect=False)
@@ -156,7 +176,7 @@ class Application():
 
     def drawPlayer(self):
         currContent = [self.player._get_property("media-title"), self.player._get_property("duration")]
-        title = currContent[0]
+        title = self.playing['title']
         dur = currContent[1]
 
         time_pos = self.player._get_property("time-pos")
@@ -198,10 +218,12 @@ class Application():
     def setPlaylist(self):
         self.player.playlist_clear()
         if not self.inPlaylist:
-            self.player.stop()
+            self.playlist = []
             for e in self.contentWindow.content:
-                self.player.playlist_append("https://youtu.be/{}".format(e["id"]))
-            self.player.playlist_play_index(self.contentWindow.selected)
+                self.playlist.append(e)
+            self.playlistIndex = self.contentWindow.selected
+            self.player.stop()
+            self.play(self.playlist[self.playlistIndex])
         self.inPlaylist = not self.inPlaylist
 
     def getPlaylist(self):
@@ -222,7 +244,11 @@ class Application():
 
     def next(self):
         if self.inPlaylist:
-            self.player.playlist_next()
+            self.playlistIndex += 1
+            if self.playlistIndex > len(self.playlist):
+                self.player.stop()
+            else:
+                self.play(self.playlist[self.playlistIndex])
         else:
             win = self.contentWindow
             win.select(Directions.Down)
@@ -230,8 +256,11 @@ class Application():
 
     def prev(self):
         if self.inPlaylist:
-            if self.player._get_property("playlist-pos") > 0:
-                self.player.playlist_prev()
+            if self.playlistIndex > 0:
+                self.playlistIndex -= 1
+                self.play(self.playlist[self.playlistIndex])
+            else:
+                self.player.stop()
         else:
             win = self.contentWindow
             win.select(Directions.Up)
@@ -249,11 +278,19 @@ class Application():
         win.page += page_incr
         win.selected += win.page_size*page_incr
 
-    def play(self):
+    def play(self, to_play=None):
         next = self.contentWindow.getSelectId()
-        if next != self.playingId:
-            self.player.play("https://youtu.be/{}".format(self.contentWindow.getSelectId()))
-            self.playingId = next
+        if to_play:
+            url = self.getUrl(to_play)
+            self.player.play(url)
+            self.playing['id'] = next
+            self.playing['title'] = to_play['content']
+        elif next != self.playing['id']:
+            to_play = self.contentWindow.content[self.contentWindow.selected]
+            url = self.getUrl(to_play)
+            self.player.play(url)
+            self.playing['id'] = next
+            self.playing['title'] = to_play['content']
 
     def stop(self):
         self.player.stop()
