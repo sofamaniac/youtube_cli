@@ -36,9 +36,19 @@ class Window():
         color = kwargs.pop("color", screen.COLOR_TEXT)
         
         # ensuring the string fit in the window
-        #s = s.encode('utf-8')
-        if len(s) > width:
-            s = s[:width - 3] + "..."
+        s = s.encode('utf-8')
+
+        # get length of s by counting number of starting bytes
+        # SO related link https://stackoverflow.com/a/4063229
+        l = 0
+        for b in s:
+            l += 1 if (b & 0xc0) != 0x80 else 0
+        if l > width:
+            # if the string is too long we cut at the first starting byte that makes it short enough
+            i = width - 3
+            while i > 0 and s[i] & (0xc0) == 0x80:
+                i -= 1
+            s = s[:i] + b"..."
 
         self.win.addstr(y, x, s, attr | curses.color_pair(color))
     
