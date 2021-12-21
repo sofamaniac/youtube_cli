@@ -63,10 +63,11 @@ class Playlist():
         self.size = nb_videos
         self.nextPage = None
         self.prevPage = None
-        self.order = []
         self.currentIndex = 0
 
         self.loadNextPage()  # we load the first page
+
+        self.order = [i for i in range(self.size)]  # used for playlist shuffling
 
     def loadNextPage(self):
         response = None
@@ -138,13 +139,19 @@ class Playlist():
         if self.currentIndex >= self.size:
             return
         self.currentIndex += 1
-        return self.getVideoUrl(self.currentIndex)
+        shuffled_index = self.order[self.currentIndex]
+        return self.videos[shuffled_index]
 
     def prev(self):
         if self.currentIndex == 0:
             return
         self.currentIndex -= 1
-        return self.getVideoUrl(self.currentIndex)
+        shuffled_index = self.order[self.currentIndex]
+        return self.videos[shuffled_index]
+
+    def getCurrent(self):
+        shuffled_index = self.order[self.currentIndex]
+        return self.videos[shuffled_index]
 
     def getItem(self, index):
         return self.getItemList(index, index+1)[0]

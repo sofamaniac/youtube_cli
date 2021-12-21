@@ -224,7 +224,7 @@ class Application():
             self.getPlaylist()
             self.contentWindow.selected = 0
 
-    def setPlaylist(self):
+    def setPlaylistOld(self):
         self.player.playlist_clear()
         if not self.inPlaylist:
             self.playlist = []
@@ -233,6 +233,14 @@ class Application():
             self.playlistIndex = self.contentWindow.selected
             self.player.stop()
             self.play(self.playlist[self.playlistIndex])
+        self.inPlaylist = not self.inPlaylist
+
+    def setPlaylist(self):
+        if not self.inPlaylist:
+            self.playlist = self.playlistWindow.getSelected()
+            self.playlist.currentIndex = self.contentWindow.selected
+            self.player.stop
+            self.play(self.playlist.getCurrent())
         self.inPlaylist = not self.inPlaylist
 
     def getPlaylist(self):
@@ -250,11 +258,10 @@ class Application():
 
     def next(self):
         if self.inPlaylist:
-            self.playlistIndex += 1
-            if self.playlistIndex > len(self.playlist):
+            if self.playlist.currentIndex > self.playlist.size:
                 self.player.stop()
             else:
-                self.play(self.playlist[self.playlistIndex])
+                self.play(self.playlist.next())
         else:
             win = self.contentWindow
             win.select(Directions.Down)
@@ -262,9 +269,8 @@ class Application():
 
     def prev(self):
         if self.inPlaylist:
-            if self.playlistIndex > 0:
-                self.playlistIndex -= 1
-                self.play(self.playlist[self.playlistIndex])
+            if self.playlist.currentIndex > 0:
+                self.play(self.playlist.prev())
             else:
                 self.player.stop()
         else:
@@ -273,7 +279,6 @@ class Application():
             self.play()
 
     def next_page(self):
-        # TODO rework to avoid getting past the last page
         win = self.windowsList[self.currentWindow]
         if win.selected + win.page_size <= win.source.getMaxIndex():
             win.page += 1
