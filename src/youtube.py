@@ -51,26 +51,55 @@ class Video():
     def loadNextPage(self):
         return
 
-class Playlist():
+class ListItems():
+    def __init__(self):
+        self.currentIndex = 0
+        self.nextPage = None
+        self.prevPage = None
+
+        self.nb_loaded = 0
+        self.elements = []
+        self.size = 1e99
+
+    def loadNextPage(self):
+        pass
+
+    def getCurrent(self):
+        return self.elements[self.currentIndex]
+
+    def getItem(self, index):
+        return self.getItemList(index, index+1)[0]
+
+    def getItemList(self, start, end):
+        while end+1 > self.nb_loaded and self.nextPage != None:
+            self.loadNextPage()
+        max_index = min(end, self.size)
+        return self.elements[start:max_index]
+
+    def loadAll(self):
+        while self.nextPage != None or self.nb_loaded == 0:
+            self.loadNextPage()
+        self.size = self.nb_loaded
+
+    def getMaxIndex(self):
+        return self.nb_loaded - 1
+
+class Playlist(ListItems):
 
     def __init__(self, id, title, nb_videos, **kwargs):
 
+        ListItems.__init__(self)
+
         self.title = title
         self.id = id
-        self.videos = []
-        self.nb_loaded = 0
         self.other = kwargs
         self.size = nb_videos
-        self.nextPage = None
-        self.prevPage = None
-        self.currentIndex = 0
 
         self.loadNextPage()  # we load the first page
 
         self.order = [i for i in range(self.size)]  # used for playlist shuffling
 
     def loadNextPage(self):
-        response = None
         to_request = "id, snippet, status"
         # since liked video playlist has no id we must have a special request
 
@@ -100,13 +129,13 @@ class Playlist():
                 video_id = v["id"]
             else:
                 video_id = v["snippet"]["resourceId"]["videoId"]
-            self.videos.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"]))
+            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"]))
 
-        # self.title = response["snippet"]["title"]
         self.size = self.size + len(response["items"]) if self.id == "Liked" else self.size
         self.nb_loaded = self.nb_loaded + len(response["items"])
         self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
         self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+
 
     def getVideoUrl(self, index):
         while index+1 > self.nb_loaded and self.nextPage != None:
@@ -114,17 +143,7 @@ class Playlist():
 
         if index > self.size:
             raise IndexError("Video index out of playlist range")
-        return self.videos[index].getUrl()
-
-    def getItemList(self, start, end):
-        while end+1 > self.nb_loaded and self.nextPage != None:
-            self.loadNextPage()
-        max_index = min(end, self.size)
-        return self.videos[start:max_index]
-
-    def loadAll(self):
-        while self.nextPage != None or self.nb_loaded == 0:
-            self.loadNextPage()
+        return self.elements[index].getUrl()
 
     def shuffle(self):
         if self.id == "Liked":
@@ -140,21 +159,18 @@ class Playlist():
             return
         self.currentIndex += 1
         shuffled_index = self.order[self.currentIndex]
-        return self.videos[shuffled_index]
+        return self.elements[shuffled_index]
 
     def prev(self):
         if self.currentIndex == 0:
             return
         self.currentIndex -= 1
         shuffled_index = self.order[self.currentIndex]
-        return self.videos[shuffled_index]
+        return self.elements[shuffled_index]
 
     def getCurrent(self):
         shuffled_index = self.order[self.currentIndex]
-        return self.videos[shuffled_index]
-
-    def getItem(self, index):
-        return self.getItemList(index, index+1)[0]
+        return self.elements[shuffled_index]
 
     def getMaxIndex(self):
         if self.id == "Liked" and self.nextPage != None:
@@ -162,13 +178,12 @@ class Playlist():
         else:
             return self.size - 1
 
-class PlaylistList():
+class PlaylistList(ListItems):
 
     def __init__(self):
-        self.playlists = [Playlist("Liked", "Liked Videos", 0)]
+        ListItems.__init__(self)
+        self.elements = [Playlist("Liked", "Liked Videos", 0)]
         self.nb_loaded = 1
-        self.prevPage = None
-        self.nextPage = None
 
         self.loadNextPage()
         self.loadAll()
@@ -183,26 +198,39 @@ class PlaylistList():
         )
         response = request.execute()
         for p in response["items"]:
-            self.playlists.append(Playlist(p["id"], p["snippet"]["title"], p["contentDetails"]["itemCount"]))
+            self.elements.append(Playlist(p["id"], p["snippet"]["title"], p["contentDetails"]["itemCount"]))
         self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
         self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
         self.nb_loaded += len(response["items"])
+        if self.nextPage == None:
+            self.size = self.nb_loaded
 
-    def getItemList(self, start, end):
-        while end+1 > self.nb_loaded and self.nextPage != None:
-            self.loadNextPage()
-        return self.playlists[start:end]
+class Search(ListItems):
 
-    def loadAll(self):
-        while self.nextPage != None or self.nb_loaded == 0:
-            self.loadNextPage()
+    def __init__(self, query):
 
-    def getItem(self, index):
-        return self.getItemList(index, index+1)[0]
+        ListItems.__init__(self)
+        self.query = query
 
-    def getMaxIndex(self):
-        return self.nb_loaded - 1
+        self.loadNextPage()
 
+    def loadNextPage(self):
+
+        request = youtube.search().list(
+                part="snippet",
+                maxResults = MAX_RESULTS,
+                pageToken=self.nextPage,
+                q=self.query,
+                type="video"
+        )
+        response = request.execute()
+        for v in response["items"]:
+            self.elements.append(Video(v["id"]["videoId"], v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"]))
+        self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
+        self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+        self.nb_loaded += len(response["items"])
+        if self.nextPage == None:
+            self.size = self.nb_loaded
 
 class YoutbeHandler(threading.Thread):
 

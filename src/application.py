@@ -161,8 +161,10 @@ class Application():
             self.textbox.reset()
             self.textbox.edit()
             search_term = self.textbox.gather()
-            self.searchWindow.content = [{"content": search_term}]
-            self.contentWindow.title = search_term
+            if search_term:
+                self.searchWindow.content = [Message(search_term)]
+                self.contentWindow.source = youtube.Search(search_term)
+                self.currentWindow = 1
             self.inSearch = False
             
     def drawInfo(self):
