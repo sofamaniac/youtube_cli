@@ -7,7 +7,6 @@ import textbox
 import mpv
 
 import time
-import sys
 
 import locale
 
@@ -19,14 +18,12 @@ class Message():
 
 class Window():
 
-    def __init__(self, win, title, page_size, yt):
+    def __init__(self, win, title):
         self.source = None
         self.selected = 0
         self.win = win
         self.title = title
         self.page = 0
-        self.page_size = page_size
-        self.yt = yt
 
     def drawBox(self, color=screen.COLOR_BORDER):
         self.win.attrset(curses.color_pair(color))
@@ -56,16 +53,16 @@ class Window():
         self.win.addstr(y, x, s, attr | curses.color_pair(color))
     
     def update(self, drawSelect=True, to_display=[]):
+        page_size = self.getPageSize()
         self.win.erase()
         self.drawBox()
-        self.page_size = self.win.getmaxyx()[0]-2  # update page size when resize
 
-        off = self.page*self.page_size
+        off = self.page*page_size
 
         self.addstr(0, 1, self.title, attr=curses.A_BOLD)
 
         if not to_display and self.source:
-            to_display = self.source.getItemList(off, self.page_size+off)
+            to_display = self.source.getItemList(off, page_size+off)
 
         for i in range(len(to_display)):
             if i+off == self.selected and drawSelect:
@@ -75,55 +72,46 @@ class Window():
         self.win.noutrefresh() 
 
     def select(self, direction):
-        off = self.page_size*self.page
+        off = self.getPageSize()*self.page
         if direction == Directions.Up:
             self.selected= max(0, self.selected-1)
             if self.selected < off:
                 self.page -= 1
         elif direction == Directions.Down:
-            #self.selected= min(len(self.content) -1, self.selected+1)
-            # TODO find condition maybe ?
             self.selected += 1
             if self.selected > self.source.getMaxIndex():
                 self.selected -= 1
-            if self.selected >= off + self.page_size:
+            if self.selected >= off + self.getPageSize():
                 self.page += 1
-
-    def getSelectId(self):
-        if self.selected < len(self.content) and "id" in self.content[self.selected]:
-            return self.content[self.selected].id
-        else:
-            # TODO: proper error handling
-            return -1
 
     def getSelected(self):
         return self.source.getItem(self.selected)
 
+    def getPageSize(self):
+        return self.win.getmaxyx()[0]-2
+
 class Application():
 
     def __init__(self, stdscr):
-        self.yt  = youtube.YoutbeHandler()
-        self.yt.start()
         self.scr = screen.Screen(stdscr)
 
-        self.contentWindow = Window(self.scr.contentWin, "Videos", screen.CONTENT_HEIGHT-2, self.yt)
-        self.playlistWindow = Window(self.scr.playlistsWin, "Playlists", screen.PLAYLIST_HEIGHT-2, self.yt)
+        self.contentWindow = Window(self.scr.contentWin, "Videos")
+        self.playlistWindow = Window(self.scr.playlistsWin, "Playlists")
 
-        self.playerWindow = Window(self.scr.playerWin, "Player Information", screen.PLAYER_HEIGHT-2, None)
+        self.playerWindow = Window(self.scr.playerWin, "Player Information")
         self.playerWindow.selected = -1
 
-        self.optionWindow = Window(self.scr.optionWin, "Options", screen.OPTION_HEIGHT-2, None)
+        self.optionWindow = Window(self.scr.optionWin, "Options")
         self.optionWindow.selected = -1
 
-        self.informationWindow = Window(self.scr.informationWin, "Informations", screen.INFO_HEIGHT-2, None)
+        self.informationWindow = Window(self.scr.informationWin, "Informations")
 
         self.windowsList = [self.playlistWindow, self.contentWindow]
         self.currentWindow = 0
 
-        self.searchWindow = Window(self.scr.searchWin, "Search", 3, None)
-        self.textWindow = self.searchWindow.win.subwin(1, 78, 11, 11)  # begin_x/y are relative to the SCREEN not the parent window
+        self.searchWindow = Window(self.scr.searchWin, "Search")
         self.inSearch = False
-        self.textbox = textbox.Textbox(self.textWindow)
+        self.textbox = textbox.Textbox(self.scr.searchField)
 
         self.player = mpv.MPV(video=False, ytdl=True)
         self.playing = {'title': 'None', 'id': ''}
@@ -177,16 +165,14 @@ class Application():
 
     
     def drawOptions(self):
-        # TODO use messages
         content = []
 
         content.append(Message(f"Auto: {self.inPlaylist}"))
         content.append(Message(f"Repeat: {self.inRepeat}"))
-        content.append(Message("Volume : {:02d} / 100".format(self.volume)))
+        content.append(Message(f"Volume : {self.volume:02d} / 100"))
         self.optionWindow.update(drawSelect=False, to_display=content)
 
     def drawPlayer(self):
-        # TODO use messages
         currContent = [self.player._get_property("media-title"), self.player._get_property("duration")]
         title = self.playing['title']
         dur = currContent[1]
@@ -282,15 +268,15 @@ class Application():
 
     def next_page(self):
         win = self.windowsList[self.currentWindow]
-        if win.selected + win.page_size <= win.source.getMaxIndex():
+        if win.selected + win.getPageSize() <= win.source.getMaxIndex():
             win.page += 1
-            win.selected = win.selected + win.page_size
+            win.selected = win.selected + win.getPageSize()
 
     def prev_page(self):
         win = self.windowsList[self.currentWindow]
         page_incr = max(0, win.page-1) - win.page
         win.page += page_incr
-        win.selected += win.page_size*page_incr
+        win.selected += win.getPageSize()*page_incr
 
     def play(self, to_play=youtube.Video("", "", "", "")):
         next = self.contentWindow.getSelected()
@@ -338,6 +324,5 @@ class Application():
             self.player._set_property("volume", self.volume)
 
     def quit(self):
-        self.yt.terminate()
-        self.yt.join()
+        return
 

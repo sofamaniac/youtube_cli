@@ -6,10 +6,6 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 # ================== #
-import isodate
-import json
-import threading
-import time
 import subprocess
 import shlex
 
@@ -32,9 +28,6 @@ class Video():
         self.author = author
         self.other = kwargs
 
-    def load(self, id:str):
-        pass
-
     def getUrl(self):
         """Return the url for the audio stream of the video"""
         if self.id == "":
@@ -47,9 +40,6 @@ class Video():
             return urls[0]
         else:
             return ""
-
-    def loadNextPage(self):
-        return
 
 class ListItems():
     def __init__(self):
@@ -68,7 +58,11 @@ class ListItems():
         return self.elements[self.currentIndex]
 
     def getItem(self, index):
-        return self.getItemList(index, index+1)[0]
+        item = self.getItemList(index, index+1)
+        if item:
+            return self.getItemList(index, index+1)[0]
+        else:
+            raise IndexError()
 
     def getItemList(self, start, end):
         while end+1 > self.nb_loaded and self.nextPage != None:
@@ -231,34 +225,6 @@ class Search(ListItems):
         self.nb_loaded += len(response["items"])
         if self.nextPage == None:
             self.size = self.nb_loaded
-
-class YoutbeHandler(threading.Thread):
-
-    def __init__(self):
-        threading.Thread.__init__(self)
-        self.playlists_list = [["", "Liked Videos"]]
-        self.currentContent = []
-        self.to_fullfill = []
-        self._terminate = False
-
-
-    def run(self):
-        while not self._terminate:
-            while self.to_fullfill:
-                r = self.to_fullfill.pop()
-                r["object"].loadNextPage()
-            time.sleep(1/10)
-
-    def terminate(self):
-        self._terminate = True
-
-    def request(self, fetcher, page=None, result=[], **kwargs):
-        self.to_fullfill.append({"fetch": fetcher, "page":page, "result": result, "kwargs":kwargs})
-
-
-    def getSearch(self):
-        pass
-
 
 def get_authenticated_service():
     path = data_path + "CREDENTIALS_PICKLE_FILE"

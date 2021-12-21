@@ -19,12 +19,20 @@ DARK_GREY = 9
 # Windows dimensions
 PLAYLIST_WIDTH = 30
 PLAYLIST_HEIGHT = 15
+
 CONTENT_WIDTH = -1
+CONTENT_HEIGHT = -1
+
 PLAYER_WIDTH = -1
 PLAYER_HEIGHT = 5
-CONTENT_HEIGHT = -1
+
 OPTION_HEIGHT = 5
 INFO_HEIGHT = 5
+
+SEARCH_WIDTH = 80
+SEARCH_HEIGHT = 3
+SEARCH_Y = 10
+SEARCH_X = 10
 
 class Screen:
 
@@ -43,7 +51,8 @@ class Screen:
         self.contentWin     = curses.newwin(CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH + 1)
         self.optionWin      = curses.newwin(OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1, 1)
         self.informationWin = curses.newwin(INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT+1+OPTION_HEIGHT+1, 1)
-        self.searchWin      = curses.newwin(3, 80, 10, 10)
+        self.searchWin      = curses.newwin(SEARCH_HEIGHT, SEARCH_WIDTH, SEARCH_Y, SEARCH_X)
+        self.searchField    = self.searchWin.subwin(SEARCH_HEIGHT-2, SEARCH_WIDTH-2, SEARCH_Y+1, SEARCH_X+1)
 
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)
@@ -57,13 +66,17 @@ class Screen:
         curses.doupdate()
 
     def initSizes(self):
-        global PLAYER_WIDTH, PLAYER_HEIGHT, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, CONTENT_WIDTH, CONTENT_HEIGHT, OPTION_HEIGHT, INFO_HEIGHT
+        global PLAYER_WIDTH, PLAYER_HEIGHT, \
+        PLAYLIST_HEIGHT, PLAYLIST_WIDTH, \
+        CONTENT_WIDTH, CONTENT_HEIGHT, \
+        OPTION_HEIGHT, INFO_HEIGHT, \
+        SEARCH_WIDTH, SEARCH_HEIGHT, SEARCH_X, SEARCH_Y
 
         PLAYER_WIDTH = curses.COLS - 2
         PLAYER_HEIGHT = 4
 
         PLAYLIST_WIDTH = max(1, curses.COLS // 5)
-        PLAYLIST_HEIGHT = 15
+        PLAYLIST_HEIGHT = min(15, curses.LINES //4)
 
         CONTENT_WIDTH = curses.COLS -1 - PLAYLIST_WIDTH -1
         CONTENT_HEIGHT = curses.LINES - PLAYER_HEIGHT -1
@@ -71,6 +84,11 @@ class Screen:
         OPTION_HEIGHT = 5
 
         INFO_HEIGHT = 5
+
+        SEARCH_WIDTH = 3*curses.COLS // 5
+        SEARCH_HEIGHT = 3  # rework formula to ensure that one can input 80 chars in the search box TODO
+        SEARCH_Y = curses.LINES//2 - 1
+        SEARCH_X = curses.COLS // 5
 
     def resizeWindows(self):
         def aux(window, size_y, size_x, start_y, start_x):
@@ -82,6 +100,7 @@ class Screen:
         aux(self.informationWin, INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT+1+OPTION_HEIGHT+1, 1)
         aux(self.contentWin, CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH+1)
         aux(self.playerWin, PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
+        aux(self.searchWin, SEARCH_HEIGHT, SEARCH_WIDTH, SEARCH_Y, SEARCH_X)
 
     def resize(self):
         self.initSizes()

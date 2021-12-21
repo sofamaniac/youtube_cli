@@ -1,15 +1,11 @@
 import mpv
 
-import youtube
 from screen import Screen, Directions
 
 from application import Application
 from keylistener import Listener
 
 import curses
-from time import sleep
-
-yt = youtube.YoutbeHandler()
 
 def main(stdscr):
     app = Application(stdscr)
