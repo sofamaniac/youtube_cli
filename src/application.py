@@ -275,8 +275,9 @@ class Application():
     def next_page(self):
         # TODO rework to avoid getting past the last page
         win = self.windowsList[self.currentWindow]
-        win.page += 1
-        win.selected = win.selected + win.page_size
+        if win.selected + win.page_size <= win.source.getMaxIndex():
+            win.page += 1
+            win.selected = win.selected + win.page_size
 
     def prev_page(self):
         win = self.windowsList[self.currentWindow]

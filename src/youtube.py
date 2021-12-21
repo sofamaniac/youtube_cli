@@ -92,6 +92,8 @@ class Playlist():
         for v in response["items"]:
             # exclude video that are not available to watch (hopefully)
             if v["status"]["privacyStatus"] != "public":  # this condition is maybe too strong as it excludes non-repertoriated
+                self.nb_loaded -= 1
+                self.size -= 1
                 continue
             if self.id == "Liked":
                 video_id = v["id"]
@@ -148,7 +150,7 @@ class Playlist():
         return self.getItemList(index, index+1)[0]
 
     def getMaxIndex(self):
-        if self.id == "Liked":
+        if self.id == "Liked" and self.nextPage != None:
             return 1e99
         else:
             return self.size - 1
