@@ -3,7 +3,6 @@ import screen
 
 from screen import Directions
 import curses
-#import curses.textpad
 import textbox
 import mpv
 
@@ -12,17 +11,19 @@ import sys
 
 import locale
 
-import subprocess
-import shlex
+class Message():
+    
+    def __init__(self, title, *kwargs):
+        self.title = title
+
 
 class Window():
 
-    def __init__(self, win, title, fetcher, page_size, yt):
-        self.content = []
+    def __init__(self, win, title, page_size, yt):
+        self.source = None
         self.selected = 0
         self.win = win
         self.title = title
-        self.fetcher = fetcher
         self.page = 0
         self.page_size = page_size
         self.yt = yt
@@ -54,7 +55,7 @@ class Window():
 
         self.win.addstr(y, x, s, attr | curses.color_pair(color))
     
-    def update(self, drawSelect=True):
+    def update(self, drawSelect=True, to_display=[]):
         self.win.erase()
         self.drawBox()
         self.page_size = self.win.getmaxyx()[0]-2  # update page size when resize
@@ -63,11 +64,14 @@ class Window():
 
         self.addstr(0, 1, self.title, attr=curses.A_BOLD)
 
-        for i in range(min(abs(len(self.content) - off), self.page_size)):
+        if not to_display and self.source:
+            to_display = self.source.getItemList(off, self.page_size+off)
+
+        for i in range(len(to_display)):
             if i+off == self.selected and drawSelect:
-                self.addstr(i+1, 1, self.content[i+off]["content"], attr=curses.A_STANDOUT, **self.content[i+off])
+                self.addstr(i+1, 1, to_display[i].title, attr=curses.A_STANDOUT)
             else:
-                self.addstr(i+1, 1, self.content[i+off]["content"], **self.content[i+off])
+                self.addstr(i+1, 1, to_display[i].title)
         self.win.noutrefresh() 
 
     def select(self, direction):
@@ -77,29 +81,23 @@ class Window():
             if self.selected < off:
                 self.page -= 1
         elif direction == Directions.Down:
-            self.selected= min(len(self.content) -1, self.selected+1)
+            #self.selected= min(len(self.content) -1, self.selected+1)
+            # TODO find condition maybe ?
+            self.selected += 1
+            if self.selected > self.source.getMaxIndex():
+                self.selected -= 1
             if self.selected >= off + self.page_size:
                 self.page += 1
 
     def getSelectId(self):
         if self.selected < len(self.content) and "id" in self.content[self.selected]:
-            return self.content[self.selected]["id"]
+            return self.content[self.selected].id
         else:
             # TODO: proper error handling
             return -1
 
-    def fetch(self, page=None, **kwargs):
-        self.content = []
-        if kwargs and "id" in kwargs:
-            self.yt.request(self.fetcher, page=page, result=self.content, **kwargs)
-        else:
-            id = self.getSelectId()
-            while id == -1:
-                # might get stuck in infinite loop
-                time.sleep(0.1)
-                id = self.getSelectId()
-            self.yt.request(self.fetcher, page=page, result=self.content, id=self.getSelectId(), **kwargs)
-
+    def getSelected(self):
+        return self.source.getItem(self.selected)
 
 class Application():
 
@@ -108,21 +106,21 @@ class Application():
         self.yt.start()
         self.scr = screen.Screen(stdscr)
 
-        self.contentWindow = Window(self.scr.contentWin, "Videos", self.yt.getPlaylist, screen.CONTENT_HEIGHT-2, self.yt)
-        self.playlistWindow = Window(self.scr.playlistsWin, "Playlists", self.yt.getPlaylistList, screen.PLAYLIST_HEIGHT-2, self.yt)
+        self.contentWindow = Window(self.scr.contentWin, "Videos", screen.CONTENT_HEIGHT-2, self.yt)
+        self.playlistWindow = Window(self.scr.playlistsWin, "Playlists", screen.PLAYLIST_HEIGHT-2, self.yt)
 
-        self.playerWindow = Window(self.scr.playerWin, "Player Information", lambda x, **kwargs:None, screen.PLAYER_HEIGHT-2, None)
+        self.playerWindow = Window(self.scr.playerWin, "Player Information", screen.PLAYER_HEIGHT-2, None)
         self.playerWindow.selected = -1
 
-        self.optionWindow = Window(self.scr.optionWin, "Options", lambda x, **kwargs:None, screen.OPTION_HEIGHT-2, None)
+        self.optionWindow = Window(self.scr.optionWin, "Options", screen.OPTION_HEIGHT-2, None)
         self.optionWindow.selected = -1
 
-        self.informationWindow = Window(self.scr.informationWin, "Informations", lambda x, **kwargs:None, screen.INFO_HEIGHT-2, None)
+        self.informationWindow = Window(self.scr.informationWin, "Informations", screen.INFO_HEIGHT-2, None)
 
         self.windowsList = [self.playlistWindow, self.contentWindow]
         self.currentWindow = 0
 
-        self.searchWindow = Window(self.scr.searchWin, "Search", lambda x,**kwargs:None, 3, None)
+        self.searchWindow = Window(self.scr.searchWin, "Search", 3, None)
         self.textWindow = self.searchWindow.win.subwin(1, 78, 11, 11)  # begin_x/y are relative to the SCREEN not the parent window
         self.inSearch = False
         self.textbox = textbox.Textbox(self.textWindow)
@@ -130,9 +128,7 @@ class Application():
         self.player = mpv.MPV(video=False, ytdl=True)
         self.playing = {'title': 'None', 'id': ''}
 
-        self.playlistWindow.fetch(id="")
-        while self.playlistWindow.content == []:
-            time.sleep(0.1)
+        self.playlistWindow.source = youtube.PlaylistList()
         self.getPlaylist()
         
         self.inPlaylist = False
@@ -148,8 +144,8 @@ class Application():
     def update(self):
 
         # Drawing all the windows
-        for i, w in enumerate(self.windowsList):
-            w.update(i == self.currentWindow)
+        self.playlistWindow.update()
+        self.contentWindow.update() 
         self.drawPlayer()
         self.drawOptions()
         self.drawInfo()
@@ -169,40 +165,26 @@ class Application():
             self.contentWindow.title = search_term
             self.inSearch = False
             
-
-
-    def getUrl(self, video):
-        command = f"yt-dlp --no-warnings --format bestaudio/best --print urls --no-playlist https://youtu.be/{video['id']}"
-        urls = subprocess.run(shlex.split(command),
-                capture_output=True, text=True)
-        urls = urls.stdout.splitlines()
-        if urls:
-            return urls[0]
-        else:
-            return ""
-
     def drawInfo(self):
-        if self.contentWindow.selected < len(self.contentWindow.content):
-            currSelection = self.contentWindow.content[self.contentWindow.selected]
-        else:
-            currSelection = {"content": "None", "Duration": 0, "publishedBy": "None", "id": "NoneID"}
+        currSelection = self.contentWindow.getSelected()
         content = []
-        content.append({"content": "Title: {}".format(currSelection["content"])})
-        content.append({"content": "Duration: {}".format(currSelection["id"])})
-        content.append({"content": "Author: {}".format(currSelection["publishedBy"])})
-        self.informationWindow.content = content
-        self.informationWindow.update(drawSelect=False)
+        content.append(Message(f"Title: {currSelection.title}"))
+        content.append(Message(f"Duration: 0"))
+        content.append(Message(f"Author: {currSelection.author}"))
+        self.informationWindow.update(drawSelect=False, to_display=content)
 
     
     def drawOptions(self):
+        # TODO use messages
         content = []
-        content.append({"content": "Auto : {}".format(self.inPlaylist)})
-        content.append({"content": "Repeat: {}".format(self.inRepeat)})
-        content.append({"content": "Volume : {:02d} / 100".format(self.volume)})
-        self.optionWindow.content = content
-        self.optionWindow.update(drawSelect=False)
+
+        content.append(Message(f"Auto: {self.inPlaylist}"))
+        content.append(Message(f"Repeat: {self.inRepeat}"))
+        content.append(Message("Volume : {:02d} / 100".format(self.volume)))
+        self.optionWindow.update(drawSelect=False, to_display=content)
 
     def drawPlayer(self):
+        # TODO use messages
         currContent = [self.player._get_property("media-title"), self.player._get_property("duration")]
         title = self.playing['title']
         dur = currContent[1]
@@ -214,7 +196,7 @@ class Application():
 
         t = t if time_pos else "00:00:00"
         d = d if dur else "00:00:00"
-        content = [{"content": "{} - {}/{}".format(title, t, d)}]
+        content = [Message(f"{title} - {t}/{d}")]
 
         # drawing progress bar
         time_pos = time_pos if time_pos else 0
@@ -224,10 +206,9 @@ class Application():
         bar = "\u2588"*int(frac_time*width)
         space = "-"*(width - len(bar))
         progress = "|" + bar + space + "|" + " {}/{}".format(t, d)
-        content.append({"content": progress})
+        content.append(Message(progress))
 
-        self.playerWindow.content = content
-        self.playerWindow.update(drawSelect=False)
+        self.playerWindow.update(drawSelect=False, to_display=content)
 
 
     def select(self, direction):
@@ -255,10 +236,7 @@ class Application():
         self.inPlaylist = not self.inPlaylist
 
     def getPlaylist(self):
-        self.contentWindow.fetch(id=self.playlistWindow.getSelectId())
-
-    def getPlaylistList(self):
-        self.playlistWindow.fetch()
+        self.contentWindow.source = self.playlistWindow.getSelected()
     
     def getCurrentWindow(self):
         return self.windowsList[self.currentWindow]
@@ -295,10 +273,10 @@ class Application():
             self.play()
 
     def next_page(self):
+        # TODO rework to avoid getting past the last page
         win = self.windowsList[self.currentWindow]
-        page_incr = min(win.page+1, len(win.content)// win.page_size) - win.page
-        win.page += page_incr
-        win.selected = min(win.selected + page_incr*win.page_size, len(win.content))
+        win.page += 1
+        win.selected = win.selected + win.page_size
 
     def prev_page(self):
         win = self.windowsList[self.currentWindow]
@@ -306,19 +284,19 @@ class Application():
         win.page += page_incr
         win.selected += win.page_size*page_incr
 
-    def play(self, to_play=None):
-        next = self.contentWindow.getSelectId()
-        if to_play:
-            url = self.getUrl(to_play)
+    def play(self, to_play=youtube.Video("", "", "", "")):
+        next = self.contentWindow.getSelected()
+        if to_play.id != "":
+            url = to_play.getUrl()
             self.player.play(url)
             self.playing['id'] = next
-            self.playing['title'] = to_play['content']
+            self.playing['title'] = to_play.title
         elif next != self.playing['id']:
-            to_play = self.contentWindow.content[self.contentWindow.selected]
-            url = self.getUrl(to_play)
+            to_play = self.contentWindow.getSelected()
+            url = to_play.getUrl()
             self.player.play(url)
             self.playing['id'] = next
-            self.playing['title'] = to_play['content']
+            self.playing['title'] = to_play.title
 
     def stop(self):
         self.player.stop()
