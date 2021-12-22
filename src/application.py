@@ -145,6 +145,7 @@ class Application():
             self.next()
 
         if self.inSearch:
+            self.inSearch = False
             self.searchWindow.update()
             self.textbox.reset()
             self.textbox.edit()
@@ -153,7 +154,9 @@ class Application():
                 self.searchWindow.content = [Message(search_term)]
                 self.contentWindow.source = youtube.Search(search_term)
                 self.currentWindow = 1
-            self.inSearch = False
+            self.searchWindow.win.clear()  # avoid artifacts
+            self.searchWindow.win.refresh()
+            self.update()
             
     def drawInfo(self):
         currSelection = self.contentWindow.getSelected()
