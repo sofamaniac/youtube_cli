@@ -56,6 +56,8 @@ def main(stdscr):
             app.scr.resize()
         elif c == ord('s'):
             app.inSearch = True
+        elif c == ord('v'):
+            app.toggleVideo()
         last_event = c
 
 

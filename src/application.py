@@ -126,8 +126,10 @@ class Application():
 
         self.volume = 100
         self.isMuted = False
+        self.videoMode = False
 
         locale.setlocale(locale.LC_ALL, '')
+        locale.setlocale(locale.LC_NUMERIC, 'C')
 
     def update(self):
 
@@ -173,6 +175,7 @@ class Application():
         content.append(Message(f"Auto: {self.inPlaylist}"))
         content.append(Message(f"Repeat: {self.inRepeat}"))
         content.append(Message(f"Volume : {self.volume:02d} / 100"))
+        content.append(Message(f"Mode: {'Video' if self.videoMode else 'Audio'}"))
         self.optionWindow.update(drawSelect=False, to_display=content)
 
     def drawPlayer(self):
@@ -284,19 +287,20 @@ class Application():
     def play(self, to_play=youtube.Video("", "", "", "")):
         next = self.contentWindow.getSelected()
         if to_play.id != "":
-            url = to_play.getUrl()
+            url = to_play.getUrl(self.videoMode)
             self.player.play(url)
             self.playing['id'] = next
             self.playing['title'] = to_play.title
         elif next != self.playing['id']:
             to_play = self.contentWindow.getSelected()
-            url = to_play.getUrl()
+            url = to_play.getUrl(self.videoMode)
             self.player.play(url)
             self.playing['id'] = next
             self.playing['title'] = to_play.title
 
     def stop(self):
         self.player.stop()
+        self.playing['id'] = ""
 
     def pause(self):
         self.player.command("cycle", "pause")
@@ -326,6 +330,15 @@ class Application():
         else:
             self.player._set_property("volume", self.volume)
 
+    def toggleVideo(self):
+        self.videoMode = not self.videoMode
+        self.stop()
+        if self.videoMode:
+            self.player = mpv.MPV(video='auto', ytdl=True)
+        else:
+            self.player = mpv.MPV(video=False, ytdl=True)
+
     def quit(self):
+        self.stop()
         return
 

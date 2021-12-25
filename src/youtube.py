@@ -28,11 +28,17 @@ class Video():
         self.author = author
         self.other = kwargs
 
-    def getUrl(self):
+    def getUrl(self, video=False):
         """Return the url for the audio stream of the video"""
-        if self.id == "":
-            1/0
-        command = f"yt-dlp --no-warnings --format bestaudio/best --print urls --no-playlist https://youtu.be/{self.id}"
+        
+        if video:
+            format = "best"
+        else:
+            format = "bestaudio/best"
+        
+        sort = ""  # sort to be applied to the results
+
+        command = f"yt-dlp --no-warnings --format {format} {sort} --print urls --no-playlist https://youtu.be/{self.id}"
         urls = subprocess.run(shlex.split(command),
                 capture_output=True, text=True)
         urls = urls.stdout.splitlines()
