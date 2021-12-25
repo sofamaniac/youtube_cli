@@ -1,5 +1,3 @@
-import mpv
-
 from screen import Screen, Directions
 
 from application import Application

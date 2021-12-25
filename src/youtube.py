@@ -1,16 +1,17 @@
 # -*- coding: utf-8 -*-
 import os
 import pickle
+import subprocess
+import shlex
+
 # === Google API === #
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 # ================== #
-import subprocess
-import shlex
 
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
-data_path = "../data/"
+data_path = "data/"
 client_secrets_file = data_path + "client_secret.json"
 api_service_name = "youtube"
 api_version = "v3"
