@@ -1,0 +1,5 @@
+google_api_python_client==2.33.0
+google_auth_oauthlib==0.4.6
+pynput==1.7.5
+python-mpv==0.5.2
+wcwidth==0.2.5
