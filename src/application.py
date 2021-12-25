@@ -36,16 +36,6 @@ class Window():
         attr = kwargs.pop("attr", 0)    # if key exist return its value otherwise 0
         color = kwargs.pop("color", screen.COLOR_TEXT)
         
-        """
-        # ensuring the string fit in the window
-        s = s.encode('utf-8')
-
-        # get length of s by counting number of starting bytes
-        # SO related link https://stackoverflow.com/a/4063229
-        l = 0
-        for b in s:
-            l += 1 if (b & 0xc0) != 0x80 else 0
-            """
         l = wcwidth.wcswidth(s)
         s = s.encode('utf-8')
         if l > width:
