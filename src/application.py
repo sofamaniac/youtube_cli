@@ -9,6 +9,7 @@ import mpv
 import time
 
 import locale
+import wcwidth
 
 class Message():
     
@@ -35,6 +36,7 @@ class Window():
         attr = kwargs.pop("attr", 0)    # if key exist return its value otherwise 0
         color = kwargs.pop("color", screen.COLOR_TEXT)
         
+        """
         # ensuring the string fit in the window
         s = s.encode('utf-8')
 
@@ -43,6 +45,9 @@ class Window():
         l = 0
         for b in s:
             l += 1 if (b & 0xc0) != 0x80 else 0
+            """
+        l = wcwidth.wcswidth(s)
+        s = s.encode('utf-8')
         if l > width:
             # if the string is too long we cut at the first starting byte that makes it short enough
             i = width - 3
