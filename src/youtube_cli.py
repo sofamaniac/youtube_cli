@@ -58,6 +58,10 @@ def main(stdscr):
             app.toggleVideo()
         elif c == ord('y'):
             app.shuffle()
+        elif c == ord('c'):
+            # TODO implement contentWindow's source reloading
+            #app.reload()
+            pass
         last_event = c
 
 

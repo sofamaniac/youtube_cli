@@ -193,8 +193,8 @@ class Application():
         frac_time = time_pos / (dur+1)
         width = screen.PLAYER_WIDTH - 5 - len(" {}/{}".format(t, d))
         bar = "\u2588"*int(frac_time*width)
-        space = "-"*(width - len(bar))
-        progress = "|" + bar + space + "|" + " {}/{}".format(t, d)
+        space = "\u2500"*(width - len(bar))
+        progress = "\u2595" + bar + space + "\u258F" + " {}/{}".format(t, d)
         content.append(Message(progress))
 
         self.playerWindow.update(drawSelect=False, to_display=content)
