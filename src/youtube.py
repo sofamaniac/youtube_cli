@@ -3,6 +3,7 @@ import os
 import pickle
 import subprocess
 import shlex
+from random import shuffle
 
 # === Google API === #
 import google_auth_oauthlib.flow
@@ -150,7 +151,7 @@ class Playlist(ListItems):
         if self.id == "Liked":
             self.loadAll()
         self.order = [i for i in range(self.size)]
-        self.order.shuffle()
+        shuffle(self.order)
 
     def unshuffle(self):
         self.order = [i for i in range(self.size)]

@@ -56,6 +56,8 @@ def main(stdscr):
             app.inSearch = True
         elif c == ord('v'):
             app.toggleVideo()
+        elif c == ord('y'):
+            app.shuffle()
         last_event = c
 
 

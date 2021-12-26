@@ -333,6 +333,12 @@ class Application():
         else:
             self.player = mpv.MPV(video=False, ytdl=True)
 
+    def shuffle(self):
+        if not self.inPlaylist:
+            return
+        else:
+            self.playlist.shuffle()
+
     def quit(self):
         self.stop()
         return
