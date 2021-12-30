@@ -121,7 +121,7 @@ class Application():
 
         self.volume = 100
         self.isMuted = False
-        self.videoMode = False
+        self.videoMode = False  # should the video be played alongside the audio
 
         locale.setlocale(locale.LC_ALL, '')
         locale.setlocale(locale.LC_NUMERIC, 'C')
@@ -212,17 +212,6 @@ class Application():
                 and self.getCurrentWindow() == self.contentWindow:
             self.getPlaylist()
             self.contentWindow.selected = 0
-
-    def setPlaylistOld(self):
-        self.player.playlist_clear()
-        if not self.inPlaylist:
-            self.playlist = []
-            for e in self.contentWindow.content:
-                self.playlist.append(e)
-            self.playlistIndex = self.contentWindow.selected
-            self.player.stop()
-            self.play(self.playlist[self.playlistIndex])
-        self.inPlaylist = not self.inPlaylist
 
     def setPlaylist(self):
         if not self.inPlaylist:
