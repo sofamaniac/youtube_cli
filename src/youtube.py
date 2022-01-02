@@ -72,6 +72,10 @@ class ListItems():
     def loadNextPage(self):
         pass
 
+    def updateTokens(self, response):
+        self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
+        self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+
     def getCurrent(self):
         return self.elements[self.currentIndex]
 
@@ -150,8 +154,7 @@ class Playlist(ListItems):
             self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"],playlistItemId=playlistItemId))
 
         self.nb_loaded = self.nb_loaded + len(response["items"])
-        self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
-        self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+        self.updateTokens(response)
 
 
     def getVideoUrl(self, index):
@@ -241,13 +244,11 @@ class LikedVideos(Playlist):
                 self.size -= 1
                 continue
             video_id = v["id"]
-            playlistItemId = ""
-            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"],playlistItemId=playlistItemId))
+            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"]))
 
         self.size = self.size + len(response["items"])
         self.nb_loaded = self.nb_loaded + len(response["items"])
-        self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
-        self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+        self.updateTokens(response)
 
     def shuffle(self):
         self.loadAll()
@@ -264,6 +265,7 @@ class LikedVideos(Playlist):
                 id=video.id,
                 rating="like"
                 )
+        request.execute()
         self.reload()  # we refresh the content
 
     def remove(self, video):
@@ -271,6 +273,7 @@ class LikedVideos(Playlist):
                 id=video.id,
                 rating="none"
                 )
+        request.execute()
         self.reload()  # we refresh the content
 
 class PlaylistList(ListItems):
@@ -284,7 +287,6 @@ class PlaylistList(ListItems):
         self.loadAll()
 
     def loadNextPage(self):
-        response = {}
         request = youtube.playlists().list(
                 part = "id, snippet, contentDetails",
                 maxResults = MAX_RESULTS,
@@ -294,8 +296,7 @@ class PlaylistList(ListItems):
         response = request.execute()
         for p in response["items"]:
             self.elements.append(Playlist(p["id"], p["snippet"]["title"], p["contentDetails"]["itemCount"]))
-        self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
-        self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+        self.updateTokens(response)
         self.nb_loaded += len(response["items"])
         if self.nextPage == None:
             self.size = self.nb_loaded
@@ -321,8 +322,7 @@ class Search(ListItems):
         response = request.execute()
         for v in response["items"]:
             self.elements.append(Video(v["id"]["videoId"], v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"]))
-        self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
-        self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+        self.updateTokens(response)
         self.nb_loaded += len(response["items"])
         if self.nextPage == None:
             self.size = self.nb_loaded
