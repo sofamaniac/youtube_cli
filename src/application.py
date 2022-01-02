@@ -136,6 +136,7 @@ class Application():
         self.playlist = []
         self.playlistIndex = 0
         self.inRepeat = False
+        self.shuffled = False
 
         self.volume = 100
         self.isMuted = False
@@ -187,6 +188,7 @@ class Application():
 
         content.append(Message(f"Auto: {self.inPlaylist}"))
         content.append(Message(f"Repeat: {self.inRepeat}"))
+        content.append(Message(f"Shuffle: {'on' if self.shuffled else 'off'}"))
         content.append(Message(f"Volume : {self.volume:02d} / 100"))
         content.append(Message(f"Mode: {'Video' if self.videoMode else 'Audio'}"))
         self.optionWindow.update(drawSelect=False, to_display=content)
@@ -389,6 +391,7 @@ class Application():
         if not self.inPlaylist:
             return
         else:
+            self.shuffled = not self.shuffled
             self.playlist.shuffle()
 
     def quit(self):
