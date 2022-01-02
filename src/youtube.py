@@ -11,7 +11,7 @@ import googleapiclient.discovery
 import googleapiclient.errors
 # ================== #
 
-scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
+scopes = ["https://www.googleapis.com/auth/youtube"]
 data_path = "data/"
 client_secrets_file = data_path + "client_secret.json"
 api_service_name = "youtube"
@@ -23,12 +23,13 @@ MAX_RESULTS = 50
 
 class Video():
 
-    def __init__(self, id, title, description, author, **kwargs):
+    def __init__(self, id, title, description, author, playlistItemId="",**kwargs):
         self.title = title
         self.id = id
         self.description = description
         self.author = author
         self.other = kwargs
+        self.playlistItemId = playlistItemId  # useful for editing playlist
 
     def getUrl(self, video=False):
         """Return the url for the audio stream of the video"""
@@ -57,7 +58,7 @@ class ListItems():
 
         self.nb_loaded = 0
         self.elements = []
-        self.size = 1e99
+        self.size = 0
 
     def loadNextPage(self):
         pass
@@ -129,9 +130,11 @@ class Playlist(ListItems):
                 continue
             if self.id == "Liked":
                 video_id = v["id"]
+                playlistItemId = ""
             else:
                 video_id = v["snippet"]["resourceId"]["videoId"]
-            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"]))
+                playlistItemId = v["id"]
+            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"],playlistItemId=playlistItemId))
 
         self.size = self.size + len(response["items"]) if self.id == "Liked" else self.size
         self.nb_loaded = self.nb_loaded + len(response["items"])
@@ -179,6 +182,55 @@ class Playlist(ListItems):
             return 1e99
         else:
             return self.size - 1
+
+    def __contains__(self, item):
+        if type(item) is Video:
+            item = item.id
+        self.loadAll()  # we need to have all the elements in order to check
+        for v in self.elements:
+            if v.id == item:
+                return True
+        return False
+
+    def reload(self):
+        self.nb_loaded = 0
+        self.size = 0
+        self.elements = []
+        self.nextPage = None
+        self.prevPage = None
+
+        self.loadNextPage()
+
+    def add(self, video):
+        # TODO add possibility to like videos
+        if self.id == "Liked":
+            return
+        request = youtube.playlistItems.insert(
+                part="snippet",
+                body={
+                    'snippet': {
+                        'playlistId': self.id,
+                        'resourceId': {
+                            'kind': 'youtube#video',
+                            'videoId': video.id
+                            },
+                        },
+                    'position': 0,
+                    }
+                )
+        request.execute()
+
+        self.reload()  # we refresh the content
+
+    def delete(self, video):
+        # TODO add possibility to remove liked video
+        if self.id == "Liked":
+            return
+        request = youtube.playlistItems.remove(
+                id=video.playlistItemId
+                )
+        request.execute()
+        self.reload()
 
 class PlaylistList(ListItems):
 
