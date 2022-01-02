@@ -89,7 +89,7 @@ class ListItems():
     def getItemList(self, start, end):
         while end+1 > self.nb_loaded and self.nextPage != None:
             self.loadNextPage()
-        max_index = min(end, self.size)
+        max_index = min(end, self.nb_loaded)
         return self.elements[start:max_index]
 
     def loadAll(self):
@@ -156,7 +156,6 @@ class Playlist(ListItems):
         self.nb_loaded = self.nb_loaded + len(response["items"])
         self.updateTokens(response)
 
-
     def getVideoUrl(self, index):
         while index+1 > self.nb_loaded and self.nextPage != None:
             self.loadNextPage()
@@ -220,6 +219,7 @@ class Playlist(ListItems):
         self.reload()
 
 class LikedVideos(Playlist):
+
     def __init__(self, title, **kwargs):
 
         Playlist.__init__(self, "Liked", title, 0, **kwargs)
