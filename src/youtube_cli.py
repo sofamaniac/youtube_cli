@@ -6,6 +6,7 @@ from keyconfig import configuration as config
 
 import curses
 
+
 def main(stdscr):
     app = Application(stdscr)
     listener = Listener(app)
@@ -67,7 +68,6 @@ def main(stdscr):
             app.scr.resize()
             app.scr.resize()
         last_event = c
-
 
         app.update()
     listener.stop()

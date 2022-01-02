@@ -11,14 +11,13 @@ import time
 import locale
 import wcwidth
 
-class Message():
-    
+
+class Message:
     def __init__(self, title, *kwargs):
         self.title = title
 
 
-class Window():
-
+class Window:
     def __init__(self, win, title):
         self.source = None
         self.selected = 0
@@ -34,20 +33,20 @@ class Window():
 
     def addstr(self, y, x, s, **kwargs):
         width = self.win.getmaxyx()[1] - 2
-        attr = kwargs.pop("attr", 0)    # if key exist return its value otherwise 0
+        attr = kwargs.pop("attr", 0)  # if key exist return its value otherwise 0
         color = kwargs.pop("color", screen.COLOR_TEXT)
-        
+
         l = wcwidth.wcswidth(s)
-        s = s.encode('utf-8')
+        s = s.encode("utf-8")
         if l > width:
             # if the string is too long we cut at the first starting byte that makes it short enough
             i = width - 3
-            while i > 0 and s[i] & (0xc0) == 0x80:
+            while i > 0 and s[i] & (0xC0) == 0x80:
                 i -= 1
             s = s[:i] + b"..."
 
         self.win.addstr(y, x, s, attr | curses.color_pair(color))
-    
+
     def update(self, drawSelect=True, to_display=[]):
         if not self.visible:
             return
@@ -56,19 +55,19 @@ class Window():
         self.win.erase()
         self.drawBox()
 
-        off = self.page*page_size
+        off = self.page * page_size
 
         self.addstr(0, 1, self.title, attr=curses.A_BOLD)
 
         if not to_display and self.source:
-            to_display = self.source.getItemList(off, page_size+off)
+            to_display = self.source.getItemList(off, page_size + off)
 
         for i in range(len(to_display)):
-            if i+off == self.selected and drawSelect:
-                self.addstr(i+1, 1, to_display[i].title, attr=curses.A_STANDOUT)
+            if i + off == self.selected and drawSelect:
+                self.addstr(i + 1, 1, to_display[i].title, attr=curses.A_STANDOUT)
             else:
-                self.addstr(i+1, 1, to_display[i].title)
-        self.win.noutrefresh() 
+                self.addstr(i + 1, 1, to_display[i].title)
+        self.win.noutrefresh()
 
     def clear(self, refresh=True):
         self.win.clear()
@@ -80,9 +79,9 @@ class Window():
         self.clear()
 
     def select(self, direction):
-        off = self.getPageSize()*self.page
+        off = self.getPageSize() * self.page
         if direction == Directions.Up:
-            self.selected= max(0, self.selected-1)
+            self.selected = max(0, self.selected - 1)
             if self.selected < off:
                 self.page -= 1
         elif direction == Directions.Down:
@@ -96,10 +95,10 @@ class Window():
         return self.source.getAtIndex(self.selected)
 
     def getPageSize(self):
-        return self.win.getmaxyx()[0]-2
+        return self.win.getmaxyx()[0] - 2
 
-class Application():
 
+class Application:
     def __init__(self, stdscr):
         self.scr = screen.Screen(stdscr)
 
@@ -130,8 +129,8 @@ class Application():
         self.inAddToPlaylist = False
 
         self.player = mpv.MPV(video=False, ytdl=True)
-        self.playing = {'title': 'None', 'id': ''}
- 
+        self.playing = {"title": "None", "id": ""}
+
         self.inPlaylist = False
         self.playlist = []
         self.playlistIndex = 0
@@ -142,14 +141,14 @@ class Application():
         self.isMuted = False
         self.videoMode = False  # should the video be played alongside the audio
 
-        locale.setlocale(locale.LC_ALL, '')
-        locale.setlocale(locale.LC_NUMERIC, 'C')
+        locale.setlocale(locale.LC_ALL, "")
+        locale.setlocale(locale.LC_NUMERIC, "C")
 
     def update(self):
 
         # Drawing all the windows
         self.playlistWindow.update()
-        self.contentWindow.update() 
+        self.contentWindow.update()
         self.drawPlayer()
         self.drawOptions()
         self.drawInfo()
@@ -158,7 +157,9 @@ class Application():
         self.scr.update()
 
         # checking if there is something playing
-        if self.inPlaylist and not self.player._get_property("media-title"): # the current song has finished
+        if self.inPlaylist and not self.player._get_property(
+            "media-title"
+        ):  # the current song has finished
             self.next()
 
         if self.inSearch:
@@ -173,7 +174,7 @@ class Application():
                 self.currentWindow = 1
             self.searchWindow.clear()
             self.update()
-            
+
     def drawInfo(self):
         currSelection = self.contentWindow.getSelected()
         content = []
@@ -182,7 +183,6 @@ class Application():
         content.append(Message(f"Author: {currSelection.author}"))
         self.informationWindow.update(drawSelect=False, to_display=content)
 
-    
     def drawOptions(self):
         content = []
 
@@ -194,8 +194,11 @@ class Application():
         self.optionWindow.update(drawSelect=False, to_display=content)
 
     def drawPlayer(self):
-        currContent = [self.player._get_property("media-title"), self.player._get_property("duration")]
-        title = self.playing['title']
+        currContent = [
+            self.player._get_property("media-title"),
+            self.player._get_property("duration"),
+        ]
+        title = self.playing["title"]
         dur = currContent[1]
 
         time_pos = self.player._get_property("time-pos")
@@ -210,10 +213,10 @@ class Application():
         # drawing progress bar
         time_pos = time_pos if time_pos else 0
         dur = dur if dur else 0
-        frac_time = time_pos / (dur+1)
+        frac_time = time_pos / (dur + 1)
         width = screen.PLAYER_WIDTH - 5 - len(" {}/{}".format(t, d))
-        bar = "\u2588"*int(frac_time*width)
-        space = "\u2500"*(width - len(bar))
+        bar = "\u2588" * int(frac_time * width)
+        space = "\u2500" * (width - len(bar))
         progress = "\u2595" + bar + space + "\u258F" + " {}/{}".format(t, d)
         content.append(Message(progress))
 
@@ -240,12 +243,13 @@ class Application():
         if direction == Directions.Up or direction == Directions.Down:
             self.getCurrentWindow().select(direction)
         elif direction == Directions.Left:
-            self.currentWindow = max(0, self.currentWindow -1)
+            self.currentWindow = max(0, self.currentWindow - 1)
         elif direction == Directions.Right:
-            self.currentWindow = min(len(self.windowsList) - 1, self.currentWindow +1)
+            self.currentWindow = min(len(self.windowsList) - 1, self.currentWindow + 1)
 
-        if (direction == Directions.Left or direction == Directions.Right) \
-                and self.getCurrentWindow() == self.contentWindow:
+        if (
+            direction == Directions.Left or direction == Directions.Right
+        ) and self.getCurrentWindow() == self.contentWindow:
             self.getPlaylist()
             self.contentWindow.selected = 0
 
@@ -268,20 +272,20 @@ class Application():
 
     def editPlaylist(self):
         currSelection = self.contentWindow.getSelected()
-        currPlaylist  = self.addToPlaylistWindow.getSelected()
+        currPlaylist = self.addToPlaylistWindow.getSelected()
         if currSelection in currPlaylist:
             currPlaylist.remove(currSelection)
         else:
             currPlaylist.add(currSelection)
         self.inAddToPlaylist = False
         self.addToPlaylistWindow.toggleVisible()
-    
+
     def getCurrentWindow(self):
         if self.inAddToPlaylist:
             return self.addToPlaylistWindow
         else:
             return self.windowsList[self.currentWindow]
-    
+
     def enter(self):
         if self.getCurrentWindow() == self.playlistWindow:
             self.getPlaylist()
@@ -331,27 +335,27 @@ class Application():
     def prev_page(self):
         # TODO move most of this code in the Window class
         win = self.getCurrentWindow()
-        page_incr = max(0, win.page-1) - win.page
+        page_incr = max(0, win.page - 1) - win.page
         win.page += page_incr
-        win.selected += win.getPageSize()*page_incr
+        win.selected += win.getPageSize() * page_incr
 
     def play(self, to_play=youtube.Video("", "", "", "")):
         next = self.contentWindow.getSelected()
         if to_play.id != "":
             url = to_play.getUrl(self.videoMode)
             self.player.play(url)
-            self.playing['id'] = next
-            self.playing['title'] = to_play.title
-        elif next != self.playing['id']:
+            self.playing["id"] = next
+            self.playing["title"] = to_play.title
+        elif next != self.playing["id"]:
             to_play = self.contentWindow.getSelected()
             url = to_play.getUrl(self.videoMode)
             self.player.play(url)
-            self.playing['id'] = next
-            self.playing['title'] = to_play.title
+            self.playing["id"] = next
+            self.playing["title"] = to_play.title
 
     def stop(self):
         self.player.stop()
-        self.playing['id'] = ""
+        self.playing["id"] = ""
 
     def pause(self):
         self.player.command("cycle", "pause")
@@ -385,7 +389,7 @@ class Application():
         self.videoMode = not self.videoMode
         self.stop()
         if self.videoMode:
-            self.player = mpv.MPV(video='auto', ytdl=True)
+            self.player = mpv.MPV(video="auto", ytdl=True)
         else:
             self.player = mpv.MPV(video=False, ytdl=True)
 
@@ -399,4 +403,3 @@ class Application():
     def quit(self):
         self.stop()
         return
-

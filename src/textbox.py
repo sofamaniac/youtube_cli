@@ -1,13 +1,15 @@
 import curses
 import curses.ascii
 
-class Textbox():
+
+class Textbox:
     def __init__(self, win):
         self.win = win
-        self.win.keypad(True)   # needed to interpret special keys such as arrows and backspace
+        self.win.keypad(
+            True
+        )  # needed to interpret special keys such as arrows and backspace
         self.content = []
-        self.editingpos = -1    # position of the letter right in front of the cursor
-        
+        self.editingpos = -1  # position of the letter right in front of the cursor
 
     def edit(self):
         while True:
@@ -27,7 +29,10 @@ class Textbox():
             elif c == curses.KEY_RIGHT:
                 self.editingpos += 1
                 self.editingpos = min(len(self.content), self.editingpos)
-            elif curses.ascii.isprint(c) and len(self.content) < self.win.getmaxyx()[1]-1:
+            elif (
+                curses.ascii.isprint(c)
+                and len(self.content) < self.win.getmaxyx()[1] - 1
+            ):
                 self.editingpos += 1
                 if self.content:
                     self.content.insert(self.editingpos, curses.keyname(c).decode())
@@ -38,16 +43,21 @@ class Textbox():
                 break
 
             self.win.clear()
-            if 0 <= self.editingpos < len(self.content)-1:
+            if 0 <= self.editingpos < len(self.content) - 1:
                 # the char right after the cursor is highlighted
-                self.win.addstr(0, 0, ''.join(self.content))
-                self.win.addstr(0, self.editingpos+1, self.content[self.editingpos+1], curses.A_STANDOUT)
+                self.win.addstr(0, 0, "".join(self.content))
+                self.win.addstr(
+                    0,
+                    self.editingpos + 1,
+                    self.content[self.editingpos + 1],
+                    curses.A_STANDOUT,
+                )
             else:  # if content is empty or the cursor is after content (ie where inputting at the end)
-                self.win.addstr(0, 0, ''.join(self.content) + '\u2588')
+                self.win.addstr(0, 0, "".join(self.content) + "\u2588")
             self.win.refresh()
 
     def gather(self):
-        return ''.join(self.content)
+        return "".join(self.content)
 
     def reset(self):
         self.content = []

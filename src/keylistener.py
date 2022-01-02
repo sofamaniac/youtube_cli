@@ -3,13 +3,15 @@ import sys
 
 app = None
 
-class Listener:
 
+class Listener:
     def __init__(self, application):
         global app
         app = application
         self.keys_down = set()
-        self.listener = keyboard.Listener(on_press=self.on_press, on_release=self.on_release)
+        self.listener = keyboard.Listener(
+            on_press=self.on_press, on_release=self.on_release
+        )
 
     def checkShortcut(self):
         if "media_next" in self.keys_down:
@@ -40,6 +42,7 @@ class Listener:
 
     def stop(self):
         self.listener.stop()
+
 
 if __name__ == "__main__":
     listener = keyboard.Listener(on_press=lambda x: print(x))
