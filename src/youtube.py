@@ -249,15 +249,6 @@ class LikedVideos(Playlist):
         self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
         self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
 
-
-    def getVideoUrl(self, index):
-        while index+1 > self.nb_loaded and self.nextPage != None:
-            self.loadNextPage()
-
-        if index > self.size:
-            raise IndexError("Video index out of playlist range")
-        return self.elements[index].getUrl()
-
     def shuffle(self):
         self.loadAll()
         Playlist.shuffle(self)
@@ -269,15 +260,17 @@ class LikedVideos(Playlist):
             return self.size - 1
 
     def add(self, video):
-        # TODO add possibility to like videos
-        return
-
+        request = youtube.Videos.rate(
+                id=video.id,
+                rating="like"
+                )
         self.reload()  # we refresh the content
 
     def remove(self, video):
-        # TODO add possibility to remove liked video
-        return
-
+        request = youtube.Videos.rate(
+                id=video.id,
+                rating="none"
+                )
         self.reload()  # we refresh the content
 
 class PlaylistList(ListItems):
