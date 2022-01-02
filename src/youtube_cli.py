@@ -2,6 +2,7 @@ from screen import Screen, Directions
 
 from application import Application
 from keylistener import Listener
+from keyconfig import configuration as config
 
 import curses
 
@@ -12,59 +13,59 @@ def main(stdscr):
     last_event = None
     while True:
         c = app.scr.stdscr.getch()
-        if c == ord('q'):
+        if c == config.quit:
             break
-        elif c == ord('j'):
+        elif c == config.down:
             app.select(Directions.Down)
-        elif c == ord('k'):
+        elif c == config.up:
             app.select(Directions.Up)
-        elif c == ord('h'):
+        elif c == config.left:
             app.select(Directions.Left)
-        elif c == ord('l'):
+        elif c == config.right:
             app.select(Directions.Right)
-        elif c == ord(' '):
+        elif c == config.pause:
             app.pause()
-        elif c == ord('>'):
+        elif c == config.next:
             app.next()
-        elif c == ord('<'):
+        elif c == config.prev:
             app.prev()
-        elif c == ord('p'):
+        elif c == config.prevPage:
             app.prev_page()
-        elif c == ord('n'):
+        elif c == config.nextPage:
             app.next_page()
-        elif c == ord('\n'):
+        elif c == config.validate:
             app.enter()
-        elif c == ord('a'):
+        elif c == config.autoplay:
             app.setPlaylist()
-        elif c == ord('r'):
+        elif c == config.repeat:
             app.repeat()
-        elif c == curses.KEY_LEFT:
+        elif c == config.backward:
             app.forward(-5)
-        elif c == curses.KEY_RIGHT:
+        elif c == config.forward:
             app.forward(5)
-        elif c == ord('m'):
+        elif c == config.mute:
             app.mute()
-        elif c == ord('d'):
+        elif c == config.incVolume:
             app.increaseVolume(-5)
-        elif c == ord('f'):
+        elif c == config.decVolume:
             app.increaseVolume(5)
+        elif c == config.search:
+            app.inSearch = True
+        elif c == config.video:
+            app.toggleVideo()
+        elif c == config.shuffle:
+            app.shuffle()
+        elif c == config.reload:
+            app.reload()
+        elif c == config.addPlaylist:
+            app.addToPlaylist()
+        elif c == curses.ascii.ESC:
+            app.escape()
         elif c == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
             # we need to check for the last event as resizing triggers a KEY_RESIZE event
             # for some reason we need to resize two times in order for the effects be felt
             app.scr.resize()
             app.scr.resize()
-        elif c == ord('s'):
-            app.inSearch = True
-        elif c == ord('v'):
-            app.toggleVideo()
-        elif c == ord('y'):
-            app.shuffle()
-        elif c == ord('c'):
-            app.reload()
-        elif c == ord('t'):
-            app.addToPlaylist()
-        elif c == curses.ascii.ESC:
-            app.escape()
         last_event = c
 
 

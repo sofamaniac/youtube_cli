@@ -79,12 +79,14 @@ class ListItems():
     def getCurrent(self):
         return self.elements[self.currentIndex]
 
-    def getItem(self, index):
-        item = self.getItemList(index, index+1)
-        if item:
-            return self.getItemList(index, index+1)[0]
-        else:
-            raise IndexError()
+    def getAtIndex(self, index):
+        """If the index is greater than the number of elements in the list,
+        does NOT raise an error but return the last element of the list instead"""
+        while index > self.nb_loaded and self.nextPage != None:
+            self.loadNextPage()
+        if index > self.size:
+            return self.elements[-1]
+        return self.elements[index]
 
     def getItemList(self, start, end):
         while end+1 > self.nb_loaded and self.nextPage != None:
@@ -151,18 +153,14 @@ class Playlist(ListItems):
                 continue
             video_id = v["snippet"]["resourceId"]["videoId"]
             playlistItemId = v["id"]
-            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"],playlistItemId=playlistItemId))
+            author = v["snippet"]["videoOwnerChannelTitle"]
+            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], author,playlistItemId=playlistItemId))
 
         self.nb_loaded = self.nb_loaded + len(response["items"])
         self.updateTokens(response)
 
     def getVideoUrl(self, index):
-        while index+1 > self.nb_loaded and self.nextPage != None:
-            self.loadNextPage()
-
-        if index > self.size:
-            raise IndexError("Video index out of playlist range")
-        return self.elements[index].getUrl()
+        return self.getAtIndex(index).getUrl()
 
     def shuffle(self):
         self.order = [i for i in range(self.size)]
@@ -171,23 +169,24 @@ class Playlist(ListItems):
     def unshuffle(self):
         self.order = [i for i in range(self.size)]
 
+
     def next(self):
         if self.currentIndex >= self.size:
             return
         self.currentIndex += 1
         shuffled_index = self.order[self.currentIndex]
-        return self.elements[shuffled_index]
+        return self.getAtIndex(shuffled_index)
 
     def prev(self):
         if self.currentIndex == 0:
             return
         self.currentIndex -= 1
         shuffled_index = self.order[self.currentIndex]
-        return self.elements[shuffled_index]
+        return self.getAtIndex(shuffled_index)
 
     def getCurrent(self):
         shuffled_index = self.order[self.currentIndex]
-        return self.elements[shuffled_index]
+        return self.getAtIndex(shuffled_index)
 
     def getMaxIndex(self):
         return self.size - 1

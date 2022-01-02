@@ -93,7 +93,7 @@ class Window():
                 self.page += 1
 
     def getSelected(self):
-        return self.source.getItem(self.selected)
+        return self.source.getAtIndex(self.selected)
 
     def getPageSize(self):
         return self.win.getmaxyx()[0]-2
@@ -252,6 +252,8 @@ class Application():
     def setPlaylist(self):
         if not self.inPlaylist:
             self.playlist = self.playlistWindow.getSelected()
+            self.playlist.unshuffle()
+            self.shuffled = False
             self.playlist.currentIndex = self.contentWindow.selected
             self.player.stop
             self.play(self.playlist.getCurrent())
