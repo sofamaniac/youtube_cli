@@ -54,7 +54,10 @@ class Screen:
         self.informationWin = curses.newwin(INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT+1+OPTION_HEIGHT+1, 1)
         self.searchWin      = curses.newwin(SEARCH_HEIGHT, SEARCH_WIDTH, SEARCH_Y, SEARCH_X)
         self.searchField    = self.searchWin.subwin(SEARCH_HEIGHT-2, SEARCH_WIDTH-2, SEARCH_Y+1, SEARCH_X+1)
-        self.addPlaylistWin = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 10, 10)  # TODO: center
+        self.addPlaylistWin = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
+        self.center(self.addPlaylistWin)
+        self.center(self.searchWin)
+        self.center(self.searchField)
 
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)
@@ -62,6 +65,17 @@ class Screen:
 
         curses.init_color(DARK_GREY, 300, 300,  0)
         curses.init_pair(2, DARK_GREY, -1)
+
+    def center(self, window):
+        max_x = curses.COLS
+        max_y = curses.LINES
+        
+        height, width = window.getmaxyx()
+
+        new_x = (max_x - width) // 2
+        new_y = (max_y - height) // 2
+        
+        window.mvwin(new_y, new_x)
 
 
     def update(self):
@@ -103,7 +117,10 @@ class Screen:
         aux(self.contentWin, CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH+1)
         aux(self.playerWin, PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
         aux(self.searchWin, SEARCH_HEIGHT, SEARCH_WIDTH, SEARCH_Y, SEARCH_X)
-        aux(self.addPlaylistWin, PLAYER_HEIGHT, PLAYER_WIDTH, 10, 10)  # TODO: center
+        aux(self.addPlaylistWin, PLAYER_HEIGHT, PLAYER_WIDTH, 10, 10)
+        self.center(self.addPlaylistWin)
+        self.center(self.searchWin)
+        self.center(self.searchField)
 
     def resize(self):
         self.initSizes()
