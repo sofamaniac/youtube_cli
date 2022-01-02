@@ -49,6 +49,7 @@ def main(stdscr):
         elif c == ord('f'):
             app.increaseVolume(5)
         elif c == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
+            # we need to check for the last event as resizing triggers a KEY_RESIZE event
             # for some reason we need to resize two times in order for the effects be felt
             app.scr.resize()
             app.scr.resize()
@@ -59,11 +60,11 @@ def main(stdscr):
         elif c == ord('y'):
             app.shuffle()
         elif c == ord('c'):
-            # TODO implement contentWindow's source reloading
-            #app.reload()
-            pass
+            app.reload()
         elif c == ord('t'):
             app.addToPlaylist()
+        elif c == curses.ascii.ESC:
+            app.escape()
         last_event = c
 
 

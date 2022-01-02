@@ -25,6 +25,7 @@ class Window():
         self.win = win
         self.title = title
         self.page = 0
+        self.visible = True
 
     def drawBox(self, color=screen.COLOR_BORDER):
         self.win.attrset(curses.color_pair(color))
@@ -48,6 +49,9 @@ class Window():
         self.win.addstr(y, x, s, attr | curses.color_pair(color))
     
     def update(self, drawSelect=True, to_display=[]):
+        if not self.visible:
+            return
+
         page_size = self.getPageSize()
         self.win.erase()
         self.drawBox()
@@ -65,6 +69,15 @@ class Window():
             else:
                 self.addstr(i+1, 1, to_display[i].title)
         self.win.noutrefresh() 
+
+    def clear(self, refresh=True):
+        self.win.clear()
+        if refresh:
+            self.win.refresh()
+
+    def toggleVisible(self):
+        self.visible = not self.visible
+        self.clear()
 
     def select(self, direction):
         off = self.getPageSize()*self.page
@@ -113,6 +126,7 @@ class Application():
 
         self.addToPlaylistWindow = Window(self.scr.addPlaylistWin, "Add to playlist")
         self.addToPlaylistWindow.source = self.playlistWindow.source
+        self.addToPlaylistWindow.toggleVisible()  # make window invisible
         self.inAddToPlaylist = False
 
         self.player = mpv.MPV(video=False, ytdl=True)
@@ -133,16 +147,12 @@ class Application():
     def update(self):
 
         # Drawing all the windows
-        if not self.inAddToPlaylist:
-            self.addToPlaylistWindow.win.clear()
-            self.addToPlaylistWindow.win.refresh()
         self.playlistWindow.update()
         self.contentWindow.update() 
         self.drawPlayer()
         self.drawOptions()
         self.drawInfo()
-        if self.inAddToPlaylist:
-            self.drawAddToPlaylist()
+        self.drawAddToPlaylist()
 
         self.scr.update()
 
@@ -160,8 +170,7 @@ class Application():
                 self.searchWindow.content = [Message(search_term)]
                 self.contentWindow.source = youtube.Search(search_term)
                 self.currentWindow = 1
-            self.searchWindow.win.clear()  # avoid artifacts
-            self.searchWindow.win.refresh()
+            self.searchWindow.clear()
             self.update()
             
     def drawInfo(self):
@@ -210,6 +219,9 @@ class Application():
 
     def drawAddToPlaylist(self):
 
+        if not self.addToPlaylistWindow.visible:
+            return
+
         currSelection = self.contentWindow.getSelected()
         content = []
 
@@ -248,6 +260,7 @@ class Application():
 
     def addToPlaylist(self):
         self.inAddToPlaylist = True
+        self.addToPlaylistWindow.toggleVisible()
 
     def editPlaylist(self):
         currSelection = self.contentWindow.getSelected()
@@ -257,6 +270,7 @@ class Application():
         else:
             currPlaylist.add(currSelection)
         self.inAddToPlaylist = False
+        self.addToPlaylistWindow.toggleVisible()
     
     def getCurrentWindow(self):
         if self.inAddToPlaylist:
@@ -272,6 +286,14 @@ class Application():
             self.editPlaylist()
         else:
             self.play()
+
+    def escape(self):
+        if self.getCurrentWindow() == self.addToPlaylistWindow:
+            self.inAddToPlaylist = False
+            self.addToPlaylistWindow.toggleVisible()
+
+    def reload(self):
+        self.contentWindow.source.reload()
 
     def next(self):
         if self.inPlaylist:

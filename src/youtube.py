@@ -84,6 +84,15 @@ class ListItems():
             self.loadNextPage()
         self.size = self.nb_loaded
 
+    def reload(self):
+        self.nb_loaded = 0
+        self.size = 0
+        self.elements = []
+        self.nextPage = None
+        self.prevPage = None
+
+        self.loadNextPage()
+
     def getMaxIndex(self):
         return self.nb_loaded - 1
 
@@ -201,15 +210,6 @@ class Playlist(ListItems):
         for v in self.elements:
             if v.id == item:
                 return v.playlistItemId
-
-    def reload(self):
-        self.nb_loaded = 0
-        self.size = 0
-        self.elements = []
-        self.nextPage = None
-        self.prevPage = None
-
-        self.loadNextPage()
 
     def add(self, video):
         # TODO add possibility to like videos
