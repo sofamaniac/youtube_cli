@@ -62,6 +62,8 @@ def main(stdscr):
             # TODO implement contentWindow's source reloading
             #app.reload()
             pass
+        elif c == ord('t'):
+            app.addToPlaylist()
         last_event = c
 
 

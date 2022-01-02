@@ -91,7 +91,10 @@ class Application():
         self.scr = screen.Screen(stdscr)
 
         self.contentWindow = Window(self.scr.contentWin, "Videos")
+
         self.playlistWindow = Window(self.scr.playlistsWin, "Playlists")
+        self.playlistWindow.source = youtube.PlaylistList()
+        self.getPlaylist()
 
         self.playerWindow = Window(self.scr.playerWin, "Player Information")
         self.playerWindow.selected = -1
@@ -108,12 +111,13 @@ class Application():
         self.inSearch = False
         self.textbox = textbox.Textbox(self.scr.searchField)
 
+        self.addToPlaylistWindow = Window(self.scr.addPlaylistWin, "Add to playlist")
+        self.addToPlaylistWindow.source = self.playlistWindow.source
+        self.inAddToPlaylist = False
+
         self.player = mpv.MPV(video=False, ytdl=True)
         self.playing = {'title': 'None', 'id': ''}
-
-        self.playlistWindow.source = youtube.PlaylistList()
-        self.getPlaylist()
-        
+ 
         self.inPlaylist = False
         self.playlist = []
         self.playlistIndex = 0
@@ -129,11 +133,16 @@ class Application():
     def update(self):
 
         # Drawing all the windows
+        if not self.inAddToPlaylist:
+            self.addToPlaylistWindow.win.clear()
+            self.addToPlaylistWindow.win.refresh()
         self.playlistWindow.update()
         self.contentWindow.update() 
         self.drawPlayer()
         self.drawOptions()
         self.drawInfo()
+        if self.inAddToPlaylist:
+            self.drawAddToPlaylist()
 
         self.scr.update()
 
@@ -199,10 +208,23 @@ class Application():
 
         self.playerWindow.update(drawSelect=False, to_display=content)
 
+    def drawAddToPlaylist(self):
+
+        currSelection = self.contentWindow.getSelected()
+        content = []
+
+        for p in self.playlistWindow.source.elements:
+            if currSelection in p:
+                checkbox = "[x]"
+            else:
+                checkbox = "[ ]"
+            content.append(Message(f"{checkbox} {p.title}"))
+
+        self.addToPlaylistWindow.update(to_display=content)
 
     def select(self, direction):
         if direction == Directions.Up or direction == Directions.Down:
-            self.windowsList[self.currentWindow].select(direction)
+            self.getCurrentWindow().select(direction)
         elif direction == Directions.Left:
             self.currentWindow = max(0, self.currentWindow -1)
         elif direction == Directions.Right:
@@ -223,14 +245,31 @@ class Application():
 
     def getPlaylist(self):
         self.contentWindow.source = self.playlistWindow.getSelected()
+
+    def addToPlaylist(self):
+        self.inAddToPlaylist = True
+
+    def editPlaylist(self):
+        currSelection = self.contentWindow.getSelected()
+        currPlaylist  = self.addToPlaylistWindow.getSelected()
+        if currSelection in currPlaylist:
+            currPlaylist.remove(currSelection)
+        else:
+            currPlaylist.add(currSelection)
+        self.inAddToPlaylist = False
     
     def getCurrentWindow(self):
-        return self.windowsList[self.currentWindow]
+        if self.inAddToPlaylist:
+            return self.addToPlaylistWindow
+        else:
+            return self.windowsList[self.currentWindow]
     
     def enter(self):
         if self.getCurrentWindow() == self.playlistWindow:
             self.getPlaylist()
             self.currentWindow = 1
+        elif self.getCurrentWindow() == self.addToPlaylistWindow:
+            self.editPlaylist()
         else:
             self.play()
 
@@ -257,13 +296,15 @@ class Application():
             self.play()
 
     def next_page(self):
-        win = self.windowsList[self.currentWindow]
+        # TODO move most of this code in the Window class
+        win = self.getCurrentWindow()
         if win.selected + win.getPageSize() <= win.source.getMaxIndex():
             win.page += 1
             win.selected = win.selected + win.getPageSize()
 
     def prev_page(self):
-        win = self.windowsList[self.currentWindow]
+        # TODO move most of this code in the Window class
+        win = self.getCurrentWindow()
         page_incr = max(0, win.page-1) - win.page
         win.page += page_incr
         win.selected += win.getPageSize()*page_incr

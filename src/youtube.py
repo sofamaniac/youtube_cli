@@ -192,6 +192,16 @@ class Playlist(ListItems):
                 return True
         return False
 
+    def getItemId(self, item):
+        if item not in self:
+            return ""
+        if type(item) is Video:
+            item = item.id
+
+        for v in self.elements:
+            if v.id == item:
+                return v.playlistItemId
+
     def reload(self):
         self.nb_loaded = 0
         self.size = 0
@@ -205,7 +215,7 @@ class Playlist(ListItems):
         # TODO add possibility to like videos
         if self.id == "Liked":
             return
-        request = youtube.playlistItems.insert(
+        request = youtube.playlistItems().insert(
                 part="snippet",
                 body={
                     'snippet': {
@@ -222,12 +232,13 @@ class Playlist(ListItems):
 
         self.reload()  # we refresh the content
 
-    def delete(self, video):
+    def remove(self, video):
         # TODO add possibility to remove liked video
         if self.id == "Liked":
             return
-        request = youtube.playlistItems.remove(
-                id=video.playlistItemId
+        id = self.getItemId(video)
+        request = youtube.playlistItems().delete(
+                id=id
                 )
         request.execute()
         self.reload()
