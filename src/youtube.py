@@ -60,6 +60,15 @@ class ListItems():
         self.elements = []
         self.size = 0
 
+    def __contains__(self, item):
+        if type(item) is Video:
+            item = item.id
+        self.loadAll()  # we need to have all the elements in order to check
+        for v in self.elements:
+            if v.id == item:
+                return True
+        return False
+
     def loadNextPage(self):
         pass
 
@@ -83,6 +92,16 @@ class ListItems():
         while self.nextPage != None or self.nb_loaded == 0:
             self.loadNextPage()
         self.size = self.nb_loaded
+
+    def getItemId(self, item):
+        if item not in self:
+            return ""
+        if type(item) is Video:
+            item = item.id
+
+        for v in self.elements:
+            if v.id == item:
+                return v.playlistItemId
 
     def reload(self):
         self.nb_loaded = 0
@@ -113,23 +132,12 @@ class Playlist(ListItems):
 
     def loadNextPage(self):
         to_request = "id, snippet, status"
-        # since liked video playlist has no id we must have a special request
-
-        request = None
-        if self.id == "Liked":
-            request = youtube.videos().list(
+        request = youtube.playlistItems().list(
                 part=to_request,
-                myRating="like",
-                maxResults=MAX_RESULTS,
-                pageToken=self.nextPage,
-            )
-        else:
-            request = youtube.playlistItems().list(
-                    part=to_request,
-                    playlistId=self.id,
-                    maxResults = MAX_RESULTS,
-                    pageToken = self.nextPage
-            )
+                playlistId=self.id,
+                maxResults = MAX_RESULTS,
+                pageToken = self.nextPage
+        )
         response = request.execute()
         for v in response["items"]:
             # exclude video that are not available to watch (hopefully)
@@ -137,15 +145,10 @@ class Playlist(ListItems):
                 self.nb_loaded -= 1
                 self.size -= 1
                 continue
-            if self.id == "Liked":
-                video_id = v["id"]
-                playlistItemId = ""
-            else:
-                video_id = v["snippet"]["resourceId"]["videoId"]
-                playlistItemId = v["id"]
+            video_id = v["snippet"]["resourceId"]["videoId"]
+            playlistItemId = v["id"]
             self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"],playlistItemId=playlistItemId))
 
-        self.size = self.size + len(response["items"]) if self.id == "Liked" else self.size
         self.nb_loaded = self.nb_loaded + len(response["items"])
         self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
         self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
@@ -160,8 +163,6 @@ class Playlist(ListItems):
         return self.elements[index].getUrl()
 
     def shuffle(self):
-        if self.id == "Liked":
-            self.loadAll()
         self.order = [i for i in range(self.size)]
         shuffle(self.order)
 
@@ -187,34 +188,9 @@ class Playlist(ListItems):
         return self.elements[shuffled_index]
 
     def getMaxIndex(self):
-        if self.id == "Liked" and self.nextPage != None:
-            return 1e99
-        else:
-            return self.size - 1
-
-    def __contains__(self, item):
-        if type(item) is Video:
-            item = item.id
-        self.loadAll()  # we need to have all the elements in order to check
-        for v in self.elements:
-            if v.id == item:
-                return True
-        return False
-
-    def getItemId(self, item):
-        if item not in self:
-            return ""
-        if type(item) is Video:
-            item = item.id
-
-        for v in self.elements:
-            if v.id == item:
-                return v.playlistItemId
+        return self.size - 1
 
     def add(self, video):
-        # TODO add possibility to like videos
-        if self.id == "Liked":
-            return
         request = youtube.playlistItems().insert(
                 part="snippet",
                 body={
@@ -233,9 +209,6 @@ class Playlist(ListItems):
         self.reload()  # we refresh the content
 
     def remove(self, video):
-        # TODO add possibility to remove liked video
-        if self.id == "Liked":
-            return
         id = self.getItemId(video)
         request = youtube.playlistItems().delete(
                 id=id
@@ -243,11 +216,75 @@ class Playlist(ListItems):
         request.execute()
         self.reload()
 
+class LikedVideos(Playlist):
+    def __init__(self, title, **kwargs):
+
+        Playlist.__init__(self, "Liked", title, 0, **kwargs)
+
+        self.loadNextPage()  # we load the first page
+
+        self.order = [i for i in range(self.size)]  # used for playlist shuffling
+
+    def loadNextPage(self):
+        to_request = "id, snippet, status"
+        request = youtube.videos().list(
+            part=to_request,
+            myRating="like",
+            maxResults=MAX_RESULTS,
+            pageToken=self.nextPage,
+        )
+        response = request.execute()
+        for v in response["items"]:
+            # exclude video that are not available to watch (hopefully)
+            if v["status"]["privacyStatus"] != "public":  # this condition is maybe too strong as it excludes non-repertoriated
+                self.nb_loaded -= 1
+                self.size -= 1
+                continue
+            video_id = v["id"]
+            playlistItemId = ""
+            self.elements.append(Video(video_id, v["snippet"]["title"], v["snippet"]["description"], v["snippet"]["channelTitle"],playlistItemId=playlistItemId))
+
+        self.size = self.size + len(response["items"])
+        self.nb_loaded = self.nb_loaded + len(response["items"])
+        self.nextPage = response["nextPageToken"] if "nextPageToken" in response else None
+        self.prevPage = response["prevPageToken"] if "prevPageToken" in response else None
+
+
+    def getVideoUrl(self, index):
+        while index+1 > self.nb_loaded and self.nextPage != None:
+            self.loadNextPage()
+
+        if index > self.size:
+            raise IndexError("Video index out of playlist range")
+        return self.elements[index].getUrl()
+
+    def shuffle(self):
+        self.loadAll()
+        Playlist.shuffle(self)
+
+    def getMaxIndex(self):
+        if self.nextPage != None:
+            return 1e99
+        else:
+            return self.size - 1
+
+    def add(self, video):
+        # TODO add possibility to like videos
+        return
+
+        self.reload()  # we refresh the content
+
+    def remove(self, video):
+        # TODO add possibility to remove liked video
+        return
+
+        self.reload()  # we refresh the content
+
 class PlaylistList(ListItems):
 
     def __init__(self):
         ListItems.__init__(self)
-        self.elements = [Playlist("Liked", "Liked Videos", 0)]
+        self.elements = [LikedVideos("Liked Videos")]
         self.nb_loaded = 1
 
         self.loadNextPage()
