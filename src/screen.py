@@ -34,9 +34,6 @@ INFO_HEIGHT = 5
 
 SEARCH_WIDTH = 80
 SEARCH_HEIGHT = 3
-SEARCH_Y = 10
-SEARCH_X = 10
-
 
 class Screen:
     def __init__(self, stdscr):
@@ -49,25 +46,17 @@ class Screen:
 
         self.initSizes()
 
-        self.playerWin = curses.newwin(PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
-        self.playlistsWin = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 1)
-        self.contentWin = curses.newwin(
-            CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH + 1
-        )
-        self.optionWin = curses.newwin(
-            OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1, 1
-        )
-        self.informationWin = curses.newwin(
-            INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1 + OPTION_HEIGHT + 1, 1
-        )
-        self.searchWin = curses.newwin(SEARCH_HEIGHT, SEARCH_WIDTH, SEARCH_Y, SEARCH_X)
-        self.searchField = self.searchWin.subwin(
-            SEARCH_HEIGHT - 2, SEARCH_WIDTH - 2, SEARCH_Y + 1, SEARCH_X + 1
-        )
+        self.playerWin = curses.newwin(PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 0)
+        self.playlistsWin = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
+        self.contentWin = curses.newwin(CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH)
+        self.optionWin = curses.newwin(OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT, 0)
+        self.informationWin = curses.newwin(INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + OPTION_HEIGHT, 0)
+        self.searchWin = curses.newwin(SEARCH_HEIGHT, SEARCH_WIDTH, 0, 0)
+        self.center(self.searchWin)
+        y, x = self.searchWin.getbegyx()
+        self.searchField = self.searchWin.subwin(SEARCH_HEIGHT - 2, SEARCH_WIDTH - 2, y+1,  x+1)
         self.addPlaylistWin = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
         self.center(self.addPlaylistWin)
-        self.center(self.searchWin)
-        self.center(self.searchField)
 
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)
@@ -85,59 +74,60 @@ class Screen:
         new_x = (max_x - width) // 2
         new_y = (max_y - height) // 2
 
+        window.resize(1, 1)
         window.mvwin(new_y, new_x)
+        window.resize(height, width)
 
     def update(self):
         curses.doupdate()
 
     def initSizes(self):
-        global PLAYER_WIDTH, PLAYER_HEIGHT, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, CONTENT_WIDTH, CONTENT_HEIGHT, OPTION_HEIGHT, INFO_HEIGHT, SEARCH_WIDTH, SEARCH_HEIGHT, SEARCH_X, SEARCH_Y
+        global PLAYER_WIDTH, PLAYER_HEIGHT, \
+                PLAYLIST_HEIGHT, PLAYLIST_WIDTH, \
+                CONTENT_WIDTH, CONTENT_HEIGHT, \
+                OPTION_HEIGHT, INFO_HEIGHT, \
+                SEARCH_WIDTH, SEARCH_HEIGHT
 
-        PLAYER_WIDTH = curses.COLS - 2
+        max_x = curses.COLS
+        max_y = curses.LINES
+
+        PLAYER_WIDTH = max_x
         PLAYER_HEIGHT = 4
 
-        PLAYLIST_WIDTH = max(1, curses.COLS // 5)
-        PLAYLIST_HEIGHT = min(15, curses.LINES // 4)
+        PLAYLIST_WIDTH = max(1, max_x // 5)
+        PLAYLIST_HEIGHT = min(15, max_y // 4)
 
-        CONTENT_WIDTH = curses.COLS - 1 - PLAYLIST_WIDTH - 1
-        CONTENT_HEIGHT = curses.LINES - PLAYER_HEIGHT - 1
+        CONTENT_WIDTH = max_x - PLAYLIST_WIDTH
+        CONTENT_HEIGHT = max_y - PLAYER_HEIGHT
 
         OPTION_HEIGHT = 2 + NB_OPTIONS
 
         INFO_HEIGHT = 5
 
-        SEARCH_WIDTH = 3 * curses.COLS // 5
+        SEARCH_WIDTH = 3 * max_x // 5
         SEARCH_HEIGHT = 3  # rework formula to ensure that one can input 80 chars in the search box TODO
-        SEARCH_Y = curses.LINES // 2 - 1
-        SEARCH_X = curses.COLS // 5
 
     def resizeWindows(self):
         def aux(window, size_y, size_x, start_y, start_x):
-            window.resize(
-                1, 1
-            )  # avoid moving windows that are too big in the next instruction
-            window.mvwin(start_y, start_x)
             window.resize(size_y, size_x)
+            window.mvwin(start_y, start_x)
 
-        aux(self.playlistsWin, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 1)
-        aux(self.optionWin, OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + 1, 1)
-        aux(
-            self.informationWin,
-            INFO_HEIGHT,
-            PLAYLIST_WIDTH,
-            PLAYLIST_HEIGHT + 1 + OPTION_HEIGHT + 1,
-            1,
-        )
-        aux(self.contentWin, CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH + 1)
-        aux(self.playerWin, PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 1)
-        aux(self.searchWin, SEARCH_HEIGHT, SEARCH_WIDTH, SEARCH_Y, SEARCH_X)
-        aux(self.addPlaylistWin, PLAYER_HEIGHT, PLAYER_WIDTH, 10, 10)
+        aux(self.playlistsWin, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
+        aux(self.optionWin, OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT, 0)
+        aux(self.informationWin, INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + OPTION_HEIGHT, 0)
+        aux(self.contentWin, CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH)
+        aux(self.playerWin, PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 0)
+
+        aux(self.addPlaylistWin, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
         self.center(self.addPlaylistWin)
+
+        aux(self.searchWin, SEARCH_HEIGHT, SEARCH_WIDTH, 0, 0)
         self.center(self.searchWin)
-        self.center(self.searchField)
+        y, x = self.searchWin.getbegyx()
+        aux(self.searchField, SEARCH_HEIGHT-2, SEARCH_WIDTH-2, y+1, x+1)
 
     def resize(self):
+        curses.resizeterm(*self.stdscr.getmaxyx())
         self.initSizes()
         self.resizeWindows()
-        curses.resizeterm(*self.stdscr.getmaxyx())
         self.stdscr.erase()
