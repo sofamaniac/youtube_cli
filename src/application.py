@@ -146,6 +146,13 @@ class Application:
 
     def update(self):
 
+        # checking if mpv core is still alive
+        try:
+            self.player.check_core_alive()
+        except mpv.ShutdownError:
+            self.createPlayer()
+
+
         # Drawing all the windows
         self.playlistWindow.update()
         self.contentWindow.update()
@@ -385,13 +392,17 @@ class Application:
         else:
             self.player._set_property("volume", self.volume)
 
-    def toggleVideo(self):
-        self.videoMode = not self.videoMode
-        self.stop()
+    def createPlayer(self):
         if self.videoMode:
             self.player = mpv.MPV(video="auto", ytdl=True)
         else:
             self.player = mpv.MPV(video=False, ytdl=True)
+
+
+    def toggleVideo(self):
+        self.videoMode = not self.videoMode
+        self.stop()
+        self.createPlayer()
 
     def shuffle(self):
         if not self.inPlaylist:
