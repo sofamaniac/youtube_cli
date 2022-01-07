@@ -62,11 +62,22 @@ class ListItems:
     def __contains__(self, item):
         if type(item) is Video:
             item = item.id
-        self.loadAll()  # we need to have all the elements in order to check
+
+        # to gain time we avoid as much as possible api calls
         for v in self.elements:
             if v.id == item:
                 return True
+        last_index = len(self.elements)-1
+        while self.nextPage != None:
+            self.loadNextPage()
+            for v in self.elements[last_index:]:
+                last_index += 1
+                if v.id == item:
+                    return True
         return False
+    
+    def request(self, who, **what):
+        return who(**what).execute()
 
     def loadNextPage(self):
         pass
@@ -85,6 +96,7 @@ class ListItems:
     def getAtIndex(self, index):
         """If the index is greater than the number of elements in the list,
         does NOT raise an error but return the last element of the list instead"""
+
         while index > self.nb_loaded and self.nextPage != None:
             self.loadNextPage()
         if index > self.size:
@@ -101,16 +113,6 @@ class ListItems:
         while self.nextPage != None or self.nb_loaded == 0:
             self.loadNextPage()
         self.size = self.nb_loaded
-
-    def getItemId(self, item):
-        if item not in self:
-            return ""
-        if type(item) is Video:
-            item = item.id
-
-        for v in self.elements:
-            if v.id == item:
-                return v.playlistItemId
 
     def reload(self):
         self.nb_loaded = 0
@@ -139,20 +141,21 @@ class Playlist(ListItems):
 
         self.order = [i for i in range(self.size)]  # used for playlist shuffling
 
+    def checkVideoAvailability(self, video):
+        # this condition is maybe too strong as it excludes non-repertoriated
+        return video["status"]["privacyStatus"] == "public"
+
     def loadNextPage(self):
         to_request = "id, snippet, status"
-        request = youtube.playlistItems().list(
+        response = self.request(youtube.playlistItems().list,
             part=to_request,
             playlistId=self.id,
             maxResults=MAX_RESULTS,
             pageToken=self.nextPage,
         )
-        response = request.execute()
         for v in response["items"]:
             # exclude video that are not available to watch (hopefully)
-            if (
-                v["status"]["privacyStatus"] != "public"
-            ):  # this condition is maybe too strong as it excludes non-repertoriated
+            if not self.checkVideoAvailability(v):  
                 self.nb_loaded -= 1
                 self.size -= 1
                 continue
@@ -204,7 +207,7 @@ class Playlist(ListItems):
         return self.size - 1
 
     def add(self, video):
-        request = youtube.playlistItems().insert(
+        self.request(youtube.playlistItems().insert,
             part="snippet",
             body={
                 "snippet": {
@@ -214,14 +217,11 @@ class Playlist(ListItems):
                 "position": 0,
             },
         )
-        request.execute()
 
         self.reload()  # we refresh the content
 
     def remove(self, video):
-        id = self.getItemId(video)
-        request = youtube.playlistItems().delete(id=id)
-        request.execute()
+        self.request(youtube.playlistItems().delete, id=video.playlistItemId)
         self.reload()
 
 
@@ -236,18 +236,15 @@ class LikedVideos(Playlist):
 
     def loadNextPage(self):
         to_request = "id, snippet, status"
-        request = youtube.videos().list(
+        response = self.request(youtube.videos().list,
             part=to_request,
             myRating="like",
             maxResults=MAX_RESULTS,
             pageToken=self.nextPage,
         )
-        response = request.execute()
         for v in response["items"]:
             # exclude video that are not available to watch (hopefully)
-            if (
-                v["status"]["privacyStatus"] != "public"
-            ):  # this condition is maybe too strong as it excludes non-repertoriated
+            if not self.checkVideoAvailability(v):  
                 self.nb_loaded -= 1
                 self.size -= 1
                 continue
@@ -276,13 +273,11 @@ class LikedVideos(Playlist):
             return self.size - 1
 
     def add(self, video):
-        request = youtube.Videos.rate(id=video.id, rating="like")
-        request.execute()
+        self.request(youtube.Videos.rate, id=video.id, rating="like")
         self.reload()  # we refresh the content
 
     def remove(self, video):
-        request = youtube.Videos.rate(id=video.id, rating="none")
-        request.execute()
+        self.request(youtube.Videos.rate, id=video.id, rating="none")
         self.reload()  # we refresh the content
 
 
@@ -296,13 +291,12 @@ class PlaylistList(ListItems):
         self.loadAll()
 
     def loadNextPage(self):
-        request = youtube.playlists().list(
+        response = self.request(youtube.playlists().list,
             part="id, snippet, contentDetails",
             maxResults=MAX_RESULTS,
             mine=True,
             pageToken=self.nextPage,
         )
-        response = request.execute()
         for p in response["items"]:
             self.elements.append(
                 Playlist(
@@ -325,14 +319,13 @@ class Search(ListItems):
 
     def loadNextPage(self):
 
-        request = youtube.search().list(
+        response = self.request(youtube.search().list,
             part="snippet",
             maxResults=MAX_RESULTS,
             pageToken=self.nextPage,
             q=self.query,
             type="video",
         )
-        response = request.execute()
         for v in response["items"]:
             self.elements.append(
                 Video(

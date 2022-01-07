@@ -150,6 +150,7 @@ class Application:
         try:
             self.player.check_core_alive()
         except mpv.ShutdownError:
+            # if not we create a new player
             self.createPlayer()
 
 
