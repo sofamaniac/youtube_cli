@@ -17,11 +17,8 @@ class Textbox:
             size = self.win.getmaxyx()[1] - 2
 
             if c == curses.ascii.BEL or c == curses.ascii.NL:
-                self.win.clear()
-                self.win.refresh()
                 return 0
             elif c == curses.KEY_BACKSPACE or c == curses.ascii.BS:
-                self.win.clear()
                 if len(self.content) > 0:
                     self.content.pop(self.editingpos)
                     self.editingpos -= 1
@@ -46,6 +43,8 @@ class Textbox:
 
             if c < 0:  # no key was input so no need to refresh
                 continue
+
+            self.win.clear()
 
             # as the text may be too long to fit, 
             # we make sure the cursor is on screen

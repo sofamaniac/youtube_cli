@@ -77,6 +77,7 @@ class ListItems:
         return False
     
     def request(self, who, **what):
+        # TODO: error handling
         return who(**what).execute()
 
     def loadNextPage(self):
