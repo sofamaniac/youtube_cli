@@ -9,7 +9,7 @@ from random import shuffle
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
-# ================== #
+
 
 scopes = ["https://www.googleapis.com/auth/youtube"]
 data_path = "data/"
@@ -20,15 +20,44 @@ cache_path = data_path + "cache.json"
 
 MAX_RESULTS = 50
 
+def get_authenticated_service():
+    path = data_path + "CREDENTIALS_PICKLE_FILE"
+    if os.path.exists(path):
+        with open(path, "rb") as f:
+            credentials = pickle.load(f)
+    else:
+        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+            client_secrets_file, scopes
+        )
+        credentials = flow.run_console()
+        with open(path, "wb") as f:
+            pickle.dump(credentials, f)
+    return googleapiclient.discovery.build(
+        api_service_name, api_version, credentials=credentials
+    )
+
+
+youtube = get_authenticated_service()
+# ================== #
+
+
+# === SponsorBlock === #
+import sponsorblock as sb
+sponsorBlock = sb.Client()
+useSponsorBlock = True
+toSkip = ["sponsor", "selfpromo", "music_offtopic"]
+# ==================== #
+
 
 class Video:
-    def __init__(self, id, title, description, author, playlistItemId="", **kwargs):
+    def __init__(self, id="", title="", description="", author="", playlistItemId="", **kwargs):
         self.title = title
         self.id = id
         self.description = description
         self.author = author
         self.other = kwargs
         self.playlistItemId = playlistItemId  # useful for editing playlist
+        self.skipSegments = []
 
     def getUrl(self, video=False):
         """Return the url for the audio stream of the video"""
@@ -44,9 +73,23 @@ class Video:
         urls = subprocess.run(shlex.split(command), capture_output=True, text=True)
         urls = urls.stdout.splitlines()
         if urls:
+            if useSponsorBlock:
+                self.getSkipSegment()
             return urls[0]
         else:
             return ""
+
+    def getSkipSegment(self):
+        try:
+            self.skipSegments = sponsorBlock.get_skip_segments(video_id = self.id, categories=toSkip)
+        except sb.errors.NotFoundException:
+            self.skipSegments = []
+
+    def checkSkip(self, time):
+        for skip in self.skipSegments:
+            if skip.start <= time <= skip.end:
+                return skip.end
+        return False
 
 
 class ListItems:
@@ -341,22 +384,3 @@ class Search(ListItems):
         if self.nextPage == None:
             self.size = self.nb_loaded
 
-
-def get_authenticated_service():
-    path = data_path + "CREDENTIALS_PICKLE_FILE"
-    if os.path.exists(path):
-        with open(path, "rb") as f:
-            credentials = pickle.load(f)
-    else:
-        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            client_secrets_file, scopes
-        )
-        credentials = flow.run_console()
-        with open(path, "wb") as f:
-            pickle.dump(credentials, f)
-    return googleapiclient.discovery.build(
-        api_service_name, api_version, credentials=credentials
-    )
-
-
-youtube = get_authenticated_service()

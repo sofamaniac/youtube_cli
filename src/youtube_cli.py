@@ -47,9 +47,9 @@ def main(stdscr):
         elif c == config.mute:
             app.mute()
         elif c == config.incVolume:
-            app.increaseVolume(-5)
-        elif c == config.decVolume:
             app.increaseVolume(5)
+        elif c == config.decVolume:
+            app.increaseVolume(-5)
         elif c == config.search:
             app.inSearch = True
         elif c == config.video:
@@ -63,13 +63,11 @@ def main(stdscr):
         elif c == curses.ascii.ESC:
             app.escape()
         elif c == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
-            # we need to check for the last event as resizing triggers a KEY_RESIZE event
-            # for some reason we need to resize two times in order for the effects be felt
-            app.scr.resize()
             app.scr.resize()
         last_event = c
 
         app.update()
+
     listener.stop()
     app.quit()
 

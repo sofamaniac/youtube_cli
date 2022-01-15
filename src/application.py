@@ -129,7 +129,7 @@ class Application:
         self.inAddToPlaylist = False
 
         self.player = mpv.MPV(video=False, ytdl=True)
-        self.playing = {"title": "None", "id": ""}
+        self.playing = youtube.Video() 
 
         self.inPlaylist = False
         self.playlist = []
@@ -153,6 +153,12 @@ class Application:
             # if not we create a new player
             self.createPlayer()
 
+        # checking for segments to skip
+        time = self.player._get_property("time-pos")
+        time = time if time else 0
+        check = self.playing.checkSkip(time)
+        if check:
+            self.player.command("seek", f"{check}", "absolute")
 
         # Drawing all the windows
         self.playlistWindow.update()
@@ -206,7 +212,7 @@ class Application:
             self.player._get_property("media-title"),
             self.player._get_property("duration"),
         ]
-        title = self.playing["title"]
+        title = self.playing.title
         dur = currContent[1]
 
         time_pos = self.player._get_property("time-pos")
@@ -347,23 +353,21 @@ class Application:
         win.page += page_incr
         win.selected += win.getPageSize() * page_incr
 
-    def play(self, to_play=youtube.Video("", "", "", "")):
+    def play(self, to_play=youtube.Video()):
         next = self.contentWindow.getSelected()
         if to_play.id != "":
             url = to_play.getUrl(self.videoMode)
             self.player.play(url)
-            self.playing["id"] = next
-            self.playing["title"] = to_play.title
-        elif next != self.playing["id"]:
+            self.playing = to_play
+        elif next != self.playing.id:
             to_play = self.contentWindow.getSelected()
             url = to_play.getUrl(self.videoMode)
             self.player.play(url)
-            self.playing["id"] = next
-            self.playing["title"] = to_play.title
+            self.playing = to_play
 
     def stop(self):
         self.player.stop()
-        self.playing["id"] = ""
+        self.playing = youtube.Video()
 
     def pause(self):
         self.player.command("cycle", "pause")

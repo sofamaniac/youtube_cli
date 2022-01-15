@@ -12,6 +12,7 @@ class Textbox:
         self.editingpos = -1  # position of the letter right in front of the cursor
 
     def edit(self):
+        self.win.refresh()
         while True:
             c = self.win.getch()
             size = self.win.getmaxyx()[1] - 2
