@@ -9,4 +9,4 @@ You will need to create a `data` directory containing your youtube api-key in `c
 You can then execute `python src/youtube_cli.py` to run the program.
 
 ## How to use it
-Just look and adjust the keyboard shorcut defined in `src/youtube_cli.py`.
+Just look and adjust the keyboard shorcut defined in `src/keyconfig.py`.
