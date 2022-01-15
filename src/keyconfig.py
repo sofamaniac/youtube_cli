@@ -33,6 +33,9 @@ class KeyConfiguration:
         self.search = ord("s")
         self.reload = ord("c")
         self.video = ord("v")
+        
+        percentKeys = "0123456789"
+        self.percentJump = [ord(c) for c in percentKeys]
 
 
 configuration = KeyConfiguration()

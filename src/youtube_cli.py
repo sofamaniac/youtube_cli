@@ -44,6 +44,8 @@ def main(stdscr):
             app.forward(-5)
         elif c == config.forward:
             app.forward(5)
+        elif c in config.percentJump:
+            app.percentJump(config.percentJump.index(c)*10)
         elif c == config.mute:
             app.mute()
         elif c == config.incVolume:

@@ -141,7 +141,7 @@ class Application:
         self.isMuted = False
         self.videoMode = False  # should the video be played alongside the audio
 
-        locale.setlocale(locale.LC_ALL, "")
+        locale.setlocale(locale.LC_ALL, "fr_FR.UTF-8")
         locale.setlocale(locale.LC_NUMERIC, "C")
 
     def update(self):
@@ -381,6 +381,12 @@ class Application:
         if not currentSong:
             return
         self.player.command("seek", "{}".format(dt), "relative")
+
+    def percentJump(self, percent):
+        currentSong = self.player._get_property("media-title")
+        if not currentSong:
+            return
+        self.player.command("seek", "{}".format(percent), "absolute-percent")
 
     def increaseVolume(self, dv):
         self.volume += dv
