@@ -50,12 +50,11 @@ toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 
 
 class Video:
-    def __init__(self, id="", title="", description="", author="", playlistItemId="", **kwargs):
+    def __init__(self, id="", title="", description="", author="", playlistItemId=""):
         self.title = title
         self.id = id
         self.description = description
         self.author = author
-        self.other = kwargs
         self.playlistItemId = playlistItemId  # useful for editing playlist
         self.skipSegments = []
 
@@ -172,13 +171,12 @@ class ListItems:
 
 
 class Playlist(ListItems):
-    def __init__(self, id, title, nb_videos, **kwargs):
+    def __init__(self, id, title, nb_videos):
 
         ListItems.__init__(self)
 
         self.title = title
         self.id = id
-        self.other = kwargs
         self.size = nb_videos
 
         self.loadNextPage()  # we load the first page
@@ -265,14 +263,18 @@ class Playlist(ListItems):
         self.reload()  # we refresh the content
 
     def remove(self, video):
-        self.request(youtube.playlistItems().delete, id=video.playlistItemId)
+        for v in self.elements:
+            if v.id == video.id:
+                playlistItemId = v.playlistItemId
+                break
+        self.request(youtube.playlistItems().delete, id=playlistItemId)
         self.reload()
 
 
 class LikedVideos(Playlist):
-    def __init__(self, title, **kwargs):
+    def __init__(self, title):
 
-        Playlist.__init__(self, "Liked", title, 0, **kwargs)
+        Playlist.__init__(self, "Liked", title, 0)
 
         self.loadNextPage()  # we load the first page
 

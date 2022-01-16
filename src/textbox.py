@@ -45,7 +45,7 @@ class Textbox:
             if c < 0:  # no key was input so no need to refresh
                 continue
 
-            self.win.clear()
+            self.win.erase()
 
             # as the text may be too long to fit, 
             # we make sure the cursor is on screen

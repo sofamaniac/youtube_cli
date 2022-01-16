@@ -141,41 +141,19 @@ class Application:
         self.isMuted = False
         self.videoMode = False  # should the video be played alongside the audio
 
-        locale.setlocale(locale.LC_ALL, "fr_FR.UTF-8")
+        locale.setlocale(locale.LC_ALL, "")
         locale.setlocale(locale.LC_NUMERIC, "C")
 
-    def update(self):
-
-        # checking if mpv core is still alive
-        try:
-            self.player.check_core_alive()
-        except mpv.ShutdownError:
-            # if not we create a new player
-            self.createPlayer()
-
-        # checking for segments to skip
+    def skipSegment(self):
         time = self.player._get_property("time-pos")
         time = time if time else 0
         check = self.playing.checkSkip(time)
-        if check:
-            self.player.command("seek", f"{check}", "absolute")
+        duration = self.player._get_property("duration")
+        if check and duration:
+            jump = min(check, duration if duration else 1e99)
+            self.player.command("seek", f"{jump}", "absolute")
 
-        # Drawing all the windows
-        self.playlistWindow.update()
-        self.contentWindow.update()
-        self.drawPlayer()
-        self.drawOptions()
-        self.drawInfo()
-        self.drawAddToPlaylist()
-
-        self.scr.update()
-
-        # checking if there is something playing
-        if self.inPlaylist and not self.player._get_property(
-            "media-title"
-        ):  # the current song has finished
-            self.next()
-
+    def search(self):
         if self.inSearch:
             self.inSearch = False
             self.searchWindow.update()
@@ -189,11 +167,42 @@ class Application:
             self.searchWindow.clear()
             self.update()
 
+    def update(self):
+
+        # checking if mpv core is still alive
+        try:
+            self.player.check_core_alive()
+        except mpv.ShutdownError:
+            # if not we create a new player
+            self.createPlayer()
+
+        # checking for segments to skip
+        self.skipSegment()
+
+        # Drawing all the windows
+        self.playlistWindow.update()
+        self.contentWindow.update()
+        self.drawPlayer()
+        self.drawOptions()
+        self.drawInfo()
+        self.drawAddToPlaylist()
+
+        # self.scr.update()
+
+        # checking if there is something playing
+        if self.inPlaylist and not self.player._get_property("media-title"):  # the current song has finished
+            self.next()
+
+        # handling search box
+        self.search()
+        self.scr.update()
+
+
     def drawInfo(self):
         currSelection = self.contentWindow.getSelected()
         content = []
         content.append(Message(f"Title: {currSelection.title}"))
-        content.append(Message(f"Duration: 0"))
+        # content.append(Message(f"Duration: 0"))
         content.append(Message(f"Author: {currSelection.author}"))
         self.informationWindow.update(drawSelect=False, to_display=content)
 
