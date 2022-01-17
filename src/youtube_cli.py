@@ -53,7 +53,7 @@ def main(stdscr):
         elif c == config.decVolume:
             app.increaseVolume(-5)
         elif c == config.search:
-            app.inSearch = True
+            app.search()
         elif c == config.video:
             app.toggleVideo()
         elif c == config.shuffle:

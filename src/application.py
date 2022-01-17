@@ -24,22 +24,6 @@ class Window:
         self.win.box()
         self.win.attrset(0)
 
-    def addstr(self, y, x, s, **kwargs):
-        width = self.win.getmaxyx()[1] - 2
-        attr = kwargs.pop("attr", 0)  # if key exist return its value otherwise 0
-        color = kwargs.pop("color", screen.COLOR_TEXT)
-
-        l = wcwidth.wcswidth(s)
-        s = s.encode("utf-8")
-        if l > width:
-            # if the string is too long we cut at the first starting byte that makes it short enough
-            i = width - 3
-            while i > 0 and s[i] & (0xC0) == 0x80:
-                i -= 1
-            s = s[:i] + b"..."
-
-        self.win.addstr(y, x, s, attr | curses.color_pair(color))
-
     def update(self, drawSelect=True, to_display=[]):
         if not self.visible:
             return
@@ -51,7 +35,6 @@ class Window:
         off = self.page * page_size
         width = self.win.getmaxyx()[1]-2
 
-        #self.addstr(0, 1, self.title, attr=curses.A_BOLD)
         self.title.drawToWin(self.win, 0, 1, width) 
 
         if not to_display and self.source:
@@ -149,18 +132,18 @@ class Application:
             self.player.command("seek", f"{jump}", "absolute")
 
     def search(self):
-        if self.inSearch:
-            self.inSearch = False
-            self.searchWindow.update()
-            self.textbox.reset()
-            self.textbox.edit()
-            search_term = self.textbox.gather()
-            if search_term:
-                self.searchWindow.content = [CurseString(search_term)]
-                self.contentWindow.source = youtube.Search(search_term)
-                self.currentWindow = 1
-            self.searchWindow.clear()
-            self.update()
+        self.inSearch = True
+        self.searchWindow.update()
+        self.textbox.reset()
+        self.textbox.edit(update=self.update)
+        search_term = self.textbox.gather()
+        if search_term:
+            self.searchWindow.content = [CurseString(search_term)]
+            self.contentWindow.source = youtube.Search(search_term)
+            self.currentWindow = 1
+        self.searchWindow.clear()
+        self.inSearch = False
+        self.update()
 
     def update(self):
 
@@ -182,14 +165,13 @@ class Application:
         self.drawInfo()
         self.drawAddToPlaylist()
 
-        # self.scr.update()
-
         # checking if there is something playing
         if self.inPlaylist and not self.player._get_property("media-title"):  # the current song has finished
             self.next()
 
-        # handling search box
-        self.search()
+        if self.inSearch:
+            self.searchWindow.update()
+
         self.scr.update()
 
 
@@ -232,10 +214,15 @@ class Application:
         dur = dur if dur else 0
         frac_time = time_pos / (dur + 1)
         width = screen.PLAYER_WIDTH - 5 - len(" {}/{}".format(t, d))
-        bar = "\u2588" * int(frac_time * width)
-        space = "\u2500" * (width - len(bar))
-        progress = "\u2595" + bar + space + "\u258F" + " {}/{}".format(t, d)
-        content.append(CurseString(progress))
+        whole = "\u2588" * int(frac_time * width)
+        space = "\u2500" * (width - len(whole))
+        bar = whole + space
+        progress = "\u2595" + bar + "\u258F" + " {}/{}".format(t, d)
+        s = CurseString(progress)
+        for i,_ in enumerate(bar):
+            if self.playing.checkSkip(i/(dur+1)):
+                s.color(i, i+1, screen.COLOR_SEG)
+        content.append(s)
 
         self.playerWindow.update(drawSelect=False, to_display=content)
 

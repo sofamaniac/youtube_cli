@@ -48,6 +48,7 @@ class CurseString:
 # Color pairs index
 COLOR_TEXT = 1
 COLOR_BORDER = 2
+COLOR_SEG = 3
 
 # Colors
 GREY = 8
@@ -98,10 +99,13 @@ class Screen:
 
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)
-        curses.init_pair(1, GREY, -1)  # -1 for terminal normal background
+        curses.init_pair(COLOR_TEXT, GREY, -1)  # -1 for terminal normal background
 
         curses.init_color(DARK_GREY, 300, 300, 0)
-        curses.init_pair(2, DARK_GREY, -1)
+        curses.init_pair(COLOR_BORDER, DARK_GREY, -1)
+        
+        curses.init_color(10, 800, 300, 300)
+        curses.init_pair(COLOR_SEG, 10, -1)
 
     def center(self, window):
         max_x = curses.COLS
