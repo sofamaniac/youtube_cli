@@ -89,6 +89,9 @@ class Video:
             if skip.start <= time <= skip.end:
                 return skip.end
         return False
+    
+    def __str__(self):
+        return self.title
 
 
 class ListItems:
@@ -269,6 +272,9 @@ class Playlist(ListItems):
                 break
         self.request(youtube.playlistItems().delete, id=playlistItemId)
         self.reload()
+
+    def __str__(self):
+        return self.title
 
 
 class LikedVideos(Playlist):

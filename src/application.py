@@ -1,20 +1,12 @@
 import youtube
 import screen
 
-from screen import Directions
+from screen import Directions, CurseString
 import curses
 import textbox
 import mpv
 
 import time
-
-import locale
-import wcwidth
-
-
-class Message:
-    def __init__(self, title, *kwargs):
-        self.title = title
 
 
 class Window:
@@ -22,7 +14,8 @@ class Window:
         self.source = None
         self.selected = 0
         self.win = win
-        self.title = title
+        self.title = CurseString(title)
+        self.title.setAttr(curses.A_BOLD)
         self.page = 0
         self.visible = True
 
@@ -56,17 +49,18 @@ class Window:
         self.drawBox()
 
         off = self.page * page_size
+        width = self.win.getmaxyx()[1]-2
 
-        self.addstr(0, 1, self.title, attr=curses.A_BOLD)
+        #self.addstr(0, 1, self.title, attr=curses.A_BOLD)
+        self.title.drawToWin(self.win, 0, 1, width) 
 
         if not to_display and self.source:
-            to_display = self.source.getItemList(off, page_size + off)
+            to_display = self.getContent(off, page_size + off)
 
         for i in range(len(to_display)):
             if i + off == self.selected and drawSelect:
-                self.addstr(i + 1, 1, to_display[i].title, attr=curses.A_STANDOUT)
-            else:
-                self.addstr(i + 1, 1, to_display[i].title)
+                to_display[i].setAttr(curses.A_STANDOUT)
+            to_display[i].drawToWin(self.win, i+1, 1, width)
         self.win.noutrefresh()
 
     def clear(self, refresh=True):
@@ -96,6 +90,10 @@ class Window:
 
     def getPageSize(self):
         return self.win.getmaxyx()[0] - 2
+
+    def getContent(self, start, end):
+        content = self.source.getItemList(start, end)
+        return [CurseString(str(c)) for c in content]
 
 
 class Application:
@@ -141,9 +139,6 @@ class Application:
         self.isMuted = False
         self.videoMode = False  # should the video be played alongside the audio
 
-        locale.setlocale(locale.LC_ALL, "")
-        locale.setlocale(locale.LC_NUMERIC, "C")
-
     def skipSegment(self):
         time = self.player._get_property("time-pos")
         time = time if time else 0
@@ -161,7 +156,7 @@ class Application:
             self.textbox.edit()
             search_term = self.textbox.gather()
             if search_term:
-                self.searchWindow.content = [Message(search_term)]
+                self.searchWindow.content = [CurseString(search_term)]
                 self.contentWindow.source = youtube.Search(search_term)
                 self.currentWindow = 1
             self.searchWindow.clear()
@@ -201,19 +196,18 @@ class Application:
     def drawInfo(self):
         currSelection = self.contentWindow.getSelected()
         content = []
-        content.append(Message(f"Title: {currSelection.title}"))
-        # content.append(Message(f"Duration: 0"))
-        content.append(Message(f"Author: {currSelection.author}"))
+        content.append(CurseString(f"Title: {currSelection.title}"))
+        content.append(CurseString(f"Author: {currSelection.author}"))
         self.informationWindow.update(drawSelect=False, to_display=content)
 
     def drawOptions(self):
         content = []
 
-        content.append(Message(f"Auto: {self.inPlaylist}"))
-        content.append(Message(f"Repeat: {self.inRepeat}"))
-        content.append(Message(f"Shuffle: {'on' if self.shuffled else 'off'}"))
-        content.append(Message(f"Volume : {self.volume:02d} / 100"))
-        content.append(Message(f"Mode: {'Video' if self.videoMode else 'Audio'}"))
+        content.append(CurseString(f"Auto: {self.inPlaylist}"))
+        content.append(CurseString(f"Repeat: {self.inRepeat}"))
+        content.append(CurseString(f"Shuffle: {'on' if self.shuffled else 'off'}"))
+        content.append(CurseString(f"Volume : {self.volume:02d} / 100"))
+        content.append(CurseString(f"Mode: {'Video' if self.videoMode else 'Audio'}"))
         self.optionWindow.update(drawSelect=False, to_display=content)
 
     def drawPlayer(self):
@@ -231,7 +225,7 @@ class Application:
 
         t = t if time_pos else "00:00:00"
         d = d if dur else "00:00:00"
-        content = [Message(f"{title} - {t}/{d}")]
+        content = [CurseString(f"{title} - {t}/{d}")]
 
         # drawing progress bar
         time_pos = time_pos if time_pos else 0
@@ -241,7 +235,7 @@ class Application:
         bar = "\u2588" * int(frac_time * width)
         space = "\u2500" * (width - len(bar))
         progress = "\u2595" + bar + space + "\u258F" + " {}/{}".format(t, d)
-        content.append(Message(progress))
+        content.append(CurseString(progress))
 
         self.playerWindow.update(drawSelect=False, to_display=content)
 
@@ -258,7 +252,7 @@ class Application:
                 checkbox = "[x]"
             else:
                 checkbox = "[ ]"
-            content.append(Message(f"{checkbox} {p.title}"))
+            content.append(CurseString(f"{checkbox} {p.title}"))
 
         self.addToPlaylistWindow.update(to_display=content)
 

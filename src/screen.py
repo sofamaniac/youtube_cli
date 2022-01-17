@@ -1,6 +1,8 @@
 import curses
 from enum import Enum
 import sys
+import locale
+import wcwidth
 
 
 class Directions(Enum):
@@ -9,6 +11,39 @@ class Directions(Enum):
     Left = 2
     Right = 3
 
+class CurseString:
+    def __init__(self, string):
+        self.string = string
+        self.effects = [curses.color_pair(COLOR_TEXT) for s in string]
+
+    def len(self):
+        return wcwidth.wcswidth(self.string)
+
+    def drawToWin(self, dest, startY, startX, maxLen):
+        i = 0  # current byte
+        c = 0  # current character
+        p = 0  # position on screen
+        s = self.string.encode("utf-8")
+        while i < len(s) and p < maxLen-3:
+            j = 1
+            # we find the beginning of the next character
+            # the next byte that is not 0x10xxxxxx
+            while i+j < len(s) and s[i+j] & (0xC0) == 0x80:
+                j += 1
+            dest.addch(startY, startX+p, self.string[c], self.effects[c])
+            p += wcwidth.wcwidth(self.string[c])  # some characters take 2 cells
+            c += 1
+            i += j
+        if p >= maxLen-3:
+            dest.addstr(startY, startX+maxLen-4, "...", self.effects[-1])
+
+    def color(self, start, end, color):
+        for i in range(start, end):
+            self.effects[i] |= curses.color_pair(color)
+
+    def setAttr(self, attr):
+        for i, _ in enumerate(self.effects):
+            self.effects[i] |= attr
 
 # Color pairs index
 COLOR_TEXT = 1
@@ -37,6 +72,9 @@ SEARCH_HEIGHT = 3
 
 class Screen:
     def __init__(self, stdscr):
+
+        locale.setlocale(locale.LC_ALL, "")
+        locale.setlocale(locale.LC_NUMERIC, "C")
 
         curses.halfdelay(2)
         curses.curs_set(0)
