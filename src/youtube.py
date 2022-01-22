@@ -367,6 +367,7 @@ class Search(ListItems):
 
         ListItems.__init__(self)
         self.query = query
+        self.size = 1e99
 
         self.loadNextPage()
 
