@@ -346,12 +346,10 @@ class Application:
         self.getCurrentWindow().prev_page()
 
     def play(self, to_play=youtube.Video()):
-        next = self.contentWindow.getSelected()
-        if to_play.id != "":
-            url = to_play.getUrl(self.videoMode)
-        elif next != self.playing.id:
-            to_play = self.contentWindow.getSelected()
-            url = to_play.getUrl(self.videoMode)
+        selected = self.contentWindow.getSelected()
+        if not to_play.id and selected.id != self.playing.id:
+            to_play = selected
+        url = to_play.getUrl(self.videoMode)
         self.player.play(url)
         self.playing = to_play
 
