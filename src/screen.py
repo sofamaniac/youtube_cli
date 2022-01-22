@@ -35,7 +35,7 @@ class CurseString:
             c += 1
             i += j
         if p >= maxLen-3:
-            dest.addstr(startY, startX+maxLen-4, "...", self.effects[-1])
+            dest.addstr(startY, startX+maxLen-3, "...", self.effects[-1])
 
     def color(self, start, end, color):
         for i in range(start, end):

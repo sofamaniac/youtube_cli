@@ -78,6 +78,16 @@ class Window:
         content = self.source.getItemList(start, end)
         return [CurseString(str(c)) for c in content]
 
+    def next_page(self):
+        if self.selected + self.getPageSize() <= self.source.getMaxIndex():
+            self.page += 1
+            self.selected = self.selected + self.getPageSize()
+
+    def prev_page(self):
+        page_incr = max(0, self.page - 1) - self.page
+        self.page += page_incr
+        self.selected += self.getPageSize() * page_incr
+
 
 class Application:
     def __init__(self, stdscr):
@@ -330,30 +340,20 @@ class Application:
             self.play()
 
     def next_page(self):
-        # TODO move most of this code in the Window class
-        win = self.getCurrentWindow()
-        if win.selected + win.getPageSize() <= win.source.getMaxIndex():
-            win.page += 1
-            win.selected = win.selected + win.getPageSize()
+        self.getCurrentWindow().next_page()
 
     def prev_page(self):
-        # TODO move most of this code in the Window class
-        win = self.getCurrentWindow()
-        page_incr = max(0, win.page - 1) - win.page
-        win.page += page_incr
-        win.selected += win.getPageSize() * page_incr
+        self.getCurrentWindow().prev_page()
 
     def play(self, to_play=youtube.Video()):
         next = self.contentWindow.getSelected()
         if to_play.id != "":
             url = to_play.getUrl(self.videoMode)
-            self.player.play(url)
-            self.playing = to_play
         elif next != self.playing.id:
             to_play = self.contentWindow.getSelected()
             url = to_play.getUrl(self.videoMode)
-            self.player.play(url)
-            self.playing = to_play
+        self.player.play(url)
+        self.playing = to_play
 
     def stop(self):
         self.player.stop()

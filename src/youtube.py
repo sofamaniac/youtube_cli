@@ -79,9 +79,10 @@ class Video:
             return ""
 
     def getSkipSegment(self):
+        # TODO: better error handling and add possibility to timeout
         try:
             self.skipSegments = sponsorBlock.get_skip_segments(video_id = self.id, categories=toSkip)
-        except sb.errors.NotFoundException:
+        except (sb.errors.NotFoundException, sb.errors.ServerException) as _:
             self.skipSegments = []
 
     def checkSkip(self, time):
@@ -372,7 +373,7 @@ class Search(ListItems):
     def loadNextPage(self):
 
         response = self.request(youtube.search().list,
-            part="snippet",
+            part="id, snippet",
             maxResults=MAX_RESULTS,
             pageToken=self.nextPage,
             q=self.query,
@@ -391,4 +392,3 @@ class Search(ListItems):
         self.nb_loaded += len(response["items"])
         if self.nextPage == None:
             self.size = self.nb_loaded
-
