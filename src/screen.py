@@ -19,23 +19,35 @@ class CurseString:
     def len(self):
         return wcwidth.wcswidth(self.string)
 
-    def drawToWin(self, dest, startY, startX, maxLen):
+    def findMax(self, maxLen):
         i = 0  # current byte
         c = 0  # current character
         p = 0  # position on screen
         s = self.string.encode("utf-8")
-        while i < len(s) and p <= maxLen-3:
+        while i < len(s) and p <= maxLen:
             j = 1
             # we find the beginning of the next character
-            # the next byte that is not 0x10xxxxxx
+            # ie the next byte that is not 0b10xxxxxx
             while i+j < len(s) and s[i+j] & (0xC0) == 0x80:
                 j += 1
-            dest.addch(startY, startX+p, self.string[c], self.effects[c])
             p += wcwidth.wcwidth(self.string[c])  # some characters take 2 cells
             c += 1
             i += j
-        if p > maxLen-3:
-            dest.addstr(startY, startX+maxLen-3, "...", self.effects[-1])
+        if p > maxLen:
+            while p > maxLen - 3:
+                c -= 1
+                p -= wcwidth.wcwidth(self.string[c])
+        return c, c < len(self.string)
+
+    def drawToWin(self, dest, startY, startX, maxLen):
+        max_pos, isLong = self.findMax(maxLen)
+        p = 0
+        for i in range(max_pos):
+            dest.addstr(startY, startX+p, self.string[i], self.effects[i])
+            p += wcwidth.wcwidth(self.string[i])
+        if isLong:
+            dest.addstr(startY, startX+maxLen-3, '...', self.effects[max_pos-1])
+
 
     def color(self, start, end, color):
         for i in range(start, end):
