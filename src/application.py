@@ -138,7 +138,7 @@ class Application:
         check = self.playing.checkSkip(time)
         duration = self.player._get_property("duration")
         if check and duration:
-            jump = min(check, duration if duration else 1e99)
+            jump = min(check, duration)
             self.player.command("seek", f"{jump}", "absolute")
 
     def search(self):
@@ -227,7 +227,7 @@ class Application:
         s = CurseString(progress)
         for i,_ in enumerate(bar):
             if self.playing.checkSkip(i*dur/width):
-                s.color(i, i+1, screen.COLOR_SEG)
+                s.color(screen.COLOR_SEG, i, i+1)
         content.append(s)
 
         self.playerWindow.update(drawSelect=False, to_display=content)

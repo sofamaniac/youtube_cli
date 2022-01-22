@@ -49,12 +49,16 @@ class CurseString:
             dest.addstr(startY, startX+maxLen-3, '...', self.effects[max_pos-1])
 
 
-    def color(self, start, end, color):
+    def color(self, color, start=-1e99, end=1e99):
+        start = max(start, 0)
+        end = min(end, len(self.string))
         for i in range(start, end):
             self.effects[i] |= curses.color_pair(color)
 
-    def setAttr(self, attr):
-        for i, _ in enumerate(self.effects):
+    def setAttr(self, attr, start=-1e99, end=1e99):
+        start = max(start, 0)
+        end = min(end, len(self.string))
+        for i in range(start, end):
             self.effects[i] |= attr
 
 # Color pairs index
