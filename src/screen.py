@@ -24,7 +24,7 @@ class CurseString:
         c = 0  # current character
         p = 0  # position on screen
         s = self.string.encode("utf-8")
-        while i < len(s) and p < maxLen-3:
+        while i < len(s) and p <= maxLen-3:
             j = 1
             # we find the beginning of the next character
             # the next byte that is not 0x10xxxxxx
@@ -34,7 +34,7 @@ class CurseString:
             p += wcwidth.wcwidth(self.string[c])  # some characters take 2 cells
             c += 1
             i += j
-        if p >= maxLen-3:
+        if p > maxLen-3:
             dest.addstr(startY, startX+maxLen-3, "...", self.effects[-1])
 
     def color(self, start, end, color):

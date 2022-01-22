@@ -48,6 +48,24 @@ useSponsorBlock = True
 toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 # ==================== #
 
+# === Timeout on functions === #
+# code found at https://stackoverflow.com/a/601168
+import signal
+from contextlib import contextmanager
+
+class TimeoutException(Exception): pass
+
+@contextmanager
+def time_limit(sec):
+    def signal_handler(signum, frame):
+        raise TimeoutException("Timed out")
+    signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(sec)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+
 
 class Video:
     def __init__(self, id="", title="", description="", author="", playlistItemId=""):
@@ -79,10 +97,10 @@ class Video:
             return ""
 
     def getSkipSegment(self):
-        # TODO: better error handling and add possibility to timeout
         try:
-            self.skipSegments = sponsorBlock.get_skip_segments(video_id = self.id, categories=toSkip)
-        except (sb.errors.NotFoundException, sb.errors.ServerException) as _:
+            with time_limit(5):
+                self.skipSegments = sponsorBlock.get_skip_segments(video_id = self.id, categories=toSkip)
+        except (sb.errors.NotFoundException, sb.errors.ServerException, TimeoutException) as _:
             self.skipSegments = []
 
     def checkSkip(self, time):
