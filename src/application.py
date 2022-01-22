@@ -203,12 +203,8 @@ class Application:
         self.optionWindow.update(drawSelect=False, to_display=content)
 
     def drawPlayer(self):
-        currContent = [
-            self.player._get_property("media-title"),
-            self.player._get_property("duration"),
-        ]
         title = self.playing.title
-        dur = currContent[1]
+        dur = self.player._get_property("duration")
 
         time_pos = self.player._get_property("time-pos")
 
@@ -230,7 +226,7 @@ class Application:
         progress = "\u2595" + bar + "\u258F" + " {}/{}".format(t, d)
         s = CurseString(progress)
         for i,_ in enumerate(bar):
-            if self.playing.checkSkip(i/(dur+1)):
+            if self.playing.checkSkip(i*dur/width):
                 s.color(i, i+1, screen.COLOR_SEG)
         content.append(s)
 
