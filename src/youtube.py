@@ -49,23 +49,26 @@ toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 # ==================== #
 
 # === Timeout on functions === #
-# code found at https://stackoverflow.com/a/601168
-import signal
-from contextlib import contextmanager
+# code found at https://stackoverflow.com/a/26664130
+from multiprocessing import Process
 
 class TimeoutException(Exception): pass
 
-@contextmanager
-def time_limit(sec):
-    def signal_handler(signum, frame):
-        raise TimeoutException("Timed out")
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(sec)
-    try:
-        yield
-    finally:
-        signal.alarm(0)
+def run_with_limited_time(func, args, kwargs, time):
+    """Runs a function with time limit
 
+    :param func: The function to run
+    :param args: The functions args, given as tuple
+    :param kwargs: The functions keywords, given as dict
+    :param time: The time limit in seconds
+    :return: True if the function ended successfully. False if it was terminated.
+    """
+    p = Process(target=func, args=args, kwargs=kwargs)
+    p.start()
+    p.join(time)
+    if p.is_alive():
+        p.terminate()
+        raise TimeoutException
 
 class Video:
     def __init__(self, id="", title="", description="", author="", playlistItemId=""):
@@ -96,11 +99,16 @@ class Video:
         else:
             return ""
 
+    def _getSkipSegment(self):
+        try:
+            self.skipSegments = sponsorBlock.get_skip_segments(video_id=self.id, categories=toSkip)
+        except (sb.errors.NotFoundException, sb.errors.ServerException) as _:
+            self.skipSegments = []
+
     def getSkipSegment(self):
         try:
-            with time_limit(5):
-                self.skipSegments = sponsorBlock.get_skip_segments(video_id = self.id, categories=toSkip)
-        except (sb.errors.NotFoundException, sb.errors.ServerException, TimeoutException) as _:
+            run_with_limited_time(self._getSkipSegment, (), {}, 5)
+        except (TimeoutException) as _:
             self.skipSegments = []
 
     def checkSkip(self, time):
