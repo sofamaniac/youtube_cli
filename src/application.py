@@ -128,7 +128,8 @@ class Application:
         self.inRepeat = False
         self.shuffled = False
 
-        self.volume = 100
+        self.volume = 50
+        self.increaseVolume(0)  # update the volume if self.volume is not set to 100
         self.isMuted = False
         self.videoMode = False  # should the video be played alongside the audio
 
