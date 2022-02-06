@@ -50,7 +50,8 @@ toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 
 # === Timeout on functions === #
 # code found at https://stackoverflow.com/a/26664130
-from multiprocessing import Process
+from multiprocessing import Process, Queue
+queue = Queue()
 
 class TimeoutException(Exception): pass
 
@@ -65,10 +66,13 @@ def run_with_limited_time(func, args, kwargs, time):
     """
     p = Process(target=func, args=args, kwargs=kwargs)
     p.start()
+    result = queue.get()
     p.join(time)
     if p.is_alive():
         p.terminate()
         raise TimeoutException
+    else:
+        return result
 
 class Video:
     def __init__(self, id="", title="", description="", author="", playlistItemId=""):
@@ -101,13 +105,15 @@ class Video:
 
     def _getSkipSegment(self):
         try:
-            self.skipSegments = sponsorBlock.get_skip_segments(video_id=self.id, categories=toSkip)
-        except (sb.errors.NotFoundException, sb.errors.ServerException) as _:
-            self.skipSegments = []
+            skipSegments = sponsorBlock.get_skip_segments(video_id=self.id, categories=toSkip)
+        except (sb.errors.NotFoundException, sb.errors.ServerException, sb.errors.ServerException) as _:
+            skipSegments = []
+        finally:
+            queue.put(skipSegments)
 
     def getSkipSegment(self):
         try:
-            run_with_limited_time(self._getSkipSegment, (), {}, 5)
+            self.skipSegments = run_with_limited_time(self._getSkipSegment, (), {}, 5)
         except (TimeoutException) as _:
             self.skipSegments = []
 
