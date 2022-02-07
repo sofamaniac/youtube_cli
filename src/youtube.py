@@ -284,6 +284,11 @@ class Playlist(ListItems):
     def getMaxIndex(self):
         return self.size - 1
 
+    def setEffectiveIndex(self, index):
+        self.currentIndex = 0
+        while self.currentIndex < self.size and self.order[self.currentIndex] != index:
+            self.currentIndex += 1
+
     def add(self, video):
         self.request(youtube.playlistItems().insert,
             part="snippet",

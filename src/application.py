@@ -258,9 +258,7 @@ class Application:
         elif direction == Directions.Right:
             self.currentWindow = min(len(self.windowsList) - 1, self.currentWindow + 1)
 
-        if (
-            direction == Directions.Left or direction == Directions.Right
-        ) and self.getCurrentWindow() == self.contentWindow:
+        if direction in [Directions.Left, Directions.Right] and self.getCurrentWindow() == self.contentWindow:
             self.getPlaylist()
             self.contentWindow.selected = 0
 
@@ -304,6 +302,8 @@ class Application:
         elif self.getCurrentWindow() == self.addToPlaylistWindow:
             self.editPlaylist()
         else:
+            if self.inPlaylist:
+                self.playlist.setEffectiveIndex(self.contentWindow.selected)
             self.play()
 
     def escape(self):
