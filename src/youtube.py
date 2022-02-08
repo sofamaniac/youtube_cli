@@ -4,7 +4,6 @@ import pickle
 import subprocess
 import shlex
 from random import shuffle
-from contextlib import redirect_stdout
 
 # === Google API === #
 import google_auth_oauthlib.flow
