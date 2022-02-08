@@ -4,11 +4,13 @@ import pickle
 import subprocess
 import shlex
 from random import shuffle
+from contextlib import redirect_stdout
 
 # === Google API === #
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
+import google.auth.exceptions
 
 
 scopes = ["https://www.googleapis.com/auth/youtube"]
@@ -20,16 +22,16 @@ cache_path = data_path + "cache.json"
 
 MAX_RESULTS = 50
 
-def get_authenticated_service():
+def get_authenticated_service(refresh=False, ouput=None):
     path = data_path + "CREDENTIALS_PICKLE_FILE"
-    if os.path.exists(path):
+    if not refresh and os.path.exists(path):
         with open(path, "rb") as f:
             credentials = pickle.load(f)
     else:
         flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
             client_secrets_file, scopes
         )
-        credentials = flow.run_console()
+        credentials = flow.run_local_server()
         with open(path, "wb") as f:
             pickle.dump(credentials, f)
     return googleapiclient.discovery.build(
@@ -155,8 +157,12 @@ class ListItems:
         return False
     
     def request(self, who, **what):
-        # TODO: error handling
-        return who(**what).execute()
+        try:
+            result = who(**what).execute()
+        except google.auth.exceptions.RefreshError as _:
+            get_authenticated_service(refresh=True)
+            result = who(**what).execute()
+        return result
 
     def loadNextPage(self):
         pass
