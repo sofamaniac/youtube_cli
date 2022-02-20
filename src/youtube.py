@@ -45,7 +45,7 @@ youtube = get_authenticated_service()
 # === SponsorBlock === #
 import sponsorblock as sb
 sponsorBlock = sb.Client()
-useSponsorBlock = True
+useSponsorBlock = False
 toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 # ==================== #
 

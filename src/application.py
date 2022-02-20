@@ -1,5 +1,6 @@
 import youtube
 import screen
+import player
 
 from screen import Directions, CurseString
 import curses
@@ -119,7 +120,7 @@ class Application:
         self.addToPlaylistWindow.toggleVisible()  # make window invisible
         self.inAddToPlaylist = False
 
-        self.player = mpv.MPV(video=False, ytdl=True)
+        self.player = player.Player()
         self.playing = youtube.Video() 
 
         self.inPlaylist = False
@@ -134,13 +135,16 @@ class Application:
         self.videoMode = False  # should the video be played alongside the audio
 
     def skipSegment(self):
-        time = self.player._get_property("time-pos")
+        #time = self.player.get_property("time")
+        time = self.player.get_time()
         time = time if time else 0
         check = self.playing.checkSkip(time)
-        duration = self.player._get_property("duration")
+        #duration = self.player._get_property("duration")
+        #duration = self.player.get_property("duration")
+        duration = self.player.get_duration()
         if check and duration:
             jump = min(check, duration)
-            self.player.command("seek", f"{jump}", "absolute")
+            self.player.seek(jump)
 
     def search(self):
         self.inSearch = True
@@ -160,8 +164,8 @@ class Application:
 
         # checking if mpv core is still alive
         try:
-            self.player.check_core_alive()
-        except mpv.ShutdownError:
+            self.player.check_alive()
+        except player.PlayerDead:
             # if not we create a new player
             self.createPlayer()
 
@@ -177,7 +181,7 @@ class Application:
         self.drawAddToPlaylist()
 
         # checking if there is something playing
-        if self.inPlaylist and not self.player._get_property("media-title"):  # the current song has finished
+        if self.inPlaylist and self.player.is_song_finished():  # the current song has finished
             self.next()
 
         if self.inSearch:
@@ -205,9 +209,9 @@ class Application:
 
     def drawPlayer(self):
         title = self.playing.title
-        dur = self.player._get_property("duration")
+        dur = self.player.get_duration()
 
-        time_pos = self.player._get_property("time-pos")
+        time_pos = self.player.get_time()
 
         t = time.strftime("%H:%M:%S", time.gmtime(time_pos))
         d = time.strftime("%H:%M:%S", time.gmtime(dur))
@@ -268,7 +272,7 @@ class Application:
             self.playlist.unshuffle()
             self.shuffled = False
             self.playlist.currentIndex = self.contentWindow.selected
-            self.player.stop
+            self.player.stop()
             self.play(self.playlist.getCurrent())
         self.inPlaylist = not self.inPlaylist
 
@@ -355,23 +359,21 @@ class Application:
         self.playing = youtube.Video()
 
     def pause(self):
-        self.player.command("cycle", "pause")
+        self.player.pause()
 
     def repeat(self):
         self.inRepeat = not self.inRepeat
-        self.player._set_property("loop", "inf" if self.inRepeat else "no")
+        self.player.set_repeat(self.inRepeat)
 
     def forward(self, dt):
-        currentSong = self.player._get_property("media-title")
-        if not currentSong:
+        if not self.player.is_playing():
             return
-        self.player.command("seek", "{}".format(dt), "relative")
+        self.player.seek(dt)
 
     def percentJump(self, percent):
-        currentSong = self.player._get_property("media-title")
-        if not currentSong:
+        if not self.player.is_playing():
             return
-        self.player.command("seek", "{}".format(percent), "absolute-percent")
+        self.player.seek_percent(percent)
 
     def increaseVolume(self, dv):
         self.volume += dv
@@ -379,21 +381,23 @@ class Application:
             self.volume = 0
         elif self.volume > 100:
             self.volume = 100
-        self.player._set_property("volume", self.volume)
+        self.player.set_volume(self.volume)
 
     def mute(self):
         self.isMuted = not self.isMuted
         if self.isMuted:
-            self.player._set_property("volume", 0)
+            self.player.set_volume(0)
         else:
-            self.player._set_property("volume", self.volume)
+            self.player.set_volume(self.volume)
 
     def createPlayer(self):
+        """
         if self.videoMode:
             self.player = mpv.MPV(video="auto", ytdl=True)
         else:
             self.player = mpv.MPV(video=False, ytdl=True)
-
+        """
+        self.player = player.Player()
 
     def toggleVideo(self):
         self.videoMode = not self.videoMode
@@ -409,4 +413,5 @@ class Application:
 
     def quit(self):
         self.stop()
+        self.player.quit()
         return
