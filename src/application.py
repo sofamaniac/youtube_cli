@@ -120,7 +120,8 @@ class Application:
         self.addToPlaylistWindow.toggleVisible()  # make window invisible
         self.inAddToPlaylist = False
 
-        self.player = player.Player()
+        self.videoMode = False  # should the video be played alongside the audio
+        self.createPlayer()
         self.playing = youtube.Video() 
 
         self.inPlaylist = False
@@ -132,7 +133,6 @@ class Application:
         self.volume = 50
         self.increaseVolume(0)  # update the volume if self.volume is not set to 100
         self.isMuted = False
-        self.videoMode = False  # should the video be played alongside the audio
 
     def skipSegment(self):
         #time = self.player.get_property("time")
@@ -165,7 +165,7 @@ class Application:
         # checking if mpv core is still alive
         try:
             self.player.check_alive()
-        except player.PlayerDead:
+        except player.PlayerDeadError:
             # if not we create a new player
             self.createPlayer()
 
@@ -391,13 +391,10 @@ class Application:
             self.player.set_volume(self.volume)
 
     def createPlayer(self):
-        """
         if self.videoMode:
-            self.player = mpv.MPV(video="auto", ytdl=True)
+            self.player = player.VideoPlayer()
         else:
-            self.player = mpv.MPV(video=False, ytdl=True)
-        """
-        self.player = player.Player()
+            self.player = player.AudioPlayer()
 
     def toggleVideo(self):
         self.videoMode = not self.videoMode

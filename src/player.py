@@ -1,9 +1,11 @@
 from mpd import MPDClient
+from mpv import MPV
+from mpv import ShutdownError as MPVDeadError
 
-class PlayerDead(Exception):
+class PlayerDeadError(Exception):
     pass
 
-class Player:
+class AudioPlayer:
 
     def __init__(self):
 
@@ -26,12 +28,16 @@ class Player:
         self.client.close()
         self.client.disconnect()
 
-    def seek(self, time: int):
-        self.client.seekcur(time)
+    def seek(self, dt: int):
+        if dt >= 0:
+            dt = '+' + str(dt)
+        else:
+            dt = str(dt)
+        self.client.seekcur(dt)
 
     def seek_percent(self, percent):
-        duration = self.client.status()["duration"]
-        self.seek(duration * percent)
+        duration = self.get_duration()
+        self.client.seekcur(duration * percent / 100)
 
     def get_property(self, prop: str, default):
         properties = self.client.status()
@@ -54,12 +60,59 @@ class Player:
 
     def check_alive(self):
         if True:
-            pass
-        raise PlayerDead
+            return
+        raise PlayerDeadError
 
     def is_playing(self):
-        return self.get_property("state", "stop") == "stop"
+        return self.get_property("state", "stop") != "stop"
 
     def is_song_finished(self):
         return self.get_property("state", "") == "stop"
 
+class VideoPlayer:
+
+    def __init__(self):
+        self.player = MPV(video="auto", ytdl=True)
+
+    def play(self, url):
+        self.player.play(url)
+
+    def stop(self):
+        self.player.stop
+
+    def pause(self):
+        self.player.command("cycle", "pause")
+
+    def set_repeat(self, state):
+        self.player.loop_file = "inf" if state else "no"
+
+    def set_volume(self, vol):
+        self.player.volume = vol
+
+
+    def check_alive(self):
+        try:
+            self.player.check_core_alive()
+        except MPVDeadError:
+            raise PlayerDeadError
+
+    def is_playing(self):
+        return self.player.media_title != ""
+
+    def get_duration(self):
+        return self.player.duration
+
+    def get_time(self):
+        return self.player.time_pos
+
+    def seek(self, dt):
+        self.player.command("seek", f"{dt}", "relative")
+
+    def seek_percent(self, dt):
+        self.player.command("seek", f"{dt}", "absolute-percent")
+
+    def quit():
+        del self.player
+
+    def is_song_finished(self):
+        return not self.is_playing()
