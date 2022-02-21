@@ -46,10 +46,12 @@ class AudioPlayer:
         except KeyError:
             return default
 
-    def get_time(self, default=0):
+    @property
+    def time(self, default=0):
         return float(self.get_property("elapsed", default))
 
-    def get_duration(self, default=0):
+    @property
+    def duration(self, default=0):
         return float(self.get_property("duration", default))
 
     def set_repeat(self, state: str):

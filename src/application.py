@@ -166,7 +166,7 @@ class Application:
         return self._shuffled
     
     @shuffled.setter
-    def suffled(self, val):
+    def shuffled(self, val):
         self._shuffled = val
         if self._shuffled:
             self.playlist.shuffle()
@@ -184,10 +184,10 @@ class Application:
         self.createPlayer()
 
     def skipSegment(self):
-        time = self.player.get_time()
+        time = self.player.time
         time = time if time else 0
         check = self.playing.checkSkip(time)
-        duration = self.player.get_duration()
+        duration = self.player.duration
         if check and duration:
             jump = min(check, duration)
             self.player.seek(jump)
@@ -255,9 +255,9 @@ class Application:
 
     def drawPlayer(self):
         title = self.playing.title
-        dur = self.player.get_duration()
+        dur = self.player.duration
 
-        time_pos = self.player.get_time()
+        time_pos = self.player.time
 
         t = time.strftime("%H:%M:%S", time.gmtime(time_pos))
         d = time.strftime("%H:%M:%S", time.gmtime(dur))
