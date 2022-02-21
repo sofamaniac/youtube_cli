@@ -120,16 +120,17 @@ class Application:
 
         self._videoMode = False  # should the video be played alongside the audio
         self.createPlayer()
+        self.videoMode = False  # should the video be played alongside the audio
         self.playing = youtube.Video() 
 
         self.inPlaylist = False
-        self.playlist = []
+        self.playlist = youtube.ListItems()
         self.playlistIndex = 0
-        self._repeat = "No"
-        self._shuffled = False
+        self.repeat = "No"
+        self.shuffled = False
 
-        self._volume = 50
-        self._muted = False
+        self.volume = 50
+        self.muted = False
 
     @property
     def volume(self):
@@ -385,10 +386,10 @@ class Application:
             win.select(Directions.Up)
             self.play()
 
-    def next_page(self):
+    def nextPage(self):
         self.getCurrentWindow().next_page()
 
-    def prev_page(self):
+    def prevPage(self):
         self.getCurrentWindow().prev_page()
 
     def play(self, to_play=youtube.Video()):
@@ -406,7 +407,7 @@ class Application:
     def pause(self):
         self.player.pause()
 
-    def cycle_repeat(self):
+    def toggleRepeat(self):
         values = ["No", "Song", "Playlist"]
         self.repeat = values[values.index(self.repeat)]
         self.player.set_repeat(self.repeat)
@@ -416,7 +417,7 @@ class Application:
             return
         self.player.seek(dt)
 
-    def percentJump(self, percent):
+    def seekPercent(self, percent):
         if not self.player.is_playing():
             return
         self.player.seek_percent(percent)
@@ -428,7 +429,7 @@ class Application:
         elif self.volume > 100:
             self.volume = 100
 
-    def toggle_mute(self):
+    def toggleMute(self):
         self.muted = not self.muted
 
     def createPlayer(self):
@@ -440,7 +441,7 @@ class Application:
     def toggleVideo(self):
         self.videoMode = not self.videoMode
 
-    def toggle_shuffle(self):
+    def toggleShuffle(self):
         self.shuffled = not self.shuffled
 
     def quit(self):

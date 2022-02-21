@@ -214,6 +214,12 @@ class ListItems:
     def getMaxIndex(self):
         return self.nb_loaded - 1
 
+    def shuffle(self):
+        pass
+
+    def unshuffle(self):
+        pass
+
 
 class Playlist(ListItems):
     def __init__(self, id, title, nb_videos):

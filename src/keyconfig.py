@@ -1,41 +1,64 @@
 import curses
-
+from screen import Directions
 
 class KeyConfiguration:
-    def __init__(self):
+    def __init__(self, app):
 
-        self.quit = ord("q")
+        self.actions = {
+            "q": [quit],
 
-        self.down = ord("j")
-        self.up = ord("k")
-        self.left = ord("h")
-        self.right = ord("l")
+            "j": [app.select, Directions.Down],
+            "k": [app.select, Directions.Up],
+            "h": [app.select, Directions.Left],
+            "l": [app.select, Directions.Right],
 
-        self.pause = ord(" ")
-        self.next = ord(">")
-        self.prev = ord("<")
+            " ": [app.pause],
+            ">": [app.next],
+            "<": [app.prev],
 
-        self.forward = curses.KEY_RIGHT
-        self.backward = curses.KEY_LEFT
+            "m": [app.toggleMute],
+            "f": [app.increaseVolume, 5],
+            "d": [app.increaseVolume, -5],
 
-        self.mute = ord("m")
-        self.incVolume = ord("f")
-        self.decVolume = ord("d")
+            "n": [app.nextPage],
+            "p": [app.prevPage],
+            "\n": [app.enter],
+            "a": [app.setPlaylist],
+            "r": [app.toggleRepeat],
+            "y": [app.toggleShuffle],
+            "t": [app.addToPlaylist],
+            "s": [app.search],
+            "c": [app.reload],
+            "v": [app.toggleVideo],
+            curses.KEY_LEFT: [app.forward, -5],
+            curses.KEY_RIGHT: [app.forward, 5],
 
-        self.nextPage = ord("n")
-        self.prevPage = ord("p")
+            "0": [app.seekPercent, 0],
+            "1": [app.seekPercent, 10],
+            "2": [app.seekPercent, 20],
+            "3": [app.seekPercent, 30],
+            "4": [app.seekPercent, 40],
+            "5": [app.seekPercent, 50],
+            "6": [app.seekPercent, 60],
+            "7": [app.seekPercent, 70],
+            "8": [app.seekPercent, 80],
+            "9": [app.seekPercent, 90],
+        }
 
-        self.validate = ord("\n")
-        self.autoplay = ord("a")
-        self.repeat = ord("r")
-        self.shuffle = ord("y")
-        self.addPlaylist = ord("t")
-        self.search = ord("s")
-        self.reload = ord("c")
-        self.video = ord("v")
-        
-        percentKeys = "0123456789"
-        self.percentJump = [ord(c) for c in percentKeys]
+        self.setupConfig()
 
+    def setupConfig(self):
+        actions = {}
+        for key in self.actions.keys():
+            if type(key) is str:
+                actions[ord(key)] = self.actions[key]
+            else:
+                actions[key] = self.actions[key]
+        self.actions = actions
 
-configuration = KeyConfiguration()
+    def checkAction(self, keycode):
+        if keycode in self.actions.keys():
+            f = self.actions[keycode][0]
+            args = self.actions[keycode][1:]
+            f(*args)
+
