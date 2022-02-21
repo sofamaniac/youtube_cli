@@ -6,7 +6,6 @@ from keyconfig import configuration as config
 
 import curses
 
-
 def main(stdscr):
     app = Application(stdscr)
     listener = Listener(app)
@@ -39,7 +38,7 @@ def main(stdscr):
         elif c == config.autoplay:
             app.setPlaylist()
         elif c == config.repeat:
-            app.repeat()
+            app.cycle_repeat()
         elif c == config.backward:
             app.forward(-5)
         elif c == config.forward:
@@ -47,7 +46,7 @@ def main(stdscr):
         elif c in config.percentJump:
             app.percentJump(config.percentJump.index(c)*10)
         elif c == config.mute:
-            app.mute()
+            app.toggle_mute()
         elif c == config.incVolume:
             app.increaseVolume(5)
         elif c == config.decVolume:
@@ -57,7 +56,7 @@ def main(stdscr):
         elif c == config.video:
             app.toggleVideo()
         elif c == config.shuffle:
-            app.shuffle()
+            app.toggle_shuffle()
         elif c == config.reload:
             app.reload()
         elif c == config.addPlaylist:

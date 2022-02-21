@@ -52,8 +52,11 @@ class AudioPlayer:
     def get_duration(self, default=0):
         return float(self.get_property("duration", default))
 
-    def set_repeat(self, state: bool):
-        self.client.repeat(1 if state else 0)
+    def set_repeat(self, state: str):
+        if state == "No":
+            self.client.repeat(0)
+        elif state == "Song":
+            self.client.repeat(1)
 
     def set_volume(self, vol: int):
         self.client.setvol(vol)
@@ -84,11 +87,13 @@ class VideoPlayer:
         self.player.command("cycle", "pause")
 
     def set_repeat(self, state):
-        self.player.loop_file = "inf" if state else "no"
+        if state == "Song":
+            self.player.loop_file = "inf"
+        elif state == "No":
+            self.player.loop_file = "no"
 
     def set_volume(self, vol):
         self.player.volume = vol
-
 
     def check_alive(self):
         try:
@@ -111,7 +116,7 @@ class VideoPlayer:
     def seek_percent(self, dt):
         self.player.command("seek", f"{dt}", "absolute-percent")
 
-    def quit():
+    def quit(self):
         del self.player
 
     def is_song_finished(self):

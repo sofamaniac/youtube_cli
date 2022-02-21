@@ -45,7 +45,7 @@ youtube = get_authenticated_service()
 # === SponsorBlock === #
 import sponsorblock as sb
 sponsorBlock = sb.Client()
-useSponsorBlock = False
+useSponsorBlock = True
 toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 # ==================== #
 
@@ -65,14 +65,18 @@ def run_with_limited_time(func, args, kwargs, time):
     :param time: The time limit in seconds
     :return: True if the function ended successfully. False if it was terminated.
     """
+
+    # First we ensure the queue we are using is empty
+    while not queue.empty():
+        queue.get()
     p = Process(target=func, args=args, kwargs=kwargs)
     p.start()
-    result = queue.get()
     p.join(time)
     if p.is_alive():
         p.terminate()
         raise TimeoutException
     else:
+        result = queue.get()
         return result
 
 class Video:

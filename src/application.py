@@ -5,10 +5,8 @@ import player
 from screen import Directions, CurseString
 import curses
 import textbox
-import mpv
 
 import time
-
 
 class Window:
     def __init__(self, win, title):
@@ -120,27 +118,75 @@ class Application:
         self.addToPlaylistWindow.toggleVisible()  # make window invisible
         self.inAddToPlaylist = False
 
-        self.videoMode = False  # should the video be played alongside the audio
+        self._videoMode = False  # should the video be played alongside the audio
         self.createPlayer()
         self.playing = youtube.Video() 
 
         self.inPlaylist = False
         self.playlist = []
         self.playlistIndex = 0
-        self.inRepeat = False
-        self.shuffled = False
+        self._repeat = "No"
+        self._shuffled = False
 
-        self.volume = 50
-        self.increaseVolume(0)  # update the volume if self.volume is not set to 100
-        self.isMuted = False
+        self._volume = 50
+        self._muted = False
+
+    @property
+    def volume(self):
+        return self._volume
+    
+    @volume.setter
+    def volume(self, vol):
+        self._volume = vol
+        self.player.set_volume(self.volume)
+
+    @property   
+    def repeat(self):
+        return self._repeat
+
+    @repeat.setter
+    def repeat(self, value):
+        self._repeat = value
+        self.player.set_repeat(self.repeat)
+
+    @property
+    def muted(self):
+        return self._muted
+
+    @muted.setter
+    def muted(self, value):
+        self._muted = value
+        if self.muted:
+            self.player.set_volume(0)
+        else:
+            self.player.set_volume(self.volume)
+
+    @property
+    def shuffled(self):
+        return self._shuffled
+    
+    @shuffled.setter
+    def suffled(self, val):
+        self._shuffled = val
+        if self._shuffled:
+            self.playlist.shuffle()
+        else:
+            self.playlist.unshuffle()
+
+    @property
+    def videoMode(self):
+        return self._videoMode
+
+    @videoMode.setter
+    def videoMode(self, val):
+        self._videoMode = val
+        self.stop()
+        self.createPlayer()
 
     def skipSegment(self):
-        #time = self.player.get_property("time")
         time = self.player.get_time()
         time = time if time else 0
         check = self.playing.checkSkip(time)
-        #duration = self.player._get_property("duration")
-        #duration = self.player.get_property("duration")
         duration = self.player.get_duration()
         if check and duration:
             jump = min(check, duration)
@@ -162,7 +208,7 @@ class Application:
 
     def update(self):
 
-        # checking if mpv core is still alive
+        # checking if player is still alive
         try:
             self.player.check_alive()
         except player.PlayerDeadError:
@@ -201,7 +247,7 @@ class Application:
         content = []
 
         content.append(CurseString(f"Auto: {self.inPlaylist}"))
-        content.append(CurseString(f"Repeat: {self.inRepeat}"))
+        content.append(CurseString(f"Repeat: {self.repeat}"))
         content.append(CurseString(f"Shuffle: {'on' if self.shuffled else 'off'}"))
         content.append(CurseString(f"Volume : {self.volume:02d} / 100"))
         content.append(CurseString(f"Mode: {'Video' if self.videoMode else 'Audio'}"))
@@ -269,7 +315,6 @@ class Application:
     def setPlaylist(self):
         if not self.inPlaylist:
             self.playlist = self.playlistWindow.getSelected()
-            self.playlist.unshuffle()
             self.shuffled = False
             self.playlist.currentIndex = self.contentWindow.selected
             self.player.stop()
@@ -361,9 +406,10 @@ class Application:
     def pause(self):
         self.player.pause()
 
-    def repeat(self):
-        self.inRepeat = not self.inRepeat
-        self.player.set_repeat(self.inRepeat)
+    def cycle_repeat(self):
+        values = ["No", "Song", "Playlist"]
+        self.repeat = values[values.index(self.repeat)]
+        self.player.set_repeat(self.repeat)
 
     def forward(self, dt):
         if not self.player.is_playing():
@@ -381,14 +427,9 @@ class Application:
             self.volume = 0
         elif self.volume > 100:
             self.volume = 100
-        self.player.set_volume(self.volume)
 
-    def mute(self):
-        self.isMuted = not self.isMuted
-        if self.isMuted:
-            self.player.set_volume(0)
-        else:
-            self.player.set_volume(self.volume)
+    def toggle_mute(self):
+        self.muted = not self.muted
 
     def createPlayer(self):
         if self.videoMode:
@@ -398,15 +439,9 @@ class Application:
 
     def toggleVideo(self):
         self.videoMode = not self.videoMode
-        self.stop()
-        self.createPlayer()
 
-    def shuffle(self):
-        if not self.inPlaylist:
-            return
-        else:
-            self.shuffled = not self.shuffled
-            self.playlist.shuffle()
+    def toggle_shuffle(self):
+        self.shuffled = not self.shuffled
 
     def quit(self):
         self.stop()
