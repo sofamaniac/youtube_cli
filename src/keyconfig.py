@@ -1,5 +1,5 @@
 import curses
-from screen import Directions
+from gui.screen import Directions
 
 class KeyConfiguration:
     def __init__(self, app):
@@ -56,9 +56,9 @@ class KeyConfiguration:
                 actions[key] = self.actions[key]
         self.actions = actions
 
-    def checkAction(self, keycode):
-        if keycode in self.actions.keys():
-            f = self.actions[keycode][0]
-            args = self.actions[keycode][1:]
+    def checkAction(self, event):
+        if event and event.id in self.actions.keys():
+            f = self.actions[event.id][0]
+            args = self.actions[event.id][1:]
             f(*args)
 

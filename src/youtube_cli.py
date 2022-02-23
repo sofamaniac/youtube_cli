@@ -1,4 +1,4 @@
-from screen import Screen, Directions
+from gui.screen import Screen, Directions
 
 from application import Application
 from keylistener import Listener
@@ -7,9 +7,10 @@ import curses
 
 from keyconfig import KeyConfiguration
 
-import primitives
+import parser.primitives as primitives
+from gui.newScreen import nc
 
-def initialize(stdscr):
+def initialize(stdscr=None):
     app = Application(stdscr)
     config = KeyConfiguration(app)
     listener = Listener(app)
@@ -20,7 +21,7 @@ def initialize(stdscr):
 def main(app, listener, config):
     last_event = None
     while True:
-        c = app.scr.stdscr.getch()
+        c = nc.get(1/60)
         if c == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
             app.scr.resize()
         else:
@@ -34,5 +35,8 @@ def quit(listener, app):
     app.quit()
 
 
+"""
 if __name__ == "__main__":
     curses.wrapper(initialize)
+"""
+initialize()

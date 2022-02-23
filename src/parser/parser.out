@@ -1,0 +1,261 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    BEGIN
+    COMMENT
+    ELSE
+    END
+    FALSE
+    FI
+    IF
+    LET
+    LPAREN
+    RPAREN
+    THEN
+    TRUE
+
+Grammar
+
+Rule 0     S' -> commandlist
+Rule 1     commandlist -> command CSEP commandlist
+Rule 2     commandlist -> command NEWLINE
+Rule 3     command -> ACTION SPACE paramlist
+Rule 4     command -> ACTION
+Rule 5     command -> NAME ASSIGN param
+Rule 6     paramlist -> param SPACE paramlist
+Rule 7     paramlist -> param
+Rule 8     param -> STRING
+Rule 9     param -> INT
+Rule 10    param -> NAME
+Rule 11    param -> ACTION
+
+Terminals, with rules where they appear
+
+ACTION               : 3 4 11
+ASSIGN               : 5
+BEGIN                : 
+COMMENT              : 
+CSEP                 : 1
+ELSE                 : 
+END                  : 
+FALSE                : 
+FI                   : 
+IF                   : 
+INT                  : 9
+LET                  : 
+LPAREN               : 
+NAME                 : 5 10
+NEWLINE              : 2
+RPAREN               : 
+SPACE                : 3 6
+STRING               : 8
+THEN                 : 
+TRUE                 : 
+error                : 
+
+Nonterminals, with rules where they appear
+
+command              : 1 2
+commandlist          : 1 0
+param                : 5 6 7
+paramlist            : 3 6
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . commandlist
+    (1) commandlist -> . command CSEP commandlist
+    (2) commandlist -> . command NEWLINE
+    (3) command -> . ACTION SPACE paramlist
+    (4) command -> . ACTION
+    (5) command -> . NAME ASSIGN param
+
+    ACTION          shift and go to state 3
+    NAME            shift and go to state 4
+
+    commandlist                    shift and go to state 1
+    command                        shift and go to state 2
+
+state 1
+
+    (0) S' -> commandlist .
+
+
+
+state 2
+
+    (1) commandlist -> command . CSEP commandlist
+    (2) commandlist -> command . NEWLINE
+
+    CSEP            shift and go to state 5
+    NEWLINE         shift and go to state 6
+
+
+state 3
+
+    (3) command -> ACTION . SPACE paramlist
+    (4) command -> ACTION .
+
+    SPACE           shift and go to state 7
+    CSEP            reduce using rule 4 (command -> ACTION .)
+    NEWLINE         reduce using rule 4 (command -> ACTION .)
+
+
+state 4
+
+    (5) command -> NAME . ASSIGN param
+
+    ASSIGN          shift and go to state 8
+
+
+state 5
+
+    (1) commandlist -> command CSEP . commandlist
+    (1) commandlist -> . command CSEP commandlist
+    (2) commandlist -> . command NEWLINE
+    (3) command -> . ACTION SPACE paramlist
+    (4) command -> . ACTION
+    (5) command -> . NAME ASSIGN param
+
+    ACTION          shift and go to state 3
+    NAME            shift and go to state 4
+
+    command                        shift and go to state 2
+    commandlist                    shift and go to state 9
+
+state 6
+
+    (2) commandlist -> command NEWLINE .
+
+    $end            reduce using rule 2 (commandlist -> command NEWLINE .)
+
+
+state 7
+
+    (3) command -> ACTION SPACE . paramlist
+    (6) paramlist -> . param SPACE paramlist
+    (7) paramlist -> . param
+    (8) param -> . STRING
+    (9) param -> . INT
+    (10) param -> . NAME
+    (11) param -> . ACTION
+
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    NAME            shift and go to state 15
+    ACTION          shift and go to state 10
+
+    paramlist                      shift and go to state 11
+    param                          shift and go to state 12
+
+state 8
+
+    (5) command -> NAME ASSIGN . param
+    (8) param -> . STRING
+    (9) param -> . INT
+    (10) param -> . NAME
+    (11) param -> . ACTION
+
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    NAME            shift and go to state 15
+    ACTION          shift and go to state 10
+
+    param                          shift and go to state 16
+
+state 9
+
+    (1) commandlist -> command CSEP commandlist .
+
+    $end            reduce using rule 1 (commandlist -> command CSEP commandlist .)
+
+
+state 10
+
+    (11) param -> ACTION .
+
+    SPACE           reduce using rule 11 (param -> ACTION .)
+    CSEP            reduce using rule 11 (param -> ACTION .)
+    NEWLINE         reduce using rule 11 (param -> ACTION .)
+
+
+state 11
+
+    (3) command -> ACTION SPACE paramlist .
+
+    CSEP            reduce using rule 3 (command -> ACTION SPACE paramlist .)
+    NEWLINE         reduce using rule 3 (command -> ACTION SPACE paramlist .)
+
+
+state 12
+
+    (6) paramlist -> param . SPACE paramlist
+    (7) paramlist -> param .
+
+    SPACE           shift and go to state 17
+    CSEP            reduce using rule 7 (paramlist -> param .)
+    NEWLINE         reduce using rule 7 (paramlist -> param .)
+
+
+state 13
+
+    (8) param -> STRING .
+
+    SPACE           reduce using rule 8 (param -> STRING .)
+    CSEP            reduce using rule 8 (param -> STRING .)
+    NEWLINE         reduce using rule 8 (param -> STRING .)
+
+
+state 14
+
+    (9) param -> INT .
+
+    SPACE           reduce using rule 9 (param -> INT .)
+    CSEP            reduce using rule 9 (param -> INT .)
+    NEWLINE         reduce using rule 9 (param -> INT .)
+
+
+state 15
+
+    (10) param -> NAME .
+
+    SPACE           reduce using rule 10 (param -> NAME .)
+    CSEP            reduce using rule 10 (param -> NAME .)
+    NEWLINE         reduce using rule 10 (param -> NAME .)
+
+
+state 16
+
+    (5) command -> NAME ASSIGN param .
+
+    CSEP            reduce using rule 5 (command -> NAME ASSIGN param .)
+    NEWLINE         reduce using rule 5 (command -> NAME ASSIGN param .)
+
+
+state 17
+
+    (6) paramlist -> param SPACE . paramlist
+    (6) paramlist -> . param SPACE paramlist
+    (7) paramlist -> . param
+    (8) param -> . STRING
+    (9) param -> . INT
+    (10) param -> . NAME
+    (11) param -> . ACTION
+
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    NAME            shift and go to state 15
+    ACTION          shift and go to state 10
+
+    param                          shift and go to state 12
+    paramlist                      shift and go to state 18
+
+state 18
+
+    (6) paramlist -> param SPACE paramlist .
+
+    CSEP            reduce using rule 6 (paramlist -> param SPACE paramlist .)
+    NEWLINE         reduce using rule 6 (paramlist -> param SPACE paramlist .)
+

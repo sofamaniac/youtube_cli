@@ -1,10 +1,10 @@
 import youtube
-import screen
+import gui.newScreen as screen
 import player
 
-from screen import Directions, CurseString
+from gui.newScreen import Directions, CurseString
 import curses
-import textbox
+import gui.textbox as textbox
 
 import time
 
@@ -14,14 +14,38 @@ class Window:
         self.selected = 0
         self.win = win
         self.title = CurseString(title)
-        self.title.setAttr(curses.A_BOLD)
+        #self.title.setAttr(curses.A_BOLD)
         self.page = 0
         self.visible = True
 
     def drawBox(self, color=screen.COLOR_BORDER):
-        self.win.attrset(curses.color_pair(color))
-        self.win.box()
-        self.win.attrset(0)
+        #self.win.attrset(curses.color_pair(color))
+        #self.win.box()
+        #self.win.attrset(0)
+        pass
+
+    def set_fg_rgba(self, c):
+        self.win.set_fg_rgb8_clipped(c[0], c[1], c[2])
+        self.win.set_fg_alpha(c[3])
+
+    def set_bg_rgba(self, c):
+        self.win.set_bg_rgb8_clipped(c[0], c[1], c[2])
+        self.win.set_bg_alpha(c[3])
+
+    def drawString(self, string, y, x, width, fg=screen.TEXT_COLOR, bg=screen.BACKGROUND_COLOR, 
+            bold=False, standout=False):
+        self.set_fg_rgba(fg)
+        # self.set_bg_rgba(bg)
+
+        if standout:
+            self.win.on_styles(0x00800000)
+
+        string.drawToWin(self.win, y, x, width)
+        if standout:
+            self.win.off_styles(0x00800000)
+        #self.win.set_bg_default()
+        self.win.set_fg_default()
+
 
     def update(self, drawSelect=True, to_display=[]):
         if not self.visible:
@@ -32,7 +56,7 @@ class Window:
         self.drawBox()
 
         off = self.page * page_size
-        width = self.win.getmaxyx()[1]-2
+        width = self.win.dim_yx()[1]-2
 
         self.title.drawToWin(self.win, 0, 1, width) 
 
@@ -41,12 +65,15 @@ class Window:
 
         for i in range(len(to_display)):
             if i + off == self.selected and drawSelect:
-                to_display[i].setAttr(curses.A_STANDOUT)
-            to_display[i].drawToWin(self.win, i+1, 1, width)
-        self.win.noutrefresh()
+                self.drawString(to_display[i], i+1, 1, width, standout=True)
+                continue
+            self.drawString(to_display[i], i+1, 1, width)
+            #to_display[i].drawToWin(self.win, i+1, 1, width)
+        #self.win.noutrefresh()
 
     def clear(self, refresh=True):
-        self.win.clear()
+        return
+        #self.win.erase()
         if refresh:
             self.win.refresh()
 
@@ -71,7 +98,7 @@ class Window:
         return self.source.getAtIndex(self.selected)
 
     def getPageSize(self):
-        return self.win.getmaxyx()[0] - 2
+        return self.win.dim_y()
 
     def getContent(self, start, end):
         content = self.source.getItemList(start, end)
@@ -90,7 +117,7 @@ class Window:
 
 class Application:
     def __init__(self, stdscr):
-        self.scr = screen.Screen(stdscr)
+        self.scr = screen.Screen()
 
         self.contentWindow = Window(self.scr.contentWin, "Videos")
 
@@ -147,6 +174,9 @@ class Application:
 
     @repeat.setter
     def repeat(self, value):
+        possible_values = ['No', 'Song', 'Playlist']
+        if value not in possible_values:
+            return
         self._repeat = value
         self.player.set_repeat(self.repeat)
 
