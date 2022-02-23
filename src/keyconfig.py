@@ -1,5 +1,5 @@
 import curses
-from screen import Directions
+from gui.screen import Directions
 
 class KeyConfiguration:
     def __init__(self, app):

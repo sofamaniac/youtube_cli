@@ -1,4 +1,4 @@
-from screen import Screen, Directions
+from gui.screen import Screen, Directions
 
 from application import Application
 from keylistener import Listener
@@ -7,7 +7,7 @@ import curses
 
 from keyconfig import KeyConfiguration
 
-import primitives
+import parser.primitives as primitives
 
 def initialize(stdscr):
     app = Application(stdscr)

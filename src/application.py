@@ -1,10 +1,10 @@
 import youtube
-import screen
+import gui.screen as screen
 import player
 
-from screen import Directions, CurseString
+from gui.screen import Directions, CurseString
 import curses
-import textbox
+import gui.textbox as textbox
 
 import time
 
