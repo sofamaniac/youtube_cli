@@ -7,11 +7,14 @@ import curses
 
 from keyconfig import KeyConfiguration
 
+import primitives
+
 def initialize(stdscr):
     app = Application(stdscr)
     config = KeyConfiguration(app)
     listener = Listener(app)
     listener.start()
+    primitives.init(app)
     return main(app, listener, config)
 
 def main(app, listener, config):
