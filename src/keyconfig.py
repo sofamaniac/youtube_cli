@@ -43,6 +43,8 @@ class KeyConfiguration:
             "7": [app.seekPercent, 70],
             "8": [app.seekPercent, 80],
             "9": [app.seekPercent, 90],
+
+            ":": [app.command]
         }
 
         self.setupConfig()

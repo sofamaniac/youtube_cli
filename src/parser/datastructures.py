@@ -156,9 +156,10 @@ class Assignment:
         return r
 
 class Block:
-    def __init__(self, commands=[], continuation=None):
+    def __init__(self, commands=[], continuation=None, scope=None):
         self.commands = commands
         self.continuation = continuation
+        self.scope = scope
 
     def __str__(self):
         s = ""
@@ -166,3 +167,54 @@ class Block:
             s += str(c)
         return "{\n" + s +"}\n"
 
+    def evaluate(self):
+        last_return = None
+        for command in self.commands:
+            command.scope = self.scope
+            last_return = command.evaluate()
+
+        if self.continuation:
+            return self.continuation.evaluate()
+        return last_return
+
+class Conditional:
+    def __init__(self, condition, if_block, else_block=None, scope=None, continuation=None):
+
+        self.condition = condition
+        self.if_block = if_block
+        self.else_block = else_block
+
+        self.scope = None
+        self.continuation = None
+
+    def evaluate(self):
+        if self.condition.evaluate():
+            self.if_block.evaluate()
+        else:
+            self.else_block.evaluate()
+
+class Function:
+    def __init__(self, name, argsName, block, scope=None, continuation=None):
+
+        self.name = name
+        self.args = argsName
+        self.scope = Scope(parent=scope)
+        self.arity = len(self.args)
+        self.continuation = continuation
+        self.block = block
+        self.block.scope = self.scope
+        self.vars = []
+
+        for arg in argsName:
+            self.vars.append(Variable(arg, scope=self.scope))
+
+        if scope:
+            scope.addFun(self)
+
+    def function(self, *args):
+        for i, arg in enumerate(args):
+            self.vars[i].assign(arg.evaluate())
+        self.block.evaluate()
+
+    def evaluate(self):
+        return self.function

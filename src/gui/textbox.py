@@ -5,7 +5,7 @@ import curses.ascii
 class Textbox:
     def __init__(self, win):
         self.win = win
-        #self.win.keypad(True)  # needed to interpret special keys such as arrows and backspace
+        self.win.keypad(True)  # needed to interpret special keys such as arrows and backspace
         self.content = ['\0']
         self.editingpos = 0  # position of the letter right in front of the cursor
 
@@ -19,7 +19,7 @@ class Textbox:
 
             if c == curses.ascii.BEL or c == curses.ascii.NL:
                 return
-            elif c == curses.KEY_BACKSPACE or c == curses.ascii.BS:
+            elif c == curses.KEY_DC or c == curses.KEY_BACKSPACE or c == curses.ascii.BS:
                 if len(self.content) > 0:
                     self.content.pop(self.editingpos)
                     self.editingpos -= 1

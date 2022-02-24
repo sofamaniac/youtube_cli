@@ -102,6 +102,8 @@ class Screen:
         self.addPlaylistWin = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
         self.center(self.addPlaylistWin)
 
+        self.commandField = curses.newwin(1, PLAYER_WIDTH, self.max_y -1, 0)
+
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)
         curses.init_pair(COLOR_TEXT, GREY, -1)  # -1 for terminal normal background
@@ -112,14 +114,19 @@ class Screen:
         curses.init_color(10, 800, 300, 300)
         curses.init_pair(COLOR_SEG, 10, -1)
 
-    def center(self, window):
-        max_x = curses.COLS
-        max_y = curses.LINES
+    @property
+    def max_x(self):
+        return curses.COLS
+    
+    @property
+    def max_y(self):
+        return curses.LINES
 
+    def center(self, window):
         height, width = window.getmaxyx()
 
-        new_x = (max_x - width) // 2
-        new_y = (max_y - height) // 2
+        new_x = (self.max_x - width) // 2
+        new_y = (self.max_y - height) // 2
 
         window.resize(1, 1)
         window.mvwin(new_y, new_x)

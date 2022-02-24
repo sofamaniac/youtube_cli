@@ -11,6 +11,7 @@ reserved = {
         'let'   : 'LET',
         'true'  : 'TRUE',
         'false' : 'FALSE',
+        'fun'   : 'FUN',
         }
 tokens = list(reserved.values()) + [
         'NAME', 'INT', 'STRING', 'ACTION', 

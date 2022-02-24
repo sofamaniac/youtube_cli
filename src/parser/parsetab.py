@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'ACTION ASSIGN BEGIN COMMENT CSEP ELSE END FALSE FI IF INT LET LPAREN NAME NEWLINE RPAREN SPACE STRING THEN TRUE\n    commandlist : command CSEP commandlist\n                | command NEWLINE\n    \n    command : ACTION SPACE paramlist\n            | ACTION\n    \n    command : NAME ASSIGN param\n    \n    paramlist : param SPACE paramlist\n    \n    paramlist : param\n    \n    param : STRING\n    \n    param : INT\n    \n    param : NAME\n    \n    param : ACTION\n    '
+_lr_signature = 'ACTION ASSIGN BEGIN COMMENT CSEP ELSE END FALSE FI FUN IF INT LET LPAREN NAME NEWLINE RPAREN SPACE STRING THEN TRUE\n    program : commandlist\n            | function\n            | program program\n    \n    commandlist : command CSEP commandlist\n                | command NEWLINE\n    \n    command : ACTION SPACE paramlist\n            | ACTION\n    \n    command : param\n    \n    command : NAME ASSIGN param\n    \n    paramlist : param SPACE paramlist\n    \n    paramlist : param\n    \n    param : STRING\n    \n    param : INT\n    \n    param : NAME\n    \n    param : ACTION\n    \n    param : LPAREN commandlist RPAREN\n    \n    block : BEGIN commandlist END\n    \n    function : FUN NAME arglist BEGIN program END\n    \n    arglist : NAME arglist\n            | NAME\n    '
     
-_lr_action_items = {'ACTION':([0,5,7,8,17,],[3,3,10,10,10,]),'NAME':([0,5,7,8,17,],[4,4,15,15,15,]),'$end':([1,6,9,],[0,-2,-1,]),'CSEP':([2,3,10,11,12,13,14,15,16,18,],[5,-4,-11,-3,-7,-8,-9,-10,-5,-6,]),'NEWLINE':([2,3,10,11,12,13,14,15,16,18,],[6,-4,-11,-3,-7,-8,-9,-10,-5,-6,]),'SPACE':([3,10,12,13,14,15,],[7,-11,17,-8,-9,-10,]),'ASSIGN':([4,],[8,]),'STRING':([7,8,17,],[13,13,13,]),'INT':([7,8,17,],[14,14,14,]),}
+_lr_action_items = {'FUN':([0,1,2,3,12,14,19,29,31,33,],[5,5,-1,-2,5,-5,-4,5,5,-18,]),'ACTION':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[7,7,-1,-2,7,7,7,-5,24,24,-4,7,24,7,-18,]),'NAME':([0,1,2,3,5,11,12,13,14,15,16,17,19,20,29,30,31,33,],[6,6,-1,-2,15,6,6,6,-5,20,22,22,-4,20,6,22,6,-18,]),'STRING':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[9,9,-1,-2,9,9,9,-5,9,9,-4,9,9,9,-18,]),'INT':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[10,10,-1,-2,10,10,10,-5,10,10,-4,10,10,10,-18,]),'LPAREN':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[11,11,-1,-2,11,11,11,-5,11,11,-4,11,11,11,-18,]),'$end':([1,2,3,12,14,19,33,],[0,-1,-2,-3,-5,-4,-18,]),'END':([2,3,12,14,19,31,33,],[-1,-2,-3,-5,-4,33,-18,]),'CSEP':([4,6,7,8,9,10,22,23,24,25,26,27,32,],[13,-14,-7,-8,-12,-13,-14,-9,-15,-6,-11,-16,-10,]),'NEWLINE':([4,6,7,8,9,10,22,23,24,25,26,27,32,],[14,-14,-7,-8,-12,-13,-14,-9,-15,-6,-11,-16,-10,]),'ASSIGN':([6,],[16,]),'SPACE':([7,9,10,22,24,26,27,],[17,-12,-13,-14,-15,30,-16,]),'RPAREN':([14,18,19,],[-5,27,-4,]),'BEGIN':([20,21,28,],[-20,29,-19,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'commandlist':([0,5,],[1,9,]),'command':([0,5,],[2,2,]),'paramlist':([7,17,],[11,18,]),'param':([7,8,17,],[12,16,12,]),}
+_lr_goto_items = {'program':([0,1,12,29,31,],[1,12,12,31,12,]),'commandlist':([0,1,11,12,13,29,31,],[2,2,18,2,19,2,2,]),'function':([0,1,12,29,31,],[3,3,3,3,3,]),'command':([0,1,11,12,13,29,31,],[4,4,4,4,4,4,4,]),'param':([0,1,11,12,13,16,17,29,30,31,],[8,8,8,8,8,23,26,8,26,8,]),'arglist':([15,20,],[21,28,]),'paramlist':([17,30,],[25,32,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -26,16 +26,25 @@ for _k, _v in _lr_goto_items.items():
        _lr_goto[_x][_k] = _y
 del _lr_goto_items
 _lr_productions = [
-  ("S' -> commandlist","S'",1,None,None,None),
-  ('commandlist -> command CSEP commandlist','commandlist',3,'p_commad_list','parser.py',36),
-  ('commandlist -> command NEWLINE','commandlist',2,'p_commad_list','parser.py',37),
-  ('command -> ACTION SPACE paramlist','command',3,'p_command_action_param','parser.py',45),
-  ('command -> ACTION','command',1,'p_command_action_param','parser.py',46),
-  ('command -> NAME ASSIGN param','command',3,'p_command_assign','parser.py',53),
-  ('paramlist -> param SPACE paramlist','paramlist',3,'p_paramlist_rec','parser.py',59),
-  ('paramlist -> param','paramlist',1,'p_paramlist_base','parser.py',66),
-  ('param -> STRING','param',1,'p_param_string','parser.py',72),
-  ('param -> INT','param',1,'p_param_int','parser.py',78),
-  ('param -> NAME','param',1,'p_param_var','parser.py',84),
-  ('param -> ACTION','param',1,'p_param_action','parser.py',90),
+  ("S' -> program","S'",1,None,None,None),
+  ('program -> commandlist','program',1,'p_program','parser.py',45),
+  ('program -> function','program',1,'p_program','parser.py',46),
+  ('program -> program program','program',2,'p_program','parser.py',47),
+  ('commandlist -> command CSEP commandlist','commandlist',3,'p_commad_list','parser.py',57),
+  ('commandlist -> command NEWLINE','commandlist',2,'p_commad_list','parser.py',58),
+  ('command -> ACTION SPACE paramlist','command',3,'p_command_action_param','parser.py',66),
+  ('command -> ACTION','command',1,'p_command_action_param','parser.py',67),
+  ('command -> param','command',1,'p_command_param','parser.py',74),
+  ('command -> NAME ASSIGN param','command',3,'p_command_assign','parser.py',80),
+  ('paramlist -> param SPACE paramlist','paramlist',3,'p_paramlist_rec','parser.py',86),
+  ('paramlist -> param','paramlist',1,'p_paramlist_base','parser.py',93),
+  ('param -> STRING','param',1,'p_param_string','parser.py',99),
+  ('param -> INT','param',1,'p_param_int','parser.py',105),
+  ('param -> NAME','param',1,'p_param_var','parser.py',111),
+  ('param -> ACTION','param',1,'p_param_action','parser.py',117),
+  ('param -> LPAREN commandlist RPAREN','param',3,'p_param_command_list','parser.py',123),
+  ('block -> BEGIN commandlist END','block',3,'p_block','parser.py',129),
+  ('function -> FUN NAME arglist BEGIN program END','function',6,'p_function','parser.py',135),
+  ('arglist -> NAME arglist','arglist',2,'p_arglist','parser.py',141),
+  ('arglist -> NAME','arglist',1,'p_arglist','parser.py',142),
 ]

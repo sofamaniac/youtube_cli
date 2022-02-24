@@ -8,6 +8,8 @@ import gui.textbox as textbox
 
 import time
 
+from parser.primitives import evaluate
+
 class Application:
     def __init__(self, stdscr):
         self.scr = screen.Screen(stdscr)
@@ -32,6 +34,7 @@ class Application:
         self.searchPanel = Panel(self.scr.searchWin, "Search")
         self.inSearch = False
         self.textbox = textbox.Textbox(self.scr.searchField)
+        self.commandField = textbox.Textbox(self.scr.commandField)
 
         self.addToPlaylistPanel = Panel(self.scr.addPlaylistWin, "Add to playlist")
         self.addToPlaylistPanel.source = self.playlistPanel.source
@@ -126,6 +129,14 @@ class Application:
         self.searchPanel.clear()
         self.inSearch = False
         self.update()
+
+    def command(self):
+        self.commandField.reset()
+        self.commandField.edit(update=self.update)
+        command = self.commandField.gather()
+        if command:
+            evaluate(command)
+
 
     def update(self):
 
