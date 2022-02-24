@@ -20,8 +20,10 @@ api_version = "v3"
 cache_path = data_path + "cache.json"
 
 MAX_RESULTS = 50
+youtube = None
 
-def get_authenticated_service(refresh=False, ouput=None):
+def get_authenticated_service(refresh=False):
+    global youtube
     path = data_path + "CREDENTIALS_PICKLE_FILE"
     if not refresh and os.path.exists(path):
         with open(path, "rb") as f:
@@ -33,12 +35,12 @@ def get_authenticated_service(refresh=False, ouput=None):
         credentials = flow.run_local_server()
         with open(path, "wb") as f:
             pickle.dump(credentials, f)
-    return googleapiclient.discovery.build(
+    youtube = googleapiclient.discovery.build(
         api_service_name, api_version, credentials=credentials
     )
 
+get_authenticated_service()
 
-youtube = get_authenticated_service()
 # ================== #
 
 
@@ -46,6 +48,7 @@ youtube = get_authenticated_service()
 import sponsorblock as sb
 sponsorBlock = sb.Client()
 useSponsorBlock = True
+sponsorBlockTimeout = 5  # timeout in seconds
 toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 # ==================== #
 
@@ -120,7 +123,7 @@ class Video:
 
     def getSkipSegment(self):
         try:
-            self.skipSegments = run_with_limited_time(self._getSkipSegment, (), {}, 5)
+            self.skipSegments = run_with_limited_time(self._getSkipSegment, (), {}, sponsorBlockTimeout)
         except (TimeoutException) as _:
             self.skipSegments = []
 
@@ -164,9 +167,9 @@ class ListItems:
     def request(self, who, **what):
         try:
             result = who(**what).execute()
-        except google.auth.exceptions.RefreshError as _:
+        except google.auth.exceptions.RefreshError as e:
             get_authenticated_service(refresh=True)
-            result = who(**what).execute()
+            raise e
         return result
 
     def loadNextPage(self):
@@ -242,12 +245,16 @@ class Playlist(ListItems):
 
     def loadNextPage(self):
         to_request = "id, snippet, status"
-        response = self.request(youtube.playlistItems().list,
-            part=to_request,
-            playlistId=self.id,
-            maxResults=MAX_RESULTS,
-            pageToken=self.nextPage,
-        )
+        args = { "part": to_request,
+                "playlistId": self.id,
+                "maxResults": MAX_RESULTS,
+                "pageToken": self.nextPage,
+                }
+        try:
+            response = self.request(youtube.playlistItems().list, **args)
+        except google.auth.exceptions.RefreshError as _:
+            response = self.request(youtube.playlistItems().list, **args)
+
         for v in response["items"]:
             # exclude video that are not available to watch (hopefully)
             if not self.checkVideoAvailability(v):  
@@ -307,17 +314,19 @@ class Playlist(ListItems):
             self.currentIndex += 1
 
     def add(self, video):
-        self.request(youtube.playlistItems().insert,
-            part="snippet",
-            body={
-                "snippet": {
-                    "playlistId": self.id,
-                    "resourceId": {"kind": "youtube#video", "videoId": video.id},
+        args = { "part": "snippet",
+                "body": {
+                    "snippet": {
+                        "playlistId": self.id,
+                        "resourceId": {"kind": "youtube#video", "videoId": video.id},
+                    },
+                    "position": 0,
                 },
-                "position": 0,
-            },
-        )
-
+        }
+        try:
+            self.request(youtube.playlistItems().insert,**args)
+        except google.auth.exceptions.RefreshError as _:
+            self.request(youtube.playlistItems().insert,**args)
         self.reload()  # we refresh the content
 
     def remove(self, video):
@@ -325,7 +334,10 @@ class Playlist(ListItems):
             if v.id == video.id:
                 playlistItemId = v.playlistItemId
                 break
-        self.request(youtube.playlistItems().delete, id=playlistItemId)
+        try:
+            self.request(youtube.playlistItems().delete, id=playlistItemId)
+        except google.auth.exceptions.RefreshError as _:
+            self.request(youtube.playlistItems().delete, id=playlistItemId)
         self.reload()
 
     def __str__(self):
@@ -343,12 +355,16 @@ class LikedVideos(Playlist):
 
     def loadNextPage(self):
         to_request = "id, snippet, status"
-        response = self.request(youtube.videos().list,
-            part=to_request,
-            myRating="like",
-            maxResults=MAX_RESULTS,
-            pageToken=self.nextPage,
-        )
+        args = { "part": to_request,
+                "myRating": "like",
+                "maxResults": MAX_RESULTS,
+                "pageToken": self.nextPage,
+                }
+        try:
+            response = self.request(youtube.videos().list, **args)
+        except google.auth.exceptions.RefreshError as _:
+            response = self.request(youtube.videos().list, **args)
+
         for v in response["items"]:
             # exclude video that are not available to watch (hopefully)
             if not self.checkVideoAvailability(v):  
@@ -380,11 +396,17 @@ class LikedVideos(Playlist):
             return self.size - 1
 
     def add(self, video):
-        self.request(youtube.Videos.rate, id=video.id, rating="like")
+        try:
+            self.request(youtube.Videos.rate, id=video.id, rating="like")
+        except google.auth.exceptions.RefreshError as _:
+            self.request(youtube.Videos.rate, id=video.id, rating="like")
         self.reload()  # we refresh the content
 
     def remove(self, video):
-        self.request(youtube.Videos.rate, id=video.id, rating="none")
+        try:
+            self.request(youtube.Videos.rate, id=video.id, rating="none")
+        except google.auth.exceptions.RefreshError as _:
+            self.request(youtube.Videos.rate, id=video.id, rating="none")
         self.reload()  # we refresh the content
 
 
@@ -398,12 +420,16 @@ class PlaylistList(ListItems):
         self.loadAll()
 
     def loadNextPage(self):
-        response = self.request(youtube.playlists().list,
-            part="id, snippet, contentDetails",
-            maxResults=MAX_RESULTS,
-            mine=True,
-            pageToken=self.nextPage,
-        )
+        args = {"part": "id, snippet, contentDetails",
+                "maxResults": MAX_RESULTS,
+                "mine": True,
+                "pageToken": self.nextPage,
+                }
+        try:
+            response = self.request(youtube.playlists().list, **args)
+        except google.auth.exceptions.RefreshError as _:
+            response = self.request(youtube.playlists().list, **args)
+
         for p in response["items"]:
             self.elements.append(
                 Playlist(
@@ -427,13 +453,18 @@ class Search(ListItems):
 
     def loadNextPage(self):
 
-        response = self.request(youtube.search().list,
-            part="id, snippet",
-            maxResults=MAX_RESULTS,
-            pageToken=self.nextPage,
-            q=self.query,
-            type="video",
-        )
+        args = {"part": "id, snippet",
+                "maxResults": MAX_RESULTS,
+                "pageToken": self.nextPage,
+                "q": self.query,
+                "type": "video",
+                }
+
+        try:
+            response = self.request(youtube.search().list, **args)
+        except google.auth.exceptions.RefreshError as _:
+            response = self.request(youtube.search().list, **args)
+
         for v in response["items"]:
             self.elements.append(
                 Video(
