@@ -1,6 +1,6 @@
 import curses
 import curses.ascii
-
+import _curses
 
 class Textbox:
     def __init__(self, win):
@@ -13,26 +13,31 @@ class Textbox:
         """the update parameter is an optional function to be called to update the screen while
         the process is occupied by the search box"""
         self.win.refresh()
+        size = self.win.getmaxyx()[1] - 2
         while True:
-            c = self.win.getch()
-            size = self.win.getmaxyx()[1] - 2
+            try:
+                c = self.win.get_wch()
+            except _curses.error:
+                continue
 
-            if c == curses.ascii.BEL or c == curses.ascii.NL:
-                return
-            elif c == curses.KEY_DC or c == curses.KEY_BACKSPACE or c == curses.ascii.BS:
-                if len(self.content) > 0:
-                    self.content.pop(self.editingpos)
+            if type(c) is int:
+                if c == -1:
+                    continue
+                if c == curses.ascii.BEL or c == curses.ascii.NL:
+                    return
+                elif c == curses.KEY_DC or c == curses.KEY_BACKSPACE or c == curses.ascii.BS:
+                    if len(self.content) > 0:
+                        self.content.pop(self.editingpos)
+                        self.editingpos -= 1
+                elif c == curses.KEY_LEFT:
                     self.editingpos -= 1
-            elif c == curses.KEY_LEFT:
-                self.editingpos -= 1
-                self.editingpos = max(0, self.editingpos)
-            elif c == curses.KEY_RIGHT:
+                    self.editingpos = max(0, self.editingpos)
+                elif c == curses.KEY_RIGHT:
+                    self.editingpos += 1
+                    self.editingpos = min(len(self.content)-1, self.editingpos)
+            else:
                 self.editingpos += 1
-                self.editingpos = min(len(self.content)-1, self.editingpos)
-            elif curses.ascii.isprint(c):
-                self.editingpos += 1
-                key = curses.keyname(c).decode()
-                self.content.insert(self.editingpos, key)
+                self.content.insert(self.editingpos, c)
             if c == curses.ascii.ESC:
                 self.reset()
                 return

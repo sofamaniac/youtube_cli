@@ -47,7 +47,7 @@ class KeyConfiguration:
             ":": [app.command]
         }
 
-        self.setupConfig()
+        #self.setupConfig()
 
     def setupConfig(self):
         actions = {}

@@ -20,7 +20,7 @@ def initialize(stdscr):
 def main(app, listener, config):
     last_event = None
     while True:
-        c = app.scr.stdscr.getch()
+        c = app.scr.get_wch()
         if c == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
             app.scr.resize()
         else:

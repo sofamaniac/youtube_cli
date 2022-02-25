@@ -3,6 +3,7 @@ from enum import Enum
 import sys
 import locale
 import wcwidth
+import _curses
 
 
 class Directions(Enum):
@@ -83,6 +84,7 @@ class Screen:
         locale.setlocale(locale.LC_NUMERIC, "C")
 
         curses.halfdelay(2)
+        curses.set_escdelay(20)
         curses.curs_set(0)
         curses.use_default_colors()
 
@@ -113,6 +115,12 @@ class Screen:
         
         curses.init_color(10, 800, 300, 300)
         curses.init_pair(COLOR_SEG, 10, -1)
+
+    def get_wch(self):
+        try:
+            return self.stdscr.get_wch()
+        except _curses.error:
+            return -1
 
     @property
     def max_x(self):
