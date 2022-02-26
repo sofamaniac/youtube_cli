@@ -49,6 +49,31 @@ class Scope:
     def addFun(self, fun):
         self.functions[fun.name] = fun
 
+class Command:
+    def __init__(self, action, args=[], continuation=None, scope=None):
+        self.action = action
+        self.args = args
+        self.continuation = continuation
+        self.scope = scope
+
+    def __str__(self):
+        s_args = ""
+        for a in self.args:
+            s_args += str(a) + ' '
+        if self.continuation:
+            return f"{self.action} {s_args};\n{self.continuation}"
+        else:
+            return f"{self.action} {s_args};\n"
+
+    def evaluate(self):
+        if len(self.args) != self.action.arity:
+            raise WrongArity(f"got {len(self.args)} argument(s) instead of {self.action.arity}")
+
+        if self.continuation:
+            self.action.function(*self.args)
+            return self.continuation.evaluate()
+        return self.action.function(*self.args)
+
 class Action:
 
     def __init__(self, name, function, arity, scope=None):
@@ -58,6 +83,32 @@ class Action:
         self.name = name
         if scope:
             self.scope.addFun(self)
+
+    def evaluate(self):
+        return self.function
+
+class Function:
+    def __init__(self, name, argsName, block, scope=None, continuation=None):
+
+        self.name = name
+        self.args = argsName
+        self.scope = Scope(parent=scope)
+        self.arity = len(self.args)
+        self.continuation = continuation
+        self.block = block
+        self.block.scope = self.scope
+        self.vars = []
+
+        for arg in argsName:
+            self.vars.append(Variable(arg, scope=self.scope))
+
+        if scope:
+            scope.addFun(self)
+
+    def function(self, *args):
+        for i, arg in enumerate(args):
+            self.vars[i].assign(arg.evaluate())
+        self.block.evaluate()
 
     def evaluate(self):
         return self.function
@@ -112,31 +163,6 @@ class Property(Variable):
     def __str__(self):
         return f"{self.name} = {self.getter()}"
 
-
-class Command:
-    def __init__(self, action, args=[], continuation=None, scope=None):
-        self.action = action
-        self.args = args
-        self.continuation = continuation
-        self.scope = scope
-
-    def __str__(self):
-        s_args = ""
-        for a in self.args:
-            s_args += str(a) + ' '
-        if self.continuation:
-            return f"{self.action} {s_args};\n{self.continuation}"
-        else:
-            return f"{self.action} {s_args};\n"
-
-    def evaluate(self):
-        if len(self.args) != self.action.arity:
-            raise WrongArity(f"got {len(self.args)} argument(s) instead of {self.action.arity}")
-
-        if self.continuation:
-            self.action.function(*self.args)
-            return self.continuation.evaluate()
-        return self.action.function(*self.args)
 
 class Assignment:
     def __init__(self, target, command, continuation=None, scope=None):
@@ -193,28 +219,3 @@ class Conditional:
         else:
             self.else_block.evaluate()
 
-class Function:
-    def __init__(self, name, argsName, block, scope=None, continuation=None):
-
-        self.name = name
-        self.args = argsName
-        self.scope = Scope(parent=scope)
-        self.arity = len(self.args)
-        self.continuation = continuation
-        self.block = block
-        self.block.scope = self.scope
-        self.vars = []
-
-        for arg in argsName:
-            self.vars.append(Variable(arg, scope=self.scope))
-
-        if scope:
-            scope.addFun(self)
-
-    def function(self, *args):
-        for i, arg in enumerate(args):
-            self.vars[i].assign(arg.evaluate())
-        self.block.evaluate()
-
-    def evaluate(self):
-        return self.function

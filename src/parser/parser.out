@@ -3,73 +3,76 @@ Created by PLY version 3.11 (http://www.dabeaz.com/ply)
 Unused terminals:
 
     COMMENT
-    ELSE
-    FALSE
     FI
-    IF
-    LET
     THEN
-    TRUE
 
 Grammar
 
 Rule 0     S' -> program
 Rule 1     program -> commandlist
 Rule 2     program -> function
-Rule 3     program -> program program
-Rule 4     commandlist -> command CSEP commandlist
-Rule 5     commandlist -> command NEWLINE
-Rule 6     command -> ACTION SPACE paramlist
-Rule 7     command -> ACTION
-Rule 8     command -> param
-Rule 9     command -> NAME ASSIGN param
-Rule 10    paramlist -> param SPACE paramlist
-Rule 11    paramlist -> param
-Rule 12    param -> STRING
-Rule 13    param -> INT
-Rule 14    param -> NAME
-Rule 15    param -> ACTION
-Rule 16    param -> LPAREN commandlist RPAREN
-Rule 17    block -> BEGIN commandlist END
-Rule 18    function -> FUN NAME arglist BEGIN program END
-Rule 19    arglist -> NAME arglist
-Rule 20    arglist -> NAME
+Rule 3     program -> if
+Rule 4     program -> program program
+Rule 5     commandlist -> command CSEP commandlist
+Rule 6     commandlist -> command NEWLINE
+Rule 7     command -> ACTION SPACE paramlist
+Rule 8     command -> ACTION
+Rule 9     command -> param
+Rule 10    command -> LET NAME ASSIGN param
+Rule 11    command -> NAME ASSIGN param
+Rule 12    paramlist -> param SPACE paramlist
+Rule 13    paramlist -> param
+Rule 14    param -> STRING
+Rule 15    param -> INT
+Rule 16    param -> NAME
+Rule 17    param -> ACTION
+Rule 18    param -> LPAREN commandlist RPAREN
+Rule 19    param -> bool
+Rule 20    bool -> TRUE
+Rule 21    bool -> FALSE
+Rule 22    block -> BEGIN commandlist END
+Rule 23    function -> FUN NAME arglist BEGIN program END
+Rule 24    arglist -> NAME arglist
+Rule 25    arglist -> NAME
+Rule 26    if -> IF LPAREN command RPAREN block ELSE block
 
 Terminals, with rules where they appear
 
-ACTION               : 6 7 15
-ASSIGN               : 9
-BEGIN                : 17 18
+ACTION               : 7 8 17
+ASSIGN               : 10 11
+BEGIN                : 22 23
 COMMENT              : 
-CSEP                 : 4
-ELSE                 : 
-END                  : 17 18
-FALSE                : 
+CSEP                 : 5
+ELSE                 : 26
+END                  : 22 23
+FALSE                : 21
 FI                   : 
-FUN                  : 18
-IF                   : 
-INT                  : 13
-LET                  : 
-LPAREN               : 16
-NAME                 : 9 14 18 19 20
-NEWLINE              : 5
-RPAREN               : 16
-SPACE                : 6 10
-STRING               : 12
+FUN                  : 23
+IF                   : 26
+INT                  : 15
+LET                  : 10
+LPAREN               : 18 26
+NAME                 : 10 11 16 23 24 25
+NEWLINE              : 6
+RPAREN               : 18 26
+SPACE                : 7 12
+STRING               : 14
 THEN                 : 
-TRUE                 : 
+TRUE                 : 20
 error                : 
 
 Nonterminals, with rules where they appear
 
-arglist              : 18 19
-block                : 
-command              : 4 5
-commandlist          : 1 4 16 17
+arglist              : 23 24
+block                : 26 26
+bool                 : 19
+command              : 5 6 26
+commandlist          : 1 5 18 22
 function             : 2
-param                : 8 9 10 11
-paramlist            : 6 10
-program              : 3 3 18 0
+if                   : 3
+param                : 9 10 11 12 13
+paramlist            : 7 12
+program              : 4 4 23 0
 
 Parsing method: LALR
 
@@ -78,76 +81,104 @@ state 0
     (0) S' -> . program
     (1) program -> . commandlist
     (2) program -> . function
-    (3) program -> . program program
-    (4) commandlist -> . command CSEP commandlist
-    (5) commandlist -> . command NEWLINE
-    (18) function -> . FUN NAME arglist BEGIN program END
-    (6) command -> . ACTION SPACE paramlist
-    (7) command -> . ACTION
-    (8) command -> . param
-    (9) command -> . NAME ASSIGN param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (3) program -> . if
+    (4) program -> . program program
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (23) function -> . FUN NAME arglist BEGIN program END
+    (26) if -> . IF LPAREN command RPAREN block ELSE block
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    FUN             shift and go to state 5
-    ACTION          shift and go to state 7
-    NAME            shift and go to state 6
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    LPAREN          shift and go to state 11
+    FUN             shift and go to state 6
+    IF              shift and go to state 8
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
     program                        shift and go to state 1
     commandlist                    shift and go to state 2
     function                       shift and go to state 3
-    command                        shift and go to state 4
-    param                          shift and go to state 8
+    if                             shift and go to state 4
+    command                        shift and go to state 5
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
 
 state 1
 
     (0) S' -> program .
-    (3) program -> program . program
+    (4) program -> program . program
     (1) program -> . commandlist
     (2) program -> . function
-    (3) program -> . program program
-    (4) commandlist -> . command CSEP commandlist
-    (5) commandlist -> . command NEWLINE
-    (18) function -> . FUN NAME arglist BEGIN program END
-    (6) command -> . ACTION SPACE paramlist
-    (7) command -> . ACTION
-    (8) command -> . param
-    (9) command -> . NAME ASSIGN param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (3) program -> . if
+    (4) program -> . program program
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (23) function -> . FUN NAME arglist BEGIN program END
+    (26) if -> . IF LPAREN command RPAREN block ELSE block
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    FUN             shift and go to state 5
-    ACTION          shift and go to state 7
-    NAME            shift and go to state 6
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    LPAREN          shift and go to state 11
+    FUN             shift and go to state 6
+    IF              shift and go to state 8
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
-    program                        shift and go to state 12
+    program                        shift and go to state 18
     commandlist                    shift and go to state 2
     function                       shift and go to state 3
-    command                        shift and go to state 4
-    param                          shift and go to state 8
+    if                             shift and go to state 4
+    command                        shift and go to state 5
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
 
 state 2
 
     (1) program -> commandlist .
 
     FUN             reduce using rule 1 (program -> commandlist .)
+    IF              reduce using rule 1 (program -> commandlist .)
     ACTION          reduce using rule 1 (program -> commandlist .)
+    LET             reduce using rule 1 (program -> commandlist .)
     NAME            reduce using rule 1 (program -> commandlist .)
     STRING          reduce using rule 1 (program -> commandlist .)
     INT             reduce using rule 1 (program -> commandlist .)
     LPAREN          reduce using rule 1 (program -> commandlist .)
+    TRUE            reduce using rule 1 (program -> commandlist .)
+    FALSE           reduce using rule 1 (program -> commandlist .)
     $end            reduce using rule 1 (program -> commandlist .)
     END             reduce using rule 1 (program -> commandlist .)
 
@@ -157,459 +188,811 @@ state 3
     (2) program -> function .
 
     FUN             reduce using rule 2 (program -> function .)
+    IF              reduce using rule 2 (program -> function .)
     ACTION          reduce using rule 2 (program -> function .)
+    LET             reduce using rule 2 (program -> function .)
     NAME            reduce using rule 2 (program -> function .)
     STRING          reduce using rule 2 (program -> function .)
     INT             reduce using rule 2 (program -> function .)
     LPAREN          reduce using rule 2 (program -> function .)
+    TRUE            reduce using rule 2 (program -> function .)
+    FALSE           reduce using rule 2 (program -> function .)
     $end            reduce using rule 2 (program -> function .)
     END             reduce using rule 2 (program -> function .)
 
 
 state 4
 
-    (4) commandlist -> command . CSEP commandlist
-    (5) commandlist -> command . NEWLINE
+    (3) program -> if .
 
-    CSEP            shift and go to state 13
-    NEWLINE         shift and go to state 14
+    FUN             reduce using rule 3 (program -> if .)
+    IF              reduce using rule 3 (program -> if .)
+    ACTION          reduce using rule 3 (program -> if .)
+    LET             reduce using rule 3 (program -> if .)
+    NAME            reduce using rule 3 (program -> if .)
+    STRING          reduce using rule 3 (program -> if .)
+    INT             reduce using rule 3 (program -> if .)
+    LPAREN          reduce using rule 3 (program -> if .)
+    TRUE            reduce using rule 3 (program -> if .)
+    FALSE           reduce using rule 3 (program -> if .)
+    $end            reduce using rule 3 (program -> if .)
+    END             reduce using rule 3 (program -> if .)
 
 
 state 5
 
-    (18) function -> FUN . NAME arglist BEGIN program END
+    (5) commandlist -> command . CSEP commandlist
+    (6) commandlist -> command . NEWLINE
 
-    NAME            shift and go to state 15
+    CSEP            shift and go to state 19
+    NEWLINE         shift and go to state 20
 
 
 state 6
 
-    (9) command -> NAME . ASSIGN param
-    (14) param -> NAME .
+    (23) function -> FUN . NAME arglist BEGIN program END
 
-    ASSIGN          shift and go to state 16
-    CSEP            reduce using rule 14 (param -> NAME .)
-    NEWLINE         reduce using rule 14 (param -> NAME .)
+    NAME            shift and go to state 21
 
 
 state 7
 
-    (6) command -> ACTION . SPACE paramlist
-    (7) command -> ACTION .
-    (15) param -> ACTION .
+    (11) command -> NAME . ASSIGN param
+    (16) param -> NAME .
 
-  ! reduce/reduce conflict for CSEP resolved using rule 7 (command -> ACTION .)
-  ! reduce/reduce conflict for NEWLINE resolved using rule 7 (command -> ACTION .)
-    SPACE           shift and go to state 17
-    CSEP            reduce using rule 7 (command -> ACTION .)
-    NEWLINE         reduce using rule 7 (command -> ACTION .)
-
-  ! CSEP            [ reduce using rule 15 (param -> ACTION .) ]
-  ! NEWLINE         [ reduce using rule 15 (param -> ACTION .) ]
+    ASSIGN          shift and go to state 22
+    CSEP            reduce using rule 16 (param -> NAME .)
+    NEWLINE         reduce using rule 16 (param -> NAME .)
+    RPAREN          reduce using rule 16 (param -> NAME .)
 
 
 state 8
 
-    (8) command -> param .
+    (26) if -> IF . LPAREN command RPAREN block ELSE block
 
-    CSEP            reduce using rule 8 (command -> param .)
-    NEWLINE         reduce using rule 8 (command -> param .)
+    LPAREN          shift and go to state 23
 
 
 state 9
 
-    (12) param -> STRING .
+    (18) param -> LPAREN . commandlist RPAREN
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    CSEP            reduce using rule 12 (param -> STRING .)
-    NEWLINE         reduce using rule 12 (param -> STRING .)
-    SPACE           reduce using rule 12 (param -> STRING .)
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
+    commandlist                    shift and go to state 24
+    command                        shift and go to state 5
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
 
 state 10
 
-    (13) param -> INT .
+    (7) command -> ACTION . SPACE paramlist
+    (8) command -> ACTION .
+    (17) param -> ACTION .
 
-    CSEP            reduce using rule 13 (param -> INT .)
-    NEWLINE         reduce using rule 13 (param -> INT .)
-    SPACE           reduce using rule 13 (param -> INT .)
+  ! reduce/reduce conflict for CSEP resolved using rule 8 (command -> ACTION .)
+  ! reduce/reduce conflict for NEWLINE resolved using rule 8 (command -> ACTION .)
+  ! reduce/reduce conflict for RPAREN resolved using rule 8 (command -> ACTION .)
+    SPACE           shift and go to state 25
+    CSEP            reduce using rule 8 (command -> ACTION .)
+    NEWLINE         reduce using rule 8 (command -> ACTION .)
+    RPAREN          reduce using rule 8 (command -> ACTION .)
+
+  ! CSEP            [ reduce using rule 17 (param -> ACTION .) ]
+  ! NEWLINE         [ reduce using rule 17 (param -> ACTION .) ]
+  ! RPAREN          [ reduce using rule 17 (param -> ACTION .) ]
 
 
 state 11
 
-    (16) param -> LPAREN . commandlist RPAREN
-    (4) commandlist -> . command CSEP commandlist
-    (5) commandlist -> . command NEWLINE
-    (6) command -> . ACTION SPACE paramlist
-    (7) command -> . ACTION
-    (8) command -> . param
-    (9) command -> . NAME ASSIGN param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (9) command -> param .
 
-    ACTION          shift and go to state 7
-    NAME            shift and go to state 6
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    LPAREN          shift and go to state 11
+    CSEP            reduce using rule 9 (command -> param .)
+    NEWLINE         reduce using rule 9 (command -> param .)
+    RPAREN          reduce using rule 9 (command -> param .)
 
-    commandlist                    shift and go to state 18
-    command                        shift and go to state 4
-    param                          shift and go to state 8
 
 state 12
 
-    (3) program -> program program .
-    (3) program -> program . program
-    (1) program -> . commandlist
-    (2) program -> . function
-    (3) program -> . program program
-    (4) commandlist -> . command CSEP commandlist
-    (5) commandlist -> . command NEWLINE
-    (18) function -> . FUN NAME arglist BEGIN program END
-    (6) command -> . ACTION SPACE paramlist
-    (7) command -> . ACTION
-    (8) command -> . param
-    (9) command -> . NAME ASSIGN param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (10) command -> LET . NAME ASSIGN param
 
-  ! shift/reduce conflict for FUN resolved as shift
-  ! shift/reduce conflict for ACTION resolved as shift
-  ! shift/reduce conflict for NAME resolved as shift
-  ! shift/reduce conflict for STRING resolved as shift
-  ! shift/reduce conflict for INT resolved as shift
-  ! shift/reduce conflict for LPAREN resolved as shift
-    $end            reduce using rule 3 (program -> program program .)
-    END             reduce using rule 3 (program -> program program .)
-    FUN             shift and go to state 5
-    ACTION          shift and go to state 7
-    NAME            shift and go to state 6
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    LPAREN          shift and go to state 11
+    NAME            shift and go to state 26
 
-  ! FUN             [ reduce using rule 3 (program -> program program .) ]
-  ! ACTION          [ reduce using rule 3 (program -> program program .) ]
-  ! NAME            [ reduce using rule 3 (program -> program program .) ]
-  ! STRING          [ reduce using rule 3 (program -> program program .) ]
-  ! INT             [ reduce using rule 3 (program -> program program .) ]
-  ! LPAREN          [ reduce using rule 3 (program -> program program .) ]
-
-    program                        shift and go to state 12
-    commandlist                    shift and go to state 2
-    function                       shift and go to state 3
-    command                        shift and go to state 4
-    param                          shift and go to state 8
 
 state 13
 
-    (4) commandlist -> command CSEP . commandlist
-    (4) commandlist -> . command CSEP commandlist
-    (5) commandlist -> . command NEWLINE
-    (6) command -> . ACTION SPACE paramlist
-    (7) command -> . ACTION
-    (8) command -> . param
-    (9) command -> . NAME ASSIGN param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (14) param -> STRING .
 
-    ACTION          shift and go to state 7
-    NAME            shift and go to state 6
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    LPAREN          shift and go to state 11
+    CSEP            reduce using rule 14 (param -> STRING .)
+    NEWLINE         reduce using rule 14 (param -> STRING .)
+    RPAREN          reduce using rule 14 (param -> STRING .)
+    SPACE           reduce using rule 14 (param -> STRING .)
 
-    command                        shift and go to state 4
-    commandlist                    shift and go to state 19
-    param                          shift and go to state 8
 
 state 14
 
-    (5) commandlist -> command NEWLINE .
+    (15) param -> INT .
 
-    FUN             reduce using rule 5 (commandlist -> command NEWLINE .)
-    ACTION          reduce using rule 5 (commandlist -> command NEWLINE .)
-    NAME            reduce using rule 5 (commandlist -> command NEWLINE .)
-    STRING          reduce using rule 5 (commandlist -> command NEWLINE .)
-    INT             reduce using rule 5 (commandlist -> command NEWLINE .)
-    LPAREN          reduce using rule 5 (commandlist -> command NEWLINE .)
-    $end            reduce using rule 5 (commandlist -> command NEWLINE .)
-    RPAREN          reduce using rule 5 (commandlist -> command NEWLINE .)
-    END             reduce using rule 5 (commandlist -> command NEWLINE .)
+    CSEP            reduce using rule 15 (param -> INT .)
+    NEWLINE         reduce using rule 15 (param -> INT .)
+    RPAREN          reduce using rule 15 (param -> INT .)
+    SPACE           reduce using rule 15 (param -> INT .)
 
 
 state 15
 
-    (18) function -> FUN NAME . arglist BEGIN program END
-    (19) arglist -> . NAME arglist
-    (20) arglist -> . NAME
+    (19) param -> bool .
 
-    NAME            shift and go to state 20
+    CSEP            reduce using rule 19 (param -> bool .)
+    NEWLINE         reduce using rule 19 (param -> bool .)
+    RPAREN          reduce using rule 19 (param -> bool .)
+    SPACE           reduce using rule 19 (param -> bool .)
 
-    arglist                        shift and go to state 21
 
 state 16
 
-    (9) command -> NAME ASSIGN . param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (20) bool -> TRUE .
 
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    NAME            shift and go to state 22
-    ACTION          shift and go to state 24
-    LPAREN          shift and go to state 11
+    CSEP            reduce using rule 20 (bool -> TRUE .)
+    NEWLINE         reduce using rule 20 (bool -> TRUE .)
+    RPAREN          reduce using rule 20 (bool -> TRUE .)
+    SPACE           reduce using rule 20 (bool -> TRUE .)
 
-    param                          shift and go to state 23
 
 state 17
 
-    (6) command -> ACTION SPACE . paramlist
-    (10) paramlist -> . param SPACE paramlist
-    (11) paramlist -> . param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (21) bool -> FALSE .
 
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    NAME            shift and go to state 22
-    ACTION          shift and go to state 24
-    LPAREN          shift and go to state 11
+    CSEP            reduce using rule 21 (bool -> FALSE .)
+    NEWLINE         reduce using rule 21 (bool -> FALSE .)
+    RPAREN          reduce using rule 21 (bool -> FALSE .)
+    SPACE           reduce using rule 21 (bool -> FALSE .)
 
-    paramlist                      shift and go to state 25
-    param                          shift and go to state 26
 
 state 18
 
-    (16) param -> LPAREN commandlist . RPAREN
+    (4) program -> program program .
+    (4) program -> program . program
+    (1) program -> . commandlist
+    (2) program -> . function
+    (3) program -> . if
+    (4) program -> . program program
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (23) function -> . FUN NAME arglist BEGIN program END
+    (26) if -> . IF LPAREN command RPAREN block ELSE block
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    RPAREN          shift and go to state 27
+  ! shift/reduce conflict for FUN resolved as shift
+  ! shift/reduce conflict for IF resolved as shift
+  ! shift/reduce conflict for ACTION resolved as shift
+  ! shift/reduce conflict for LET resolved as shift
+  ! shift/reduce conflict for NAME resolved as shift
+  ! shift/reduce conflict for STRING resolved as shift
+  ! shift/reduce conflict for INT resolved as shift
+  ! shift/reduce conflict for LPAREN resolved as shift
+  ! shift/reduce conflict for TRUE resolved as shift
+  ! shift/reduce conflict for FALSE resolved as shift
+    $end            reduce using rule 4 (program -> program program .)
+    END             reduce using rule 4 (program -> program program .)
+    FUN             shift and go to state 6
+    IF              shift and go to state 8
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
+  ! FUN             [ reduce using rule 4 (program -> program program .) ]
+  ! IF              [ reduce using rule 4 (program -> program program .) ]
+  ! ACTION          [ reduce using rule 4 (program -> program program .) ]
+  ! LET             [ reduce using rule 4 (program -> program program .) ]
+  ! NAME            [ reduce using rule 4 (program -> program program .) ]
+  ! STRING          [ reduce using rule 4 (program -> program program .) ]
+  ! INT             [ reduce using rule 4 (program -> program program .) ]
+  ! LPAREN          [ reduce using rule 4 (program -> program program .) ]
+  ! TRUE            [ reduce using rule 4 (program -> program program .) ]
+  ! FALSE           [ reduce using rule 4 (program -> program program .) ]
+
+    program                        shift and go to state 18
+    commandlist                    shift and go to state 2
+    function                       shift and go to state 3
+    if                             shift and go to state 4
+    command                        shift and go to state 5
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
 
 state 19
 
-    (4) commandlist -> command CSEP commandlist .
+    (5) commandlist -> command CSEP . commandlist
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    FUN             reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    ACTION          reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    NAME            reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    STRING          reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    INT             reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    LPAREN          reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    $end            reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    RPAREN          reduce using rule 4 (commandlist -> command CSEP commandlist .)
-    END             reduce using rule 4 (commandlist -> command CSEP commandlist .)
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
+    command                        shift and go to state 5
+    commandlist                    shift and go to state 27
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
 
 state 20
 
-    (19) arglist -> NAME . arglist
-    (20) arglist -> NAME .
-    (19) arglist -> . NAME arglist
-    (20) arglist -> . NAME
+    (6) commandlist -> command NEWLINE .
 
-    BEGIN           reduce using rule 20 (arglist -> NAME .)
-    NAME            shift and go to state 20
+    FUN             reduce using rule 6 (commandlist -> command NEWLINE .)
+    IF              reduce using rule 6 (commandlist -> command NEWLINE .)
+    ACTION          reduce using rule 6 (commandlist -> command NEWLINE .)
+    LET             reduce using rule 6 (commandlist -> command NEWLINE .)
+    NAME            reduce using rule 6 (commandlist -> command NEWLINE .)
+    STRING          reduce using rule 6 (commandlist -> command NEWLINE .)
+    INT             reduce using rule 6 (commandlist -> command NEWLINE .)
+    LPAREN          reduce using rule 6 (commandlist -> command NEWLINE .)
+    TRUE            reduce using rule 6 (commandlist -> command NEWLINE .)
+    FALSE           reduce using rule 6 (commandlist -> command NEWLINE .)
+    $end            reduce using rule 6 (commandlist -> command NEWLINE .)
+    RPAREN          reduce using rule 6 (commandlist -> command NEWLINE .)
+    END             reduce using rule 6 (commandlist -> command NEWLINE .)
 
-    arglist                        shift and go to state 28
 
 state 21
 
-    (18) function -> FUN NAME arglist . BEGIN program END
+    (23) function -> FUN NAME . arglist BEGIN program END
+    (24) arglist -> . NAME arglist
+    (25) arglist -> . NAME
 
-    BEGIN           shift and go to state 29
+    NAME            shift and go to state 28
 
+    arglist                        shift and go to state 29
 
 state 22
 
-    (14) param -> NAME .
+    (11) command -> NAME ASSIGN . param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    CSEP            reduce using rule 14 (param -> NAME .)
-    NEWLINE         reduce using rule 14 (param -> NAME .)
-    SPACE           reduce using rule 14 (param -> NAME .)
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    NAME            shift and go to state 30
+    ACTION          shift and go to state 32
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
+    param                          shift and go to state 31
+    bool                           shift and go to state 15
 
 state 23
 
-    (9) command -> NAME ASSIGN param .
+    (26) if -> IF LPAREN . command RPAREN block ELSE block
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    CSEP            reduce using rule 9 (command -> NAME ASSIGN param .)
-    NEWLINE         reduce using rule 9 (command -> NAME ASSIGN param .)
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
+    command                        shift and go to state 33
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
 
 state 24
 
-    (15) param -> ACTION .
+    (18) param -> LPAREN commandlist . RPAREN
 
-    CSEP            reduce using rule 15 (param -> ACTION .)
-    NEWLINE         reduce using rule 15 (param -> ACTION .)
-    SPACE           reduce using rule 15 (param -> ACTION .)
+    RPAREN          shift and go to state 34
 
 
 state 25
 
-    (6) command -> ACTION SPACE paramlist .
+    (7) command -> ACTION SPACE . paramlist
+    (12) paramlist -> . param SPACE paramlist
+    (13) paramlist -> . param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
 
-    CSEP            reduce using rule 6 (command -> ACTION SPACE paramlist .)
-    NEWLINE         reduce using rule 6 (command -> ACTION SPACE paramlist .)
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    NAME            shift and go to state 30
+    ACTION          shift and go to state 32
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
 
+    paramlist                      shift and go to state 35
+    param                          shift and go to state 36
+    bool                           shift and go to state 15
 
 state 26
 
-    (10) paramlist -> param . SPACE paramlist
-    (11) paramlist -> param .
+    (10) command -> LET NAME . ASSIGN param
 
-    SPACE           shift and go to state 30
-    CSEP            reduce using rule 11 (paramlist -> param .)
-    NEWLINE         reduce using rule 11 (paramlist -> param .)
+    ASSIGN          shift and go to state 37
 
 
 state 27
 
-    (16) param -> LPAREN commandlist RPAREN .
+    (5) commandlist -> command CSEP commandlist .
 
-    CSEP            reduce using rule 16 (param -> LPAREN commandlist RPAREN .)
-    NEWLINE         reduce using rule 16 (param -> LPAREN commandlist RPAREN .)
-    SPACE           reduce using rule 16 (param -> LPAREN commandlist RPAREN .)
+    FUN             reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    IF              reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    ACTION          reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    LET             reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    NAME            reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    STRING          reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    INT             reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    LPAREN          reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    TRUE            reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    FALSE           reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    $end            reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    RPAREN          reduce using rule 5 (commandlist -> command CSEP commandlist .)
+    END             reduce using rule 5 (commandlist -> command CSEP commandlist .)
 
 
 state 28
 
-    (19) arglist -> NAME arglist .
+    (24) arglist -> NAME . arglist
+    (25) arglist -> NAME .
+    (24) arglist -> . NAME arglist
+    (25) arglist -> . NAME
 
-    BEGIN           reduce using rule 19 (arglist -> NAME arglist .)
+    BEGIN           reduce using rule 25 (arglist -> NAME .)
+    NAME            shift and go to state 28
 
+    arglist                        shift and go to state 38
 
 state 29
 
-    (18) function -> FUN NAME arglist BEGIN . program END
-    (1) program -> . commandlist
-    (2) program -> . function
-    (3) program -> . program program
-    (4) commandlist -> . command CSEP commandlist
-    (5) commandlist -> . command NEWLINE
-    (18) function -> . FUN NAME arglist BEGIN program END
-    (6) command -> . ACTION SPACE paramlist
-    (7) command -> . ACTION
-    (8) command -> . param
-    (9) command -> . NAME ASSIGN param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (23) function -> FUN NAME arglist . BEGIN program END
 
-    FUN             shift and go to state 5
-    ACTION          shift and go to state 7
-    NAME            shift and go to state 6
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    LPAREN          shift and go to state 11
+    BEGIN           shift and go to state 39
 
-    program                        shift and go to state 31
-    commandlist                    shift and go to state 2
-    function                       shift and go to state 3
-    command                        shift and go to state 4
-    param                          shift and go to state 8
 
 state 30
 
-    (10) paramlist -> param SPACE . paramlist
-    (10) paramlist -> . param SPACE paramlist
-    (11) paramlist -> . param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (16) param -> NAME .
 
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    NAME            shift and go to state 22
-    ACTION          shift and go to state 24
-    LPAREN          shift and go to state 11
+    CSEP            reduce using rule 16 (param -> NAME .)
+    NEWLINE         reduce using rule 16 (param -> NAME .)
+    RPAREN          reduce using rule 16 (param -> NAME .)
+    SPACE           reduce using rule 16 (param -> NAME .)
 
-    param                          shift and go to state 26
-    paramlist                      shift and go to state 32
 
 state 31
 
-    (18) function -> FUN NAME arglist BEGIN program . END
-    (3) program -> program . program
-    (1) program -> . commandlist
-    (2) program -> . function
-    (3) program -> . program program
-    (4) commandlist -> . command CSEP commandlist
-    (5) commandlist -> . command NEWLINE
-    (18) function -> . FUN NAME arglist BEGIN program END
-    (6) command -> . ACTION SPACE paramlist
-    (7) command -> . ACTION
-    (8) command -> . param
-    (9) command -> . NAME ASSIGN param
-    (12) param -> . STRING
-    (13) param -> . INT
-    (14) param -> . NAME
-    (15) param -> . ACTION
-    (16) param -> . LPAREN commandlist RPAREN
+    (11) command -> NAME ASSIGN param .
 
-    END             shift and go to state 33
-    FUN             shift and go to state 5
-    ACTION          shift and go to state 7
-    NAME            shift and go to state 6
-    STRING          shift and go to state 9
-    INT             shift and go to state 10
-    LPAREN          shift and go to state 11
+    CSEP            reduce using rule 11 (command -> NAME ASSIGN param .)
+    NEWLINE         reduce using rule 11 (command -> NAME ASSIGN param .)
+    RPAREN          reduce using rule 11 (command -> NAME ASSIGN param .)
 
-    program                        shift and go to state 12
-    commandlist                    shift and go to state 2
-    function                       shift and go to state 3
-    command                        shift and go to state 4
-    param                          shift and go to state 8
 
 state 32
 
-    (10) paramlist -> param SPACE paramlist .
+    (17) param -> ACTION .
 
-    CSEP            reduce using rule 10 (paramlist -> param SPACE paramlist .)
-    NEWLINE         reduce using rule 10 (paramlist -> param SPACE paramlist .)
+    CSEP            reduce using rule 17 (param -> ACTION .)
+    NEWLINE         reduce using rule 17 (param -> ACTION .)
+    RPAREN          reduce using rule 17 (param -> ACTION .)
+    SPACE           reduce using rule 17 (param -> ACTION .)
 
 
 state 33
 
-    (18) function -> FUN NAME arglist BEGIN program END .
+    (26) if -> IF LPAREN command . RPAREN block ELSE block
 
-    FUN             reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
-    ACTION          reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
-    NAME            reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
-    STRING          reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
-    INT             reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
-    LPAREN          reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
-    $end            reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
-    END             reduce using rule 18 (function -> FUN NAME arglist BEGIN program END .)
+    RPAREN          shift and go to state 40
+
+
+state 34
+
+    (18) param -> LPAREN commandlist RPAREN .
+
+    CSEP            reduce using rule 18 (param -> LPAREN commandlist RPAREN .)
+    NEWLINE         reduce using rule 18 (param -> LPAREN commandlist RPAREN .)
+    RPAREN          reduce using rule 18 (param -> LPAREN commandlist RPAREN .)
+    SPACE           reduce using rule 18 (param -> LPAREN commandlist RPAREN .)
+
+
+state 35
+
+    (7) command -> ACTION SPACE paramlist .
+
+    CSEP            reduce using rule 7 (command -> ACTION SPACE paramlist .)
+    NEWLINE         reduce using rule 7 (command -> ACTION SPACE paramlist .)
+    RPAREN          reduce using rule 7 (command -> ACTION SPACE paramlist .)
+
+
+state 36
+
+    (12) paramlist -> param . SPACE paramlist
+    (13) paramlist -> param .
+
+    SPACE           shift and go to state 41
+    CSEP            reduce using rule 13 (paramlist -> param .)
+    NEWLINE         reduce using rule 13 (paramlist -> param .)
+    RPAREN          reduce using rule 13 (paramlist -> param .)
+
+
+state 37
+
+    (10) command -> LET NAME ASSIGN . param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
+
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    NAME            shift and go to state 30
+    ACTION          shift and go to state 32
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
+
+    param                          shift and go to state 42
+    bool                           shift and go to state 15
+
+state 38
+
+    (24) arglist -> NAME arglist .
+
+    BEGIN           reduce using rule 24 (arglist -> NAME arglist .)
+
+
+state 39
+
+    (23) function -> FUN NAME arglist BEGIN . program END
+    (1) program -> . commandlist
+    (2) program -> . function
+    (3) program -> . if
+    (4) program -> . program program
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (23) function -> . FUN NAME arglist BEGIN program END
+    (26) if -> . IF LPAREN command RPAREN block ELSE block
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
+
+    FUN             shift and go to state 6
+    IF              shift and go to state 8
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
+
+    program                        shift and go to state 43
+    commandlist                    shift and go to state 2
+    function                       shift and go to state 3
+    if                             shift and go to state 4
+    command                        shift and go to state 5
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
+
+state 40
+
+    (26) if -> IF LPAREN command RPAREN . block ELSE block
+    (22) block -> . BEGIN commandlist END
+
+    BEGIN           shift and go to state 45
+
+    block                          shift and go to state 44
+
+state 41
+
+    (12) paramlist -> param SPACE . paramlist
+    (12) paramlist -> . param SPACE paramlist
+    (13) paramlist -> . param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
+
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    NAME            shift and go to state 30
+    ACTION          shift and go to state 32
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
+
+    param                          shift and go to state 36
+    paramlist                      shift and go to state 46
+    bool                           shift and go to state 15
+
+state 42
+
+    (10) command -> LET NAME ASSIGN param .
+
+    CSEP            reduce using rule 10 (command -> LET NAME ASSIGN param .)
+    NEWLINE         reduce using rule 10 (command -> LET NAME ASSIGN param .)
+    RPAREN          reduce using rule 10 (command -> LET NAME ASSIGN param .)
+
+
+state 43
+
+    (23) function -> FUN NAME arglist BEGIN program . END
+    (4) program -> program . program
+    (1) program -> . commandlist
+    (2) program -> . function
+    (3) program -> . if
+    (4) program -> . program program
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (23) function -> . FUN NAME arglist BEGIN program END
+    (26) if -> . IF LPAREN command RPAREN block ELSE block
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
+
+    END             shift and go to state 47
+    FUN             shift and go to state 6
+    IF              shift and go to state 8
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
+
+    program                        shift and go to state 18
+    commandlist                    shift and go to state 2
+    function                       shift and go to state 3
+    if                             shift and go to state 4
+    command                        shift and go to state 5
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
+
+state 44
+
+    (26) if -> IF LPAREN command RPAREN block . ELSE block
+
+    ELSE            shift and go to state 48
+
+
+state 45
+
+    (22) block -> BEGIN . commandlist END
+    (5) commandlist -> . command CSEP commandlist
+    (6) commandlist -> . command NEWLINE
+    (7) command -> . ACTION SPACE paramlist
+    (8) command -> . ACTION
+    (9) command -> . param
+    (10) command -> . LET NAME ASSIGN param
+    (11) command -> . NAME ASSIGN param
+    (14) param -> . STRING
+    (15) param -> . INT
+    (16) param -> . NAME
+    (17) param -> . ACTION
+    (18) param -> . LPAREN commandlist RPAREN
+    (19) param -> . bool
+    (20) bool -> . TRUE
+    (21) bool -> . FALSE
+
+    ACTION          shift and go to state 10
+    LET             shift and go to state 12
+    NAME            shift and go to state 7
+    STRING          shift and go to state 13
+    INT             shift and go to state 14
+    LPAREN          shift and go to state 9
+    TRUE            shift and go to state 16
+    FALSE           shift and go to state 17
+
+    commandlist                    shift and go to state 49
+    command                        shift and go to state 5
+    param                          shift and go to state 11
+    bool                           shift and go to state 15
+
+state 46
+
+    (12) paramlist -> param SPACE paramlist .
+
+    CSEP            reduce using rule 12 (paramlist -> param SPACE paramlist .)
+    NEWLINE         reduce using rule 12 (paramlist -> param SPACE paramlist .)
+    RPAREN          reduce using rule 12 (paramlist -> param SPACE paramlist .)
+
+
+state 47
+
+    (23) function -> FUN NAME arglist BEGIN program END .
+
+    FUN             reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    IF              reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    ACTION          reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    LET             reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    NAME            reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    STRING          reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    INT             reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    LPAREN          reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    TRUE            reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    FALSE           reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    $end            reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+    END             reduce using rule 23 (function -> FUN NAME arglist BEGIN program END .)
+
+
+state 48
+
+    (26) if -> IF LPAREN command RPAREN block ELSE . block
+    (22) block -> . BEGIN commandlist END
+
+    BEGIN           shift and go to state 45
+
+    block                          shift and go to state 50
+
+state 49
+
+    (22) block -> BEGIN commandlist . END
+
+    END             shift and go to state 51
+
+
+state 50
+
+    (26) if -> IF LPAREN command RPAREN block ELSE block .
+
+    FUN             reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    IF              reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    ACTION          reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    LET             reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    NAME            reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    STRING          reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    INT             reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    LPAREN          reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    TRUE            reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    FALSE           reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    $end            reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+    END             reduce using rule 26 (if -> IF LPAREN command RPAREN block ELSE block .)
+
+
+state 51
+
+    (22) block -> BEGIN commandlist END .
+
+    ELSE            reduce using rule 22 (block -> BEGIN commandlist END .)
+    FUN             reduce using rule 22 (block -> BEGIN commandlist END .)
+    IF              reduce using rule 22 (block -> BEGIN commandlist END .)
+    ACTION          reduce using rule 22 (block -> BEGIN commandlist END .)
+    LET             reduce using rule 22 (block -> BEGIN commandlist END .)
+    NAME            reduce using rule 22 (block -> BEGIN commandlist END .)
+    STRING          reduce using rule 22 (block -> BEGIN commandlist END .)
+    INT             reduce using rule 22 (block -> BEGIN commandlist END .)
+    LPAREN          reduce using rule 22 (block -> BEGIN commandlist END .)
+    TRUE            reduce using rule 22 (block -> BEGIN commandlist END .)
+    FALSE           reduce using rule 22 (block -> BEGIN commandlist END .)
+    $end            reduce using rule 22 (block -> BEGIN commandlist END .)
+    END             reduce using rule 22 (block -> BEGIN commandlist END .)
 
 WARNING: 
 WARNING: Conflicts:
 WARNING: 
-WARNING: shift/reduce conflict for FUN in state 12 resolved as shift
-WARNING: shift/reduce conflict for ACTION in state 12 resolved as shift
-WARNING: shift/reduce conflict for NAME in state 12 resolved as shift
-WARNING: shift/reduce conflict for STRING in state 12 resolved as shift
-WARNING: shift/reduce conflict for INT in state 12 resolved as shift
-WARNING: shift/reduce conflict for LPAREN in state 12 resolved as shift
-WARNING: reduce/reduce conflict in state 7 resolved using rule (command -> ACTION)
-WARNING: rejected rule (param -> ACTION) in state 7
+WARNING: shift/reduce conflict for FUN in state 18 resolved as shift
+WARNING: shift/reduce conflict for IF in state 18 resolved as shift
+WARNING: shift/reduce conflict for ACTION in state 18 resolved as shift
+WARNING: shift/reduce conflict for LET in state 18 resolved as shift
+WARNING: shift/reduce conflict for NAME in state 18 resolved as shift
+WARNING: shift/reduce conflict for STRING in state 18 resolved as shift
+WARNING: shift/reduce conflict for INT in state 18 resolved as shift
+WARNING: shift/reduce conflict for LPAREN in state 18 resolved as shift
+WARNING: shift/reduce conflict for TRUE in state 18 resolved as shift
+WARNING: shift/reduce conflict for FALSE in state 18 resolved as shift
+WARNING: reduce/reduce conflict in state 10 resolved using rule (command -> ACTION)
+WARNING: rejected rule (param -> ACTION) in state 10

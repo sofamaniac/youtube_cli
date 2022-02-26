@@ -23,6 +23,9 @@ class Textbox:
             if type(c) is int:
                 if c == -1:
                     continue
+                if c == curses.ascii.ESC:
+                    self.reset()
+                    return
                 if c == curses.ascii.BEL or c == curses.ascii.NL:
                     return
                 elif c == curses.KEY_DC or c == curses.KEY_BACKSPACE or c == curses.ascii.BS:
@@ -36,11 +39,10 @@ class Textbox:
                     self.editingpos += 1
                     self.editingpos = min(len(self.content)-1, self.editingpos)
             else:
+                if c == '\n':
+                    return
                 self.editingpos += 1
                 self.content.insert(self.editingpos, c)
-            if c == curses.ascii.ESC:
-                self.reset()
-                return
 
             if update:
                 update()

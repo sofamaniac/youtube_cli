@@ -106,10 +106,12 @@ class VideoPlayer:
     def is_playing(self):
         return self.player.media_title != ""
 
-    def get_duration(self):
+    @property
+    def duration(self):
         return self.player.duration
 
-    def get_time(self):
+    @property
+    def time(self):
         return self.player.time_pos
 
     def seek(self, dt):

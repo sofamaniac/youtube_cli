@@ -150,23 +150,20 @@ class Screen:
                 OPTION_HEIGHT, INFO_HEIGHT, \
                 SEARCH_WIDTH, SEARCH_HEIGHT
 
-        max_x = curses.COLS
-        max_y = curses.LINES
-
-        PLAYER_WIDTH = max_x
+        PLAYER_WIDTH = self.max_x
         PLAYER_HEIGHT = 4
 
-        PLAYLIST_WIDTH = max(1, max_x // 5)
-        PLAYLIST_HEIGHT = min(15, max_y // 4)
+        PLAYLIST_WIDTH = max(1, self.max_x // 5)
+        PLAYLIST_HEIGHT = min(15, self.max_y // 4)
 
-        CONTENT_WIDTH = max_x - PLAYLIST_WIDTH
-        CONTENT_HEIGHT = max_y - PLAYER_HEIGHT
+        CONTENT_WIDTH = self.max_x - PLAYLIST_WIDTH
+        CONTENT_HEIGHT = self.max_y - PLAYER_HEIGHT
 
         OPTION_HEIGHT = 2 + NB_OPTIONS
 
         INFO_HEIGHT = 5
 
-        SEARCH_WIDTH = 3 * max_x // 5
+        SEARCH_WIDTH = 3 * self.max_x // 5
         SEARCH_HEIGHT = 3  # rework formula to ensure that one can input 80 chars in the search box TODO
 
     def resizeWindows(self):

@@ -8,7 +8,7 @@ import gui.textbox as textbox
 
 import time
 
-from parser.primitives import evaluate
+import parser.primitives as primitives
 
 class Application:
     def __init__(self, stdscr):
@@ -43,7 +43,6 @@ class Application:
 
         self._videoMode = False  # should the video be played alongside the audio
         self.createPlayer()
-        self.videoMode = False  # should the video be played alongside the audio
         self.playing = youtube.Video() 
 
         self.inPlaylist = False
@@ -61,6 +60,8 @@ class Application:
     
     @volume.setter
     def volume(self, vol):
+        if not 0 <= vol < 100:
+            return
         self._volume = vol
         self.player.set_volume(self.volume)
 
@@ -135,8 +136,7 @@ class Application:
         self.commandField.edit(update=self.update)
         command = self.commandField.gather()
         if command:
-            evaluate(command)
-
+            primitives.evaluate(command)
 
     def update(self):
 

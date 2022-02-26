@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'ACTION ASSIGN BEGIN COMMENT CSEP ELSE END FALSE FI FUN IF INT LET LPAREN NAME NEWLINE RPAREN SPACE STRING THEN TRUE\n    program : commandlist\n            | function\n            | program program\n    \n    commandlist : command CSEP commandlist\n                | command NEWLINE\n    \n    command : ACTION SPACE paramlist\n            | ACTION\n    \n    command : param\n    \n    command : NAME ASSIGN param\n    \n    paramlist : param SPACE paramlist\n    \n    paramlist : param\n    \n    param : STRING\n    \n    param : INT\n    \n    param : NAME\n    \n    param : ACTION\n    \n    param : LPAREN commandlist RPAREN\n    \n    block : BEGIN commandlist END\n    \n    function : FUN NAME arglist BEGIN program END\n    \n    arglist : NAME arglist\n            | NAME\n    '
+_lr_signature = 'ACTION ASSIGN BEGIN COMMENT CSEP ELSE END FALSE FI FUN IF INT LET LPAREN NAME NEWLINE RPAREN SPACE STRING THEN TRUE\n    program : commandlist\n            | function\n            | if\n    \n    program : program program\n    \n    commandlist : command CSEP commandlist\n                | command NEWLINE\n    \n    command : ACTION SPACE paramlist\n            | ACTION\n    \n    command : param\n    \n    command : LET NAME ASSIGN param\n    \n    command : NAME ASSIGN param\n    \n    paramlist : param SPACE paramlist\n    \n    paramlist : param\n    \n    param : STRING\n    \n    param : INT\n    \n    param : NAME\n    \n    param : ACTION\n    \n    param : LPAREN commandlist RPAREN\n    \n    param : bool\n    \n    bool : TRUE\n         | FALSE\n    \n    block : BEGIN commandlist END\n    \n    function : FUN NAME arglist BEGIN program END\n    \n    arglist : NAME arglist\n            | NAME\n    \n    if : IF LPAREN command RPAREN block ELSE block\n    '
     
-_lr_action_items = {'FUN':([0,1,2,3,12,14,19,29,31,33,],[5,5,-1,-2,5,-5,-4,5,5,-18,]),'ACTION':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[7,7,-1,-2,7,7,7,-5,24,24,-4,7,24,7,-18,]),'NAME':([0,1,2,3,5,11,12,13,14,15,16,17,19,20,29,30,31,33,],[6,6,-1,-2,15,6,6,6,-5,20,22,22,-4,20,6,22,6,-18,]),'STRING':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[9,9,-1,-2,9,9,9,-5,9,9,-4,9,9,9,-18,]),'INT':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[10,10,-1,-2,10,10,10,-5,10,10,-4,10,10,10,-18,]),'LPAREN':([0,1,2,3,11,12,13,14,16,17,19,29,30,31,33,],[11,11,-1,-2,11,11,11,-5,11,11,-4,11,11,11,-18,]),'$end':([1,2,3,12,14,19,33,],[0,-1,-2,-3,-5,-4,-18,]),'END':([2,3,12,14,19,31,33,],[-1,-2,-3,-5,-4,33,-18,]),'CSEP':([4,6,7,8,9,10,22,23,24,25,26,27,32,],[13,-14,-7,-8,-12,-13,-14,-9,-15,-6,-11,-16,-10,]),'NEWLINE':([4,6,7,8,9,10,22,23,24,25,26,27,32,],[14,-14,-7,-8,-12,-13,-14,-9,-15,-6,-11,-16,-10,]),'ASSIGN':([6,],[16,]),'SPACE':([7,9,10,22,24,26,27,],[17,-12,-13,-14,-15,30,-16,]),'RPAREN':([14,18,19,],[-5,27,-4,]),'BEGIN':([20,21,28,],[-20,29,-19,]),}
+_lr_action_items = {'FUN':([0,1,2,3,4,18,20,27,39,43,47,50,51,],[6,6,-1,-2,-3,6,-6,-5,6,6,-23,-26,-22,]),'IF':([0,1,2,3,4,18,20,27,39,43,47,50,51,],[8,8,-1,-2,-3,8,-6,-5,8,8,-23,-26,-22,]),'ACTION':([0,1,2,3,4,9,18,19,20,22,23,25,27,37,39,41,43,45,47,50,51,],[10,10,-1,-2,-3,10,10,10,-6,32,10,32,-5,32,10,32,10,10,-23,-26,-22,]),'LET':([0,1,2,3,4,9,18,19,20,23,27,39,43,45,47,50,51,],[12,12,-1,-2,-3,12,12,12,-6,12,-5,12,12,12,-23,-26,-22,]),'NAME':([0,1,2,3,4,6,9,12,18,19,20,21,22,23,25,27,28,37,39,41,43,45,47,50,51,],[7,7,-1,-2,-3,21,7,26,7,7,-6,28,30,7,30,-5,28,30,7,30,7,7,-23,-26,-22,]),'STRING':([0,1,2,3,4,9,18,19,20,22,23,25,27,37,39,41,43,45,47,50,51,],[13,13,-1,-2,-3,13,13,13,-6,13,13,13,-5,13,13,13,13,13,-23,-26,-22,]),'INT':([0,1,2,3,4,9,18,19,20,22,23,25,27,37,39,41,43,45,47,50,51,],[14,14,-1,-2,-3,14,14,14,-6,14,14,14,-5,14,14,14,14,14,-23,-26,-22,]),'LPAREN':([0,1,2,3,4,8,9,18,19,20,22,23,25,27,37,39,41,43,45,47,50,51,],[9,9,-1,-2,-3,23,9,9,9,-6,9,9,9,-5,9,9,9,9,9,-23,-26,-22,]),'TRUE':([0,1,2,3,4,9,18,19,20,22,23,25,27,37,39,41,43,45,47,50,51,],[16,16,-1,-2,-3,16,16,16,-6,16,16,16,-5,16,16,16,16,16,-23,-26,-22,]),'FALSE':([0,1,2,3,4,9,18,19,20,22,23,25,27,37,39,41,43,45,47,50,51,],[17,17,-1,-2,-3,17,17,17,-6,17,17,17,-5,17,17,17,17,17,-23,-26,-22,]),'$end':([1,2,3,4,18,20,27,47,50,51,],[0,-1,-2,-3,-4,-6,-5,-23,-26,-22,]),'END':([2,3,4,18,20,27,43,47,49,50,51,],[-1,-2,-3,-4,-6,-5,47,-23,51,-26,-22,]),'CSEP':([5,7,10,11,13,14,15,16,17,30,31,32,34,35,36,42,46,],[19,-16,-8,-9,-14,-15,-19,-20,-21,-16,-11,-17,-18,-7,-13,-10,-12,]),'NEWLINE':([5,7,10,11,13,14,15,16,17,30,31,32,34,35,36,42,46,],[20,-16,-8,-9,-14,-15,-19,-20,-21,-16,-11,-17,-18,-7,-13,-10,-12,]),'ASSIGN':([7,26,],[22,37,]),'RPAREN':([7,10,11,13,14,15,16,17,20,24,27,30,31,32,33,34,35,36,42,46,],[-16,-8,-9,-14,-15,-19,-20,-21,-6,34,-5,-16,-11,-17,40,-18,-7,-13,-10,-12,]),'SPACE':([10,13,14,15,16,17,30,32,34,36,],[25,-14,-15,-19,-20,-21,-16,-17,-18,41,]),'BEGIN':([28,29,38,40,48,],[-25,39,-24,45,45,]),'ELSE':([44,51,],[48,-22,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'program':([0,1,12,29,31,],[1,12,12,31,12,]),'commandlist':([0,1,11,12,13,29,31,],[2,2,18,2,19,2,2,]),'function':([0,1,12,29,31,],[3,3,3,3,3,]),'command':([0,1,11,12,13,29,31,],[4,4,4,4,4,4,4,]),'param':([0,1,11,12,13,16,17,29,30,31,],[8,8,8,8,8,23,26,8,26,8,]),'arglist':([15,20,],[21,28,]),'paramlist':([17,30,],[25,32,]),}
+_lr_goto_items = {'program':([0,1,18,39,43,],[1,18,18,43,18,]),'commandlist':([0,1,9,18,19,39,43,45,],[2,2,24,2,27,2,2,49,]),'function':([0,1,18,39,43,],[3,3,3,3,3,]),'if':([0,1,18,39,43,],[4,4,4,4,4,]),'command':([0,1,9,18,19,23,39,43,45,],[5,5,5,5,5,33,5,5,5,]),'param':([0,1,9,18,19,22,23,25,37,39,41,43,45,],[11,11,11,11,11,31,11,36,42,11,36,11,11,]),'bool':([0,1,9,18,19,22,23,25,37,39,41,43,45,],[15,15,15,15,15,15,15,15,15,15,15,15,15,]),'arglist':([21,28,],[29,38,]),'paramlist':([25,41,],[35,46,]),'block':([40,48,],[44,50,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -27,24 +27,30 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> program","S'",1,None,None,None),
-  ('program -> commandlist','program',1,'p_program','parser.py',45),
-  ('program -> function','program',1,'p_program','parser.py',46),
-  ('program -> program program','program',2,'p_program','parser.py',47),
-  ('commandlist -> command CSEP commandlist','commandlist',3,'p_commad_list','parser.py',57),
-  ('commandlist -> command NEWLINE','commandlist',2,'p_commad_list','parser.py',58),
-  ('command -> ACTION SPACE paramlist','command',3,'p_command_action_param','parser.py',66),
-  ('command -> ACTION','command',1,'p_command_action_param','parser.py',67),
-  ('command -> param','command',1,'p_command_param','parser.py',74),
-  ('command -> NAME ASSIGN param','command',3,'p_command_assign','parser.py',80),
-  ('paramlist -> param SPACE paramlist','paramlist',3,'p_paramlist_rec','parser.py',86),
-  ('paramlist -> param','paramlist',1,'p_paramlist_base','parser.py',93),
-  ('param -> STRING','param',1,'p_param_string','parser.py',99),
-  ('param -> INT','param',1,'p_param_int','parser.py',105),
-  ('param -> NAME','param',1,'p_param_var','parser.py',111),
-  ('param -> ACTION','param',1,'p_param_action','parser.py',117),
-  ('param -> LPAREN commandlist RPAREN','param',3,'p_param_command_list','parser.py',123),
-  ('block -> BEGIN commandlist END','block',3,'p_block','parser.py',129),
-  ('function -> FUN NAME arglist BEGIN program END','function',6,'p_function','parser.py',135),
-  ('arglist -> NAME arglist','arglist',2,'p_arglist','parser.py',141),
-  ('arglist -> NAME','arglist',1,'p_arglist','parser.py',142),
+  ('program -> commandlist','program',1,'p_program_base','parser.py',51),
+  ('program -> function','program',1,'p_program_base','parser.py',52),
+  ('program -> if','program',1,'p_program_base','parser.py',53),
+  ('program -> program program','program',2,'p_program_rec','parser.py',59),
+  ('commandlist -> command CSEP commandlist','commandlist',3,'p_commad_list','parser.py',66),
+  ('commandlist -> command NEWLINE','commandlist',2,'p_commad_list','parser.py',67),
+  ('command -> ACTION SPACE paramlist','command',3,'p_command_action_param','parser.py',75),
+  ('command -> ACTION','command',1,'p_command_action_param','parser.py',76),
+  ('command -> param','command',1,'p_command_param','parser.py',83),
+  ('command -> LET NAME ASSIGN param','command',4,'p_command_declaration','parser.py',89),
+  ('command -> NAME ASSIGN param','command',3,'p_command_assign','parser.py',97),
+  ('paramlist -> param SPACE paramlist','paramlist',3,'p_paramlist_rec','parser.py',103),
+  ('paramlist -> param','paramlist',1,'p_paramlist_base','parser.py',110),
+  ('param -> STRING','param',1,'p_param_string','parser.py',116),
+  ('param -> INT','param',1,'p_param_int','parser.py',122),
+  ('param -> NAME','param',1,'p_param_var','parser.py',128),
+  ('param -> ACTION','param',1,'p_param_action','parser.py',134),
+  ('param -> LPAREN commandlist RPAREN','param',3,'p_param_command_list','parser.py',140),
+  ('param -> bool','param',1,'p_param_bool','parser.py',146),
+  ('bool -> TRUE','bool',1,'p_bool','parser.py',152),
+  ('bool -> FALSE','bool',1,'p_bool','parser.py',153),
+  ('block -> BEGIN commandlist END','block',3,'p_block','parser.py',159),
+  ('function -> FUN NAME arglist BEGIN program END','function',6,'p_function','parser.py',165),
+  ('arglist -> NAME arglist','arglist',2,'p_arglist','parser.py',171),
+  ('arglist -> NAME','arglist',1,'p_arglist','parser.py',172),
+  ('if -> IF LPAREN command RPAREN block ELSE block','if',7,'p_if','parser.py',179),
 ]

@@ -3,9 +3,7 @@ from parser.primitives import getScope
 
 reserved = {
         'if'    : 'IF',
-        'then'  : 'THEN',
         'else'  : 'ELSE',
-        'fi'    : 'FI',
         '{'     : 'BEGIN',
         '}'     : 'END',
         'let'   : 'LET',
@@ -16,7 +14,14 @@ reserved = {
 tokens = list(reserved.values()) + [
         'NAME', 'INT', 'STRING', 'ACTION', 
         'CSEP', 'SPACE', 'COMMENT',
-        'LPAREN', 'RPAREN', 'ASSIGN', 'NEWLINE']
+        'LPAREN', 'RPAREN', 'ASSIGN', 'NEWLINE',
+        
+        # operators
+        'PLUS', 'MINUS', 'TIMES', 'DIVID', 'MOD',
+        'OR', 'AND', 'NOT', 'XOR',
+        'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
+        'LOR', 'LAND', 'LNOT', 'LSHIFT', 'RSHIFT',
+        ]
 
 t_ignore = '\t'  # Ignored chars
 
@@ -41,6 +46,10 @@ def t_ACTION(t):
     if getScope().containsFun(t.value):
         t.type = "ACTION"
     else:
+        for r in reserved:
+            if t.value == r:
+                t.type = reserved[r]
+                return t
         t.type = "NAME"
     return t
 
@@ -53,4 +62,5 @@ def t_error(t):
     t.lexer.skip(1)
     return t
 
-lexer = lex.lex()
+from logger import log
+lexer = lex.lex(debug=True, debuglog=log)
