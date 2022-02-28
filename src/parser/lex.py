@@ -10,6 +10,7 @@ reserved = {
         'true'  : 'TRUE',
         'false' : 'FALSE',
         'fun'   : 'FUN',
+        'while' : 'WHILE',
         }
 tokens = list(reserved.values()) + [
         'NAME', 'INT', 'STRING', 'ACTION', 

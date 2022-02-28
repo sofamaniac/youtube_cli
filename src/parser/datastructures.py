@@ -219,3 +219,15 @@ class Conditional:
         else:
             self.else_block.evaluate()
 
+
+class Loop:
+    def __init__(self, condition, block, scope=None, continuation=None):
+        
+        self.condition = condition
+        self.block = block
+        self.scope = scope
+        self.continuation = continuation
+
+    def evaluate(self):
+        while self.condition.evaluate():
+            self.block.evaluate()

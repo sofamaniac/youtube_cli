@@ -14,17 +14,20 @@ command     : ACTION
             
             TODO
             | LPAREN command RPAREN
+            | param BINOP param
 
 
 commandlist : command CSEP command
             | command NEWLINE
 
-param       : NAME
-            | STRING
+constant    : STRING
             | INT
-            | ACTION
-            | LPAREN commandlist RPAREN
             | bool
+
+param       : NAME
+            | ACTION
+            | LPAREN command RPAREN
+            | constant
 
 bool        : TRUE
             | FALSE
@@ -115,9 +118,10 @@ def p_paramlist_base(p):
     '''
     p[0] = [p[1]]
 
-def p_param_string(p):
+def p_param_string_bool(p):
     '''
     param : STRING
+          | bool
     '''
     p[0] = Constante(p[1], currentScope)
 
@@ -141,15 +145,10 @@ def p_param_action(p):
 
 def p_param_command_list(p):
     '''
-    param : LPAREN commandlist RPAREN
+    param : LPAREN command RPAREN
     '''
     p[0] = p[2]
 
-def p_param_bool(p):
-    '''
-    param : bool
-    '''
-    p[0] = p[1]
 
 def p_bool(p):
     '''
@@ -182,7 +181,13 @@ def p_if(p):
     '''
     if : IF LPAREN command RPAREN block ELSE block
     '''
-    p[0] = Conditional(p[3], p[5], p[7])
+    p[0] = Conditional(p[3], p[5], p[7], scope=currentScope)
+
+def p_while(p):
+    '''
+    while : WHILE LPAREN command RPAREN block
+    '''
+    p[0] = Loop(p[3], p[5], scope=currentScope)
     
 def p_error(p):
     print(p)
