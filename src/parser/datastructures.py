@@ -215,9 +215,9 @@ class Conditional:
 
     def evaluate(self):
         if self.condition.evaluate():
-            self.if_block.evaluate()
+            return self.if_block.evaluate()
         else:
-            self.else_block.evaluate()
+            return self.else_block.evaluate()
 
 
 class Loop:

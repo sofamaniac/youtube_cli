@@ -60,7 +60,7 @@ class Application:
     
     @volume.setter
     def volume(self, vol):
-        if not 0 <= vol < 100:
+        if not 0 <= vol <= 100:
             return
         self._volume = vol
         self.player.set_volume(self.volume)
@@ -180,7 +180,7 @@ class Application:
 
         content.append(CurseString(f"Auto: {self.inPlaylist}"))
         content.append(CurseString(f"Repeat: {self.repeat}"))
-        content.append(CurseString(f"Shuffle: {'on' if self.shuffled else 'off'}"))
+        content.append(CurseString(f"Shuffle: {self.shuffled}"))
         content.append(CurseString(f"Volume : {self.volume:02d} / 100"))
         content.append(CurseString(f"Mode: {'Video' if self.videoMode else 'Audio'}"))
         self.optionPanel.update(drawSelect=False, to_display=content)

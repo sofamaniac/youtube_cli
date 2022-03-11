@@ -96,8 +96,8 @@ def p_command_declaration(p):
     command : LET NAME ASSIGN param
     '''
     s = getScope()
-    Variable(p[2], p[4].evaluate(), scope=s) 
-    # TODO check if p[0] should not be set to something
+    Variable(p[2], None, scope=s) 
+    p[0] = Assignment(p[2], command=p[4])
 
 def p_command_assign(p):
     '''
@@ -148,7 +148,6 @@ def p_param_command_list(p):
     param : LPAREN command RPAREN
     '''
     p[0] = p[2]
-
 
 def p_bool(p):
     '''
