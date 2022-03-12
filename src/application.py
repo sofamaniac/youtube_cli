@@ -173,6 +173,7 @@ class Application:
         content = []
         content.append(CurseString(f"Title: {currSelection.title}"))
         content.append(CurseString(f"Author: {currSelection.author}"))
+        content.append(CurseString(f"Id: {currSelection.id}"))
         self.informationPanel.update(drawSelect=False, to_display=content)
 
     def drawOptions(self):
@@ -338,6 +339,7 @@ class Application:
         self.playing = to_play
         # when nothing is playing, the volume might not get updated on the backend
         # therefore we update it manually each time something is played
+        # TODO not working
         self.increaseVolume(0)
 
     def stop(self):
@@ -364,10 +366,6 @@ class Application:
 
     def increaseVolume(self, dv):
         self.volume += dv
-        if self.volume < 0:
-            self.volume = 0
-        elif self.volume > 100:
-            self.volume = 100
 
     def toggleMute(self):
         self.muted = not self.muted
