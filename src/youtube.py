@@ -167,7 +167,7 @@ class ListItems:
     def request(self, who, **what):
         try:
             result = who(**what).execute()
-        except google.auth.exceptions.RefreshError as e:
+        except google.auth.exceptions.RefreshError as _:
             get_authenticated_service(refresh=True)
             result = who(**what).execute()
         return result
@@ -370,7 +370,6 @@ class LikedVideos(Playlist):
         idList = []
         for v in response["items"]:
             idList.append(v["id"])
-
         nb_loaded = self._addVideos(idList)
 
         self.size += nb_loaded
@@ -447,7 +446,9 @@ class Search(ListItems):
         idList = []
         for v in response["items"]:
             idList.append(v["id"]["videoId"])
+
         self.nb_loaded += self._addVideos(idList)
         self.updateTokens(response)
+
         if self.nextPage == None:
             self.size = self.nb_loaded

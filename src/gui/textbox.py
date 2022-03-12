@@ -41,6 +41,9 @@ class Textbox:
             else:
                 if c == '\n':
                     return
+                elif ord(c) == curses.ascii.ESC:  # may break other function keys
+                    self.reset()
+                    return
                 self.editingpos += 1
                 self.content.insert(self.editingpos, c)
 
