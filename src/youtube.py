@@ -215,7 +215,7 @@ class ListItems:
 
         while index > self.nb_loaded and self.nextPage != None:
             self.loadNextPage()
-        if index > self.size:
+        if index >= self.size:
             return self.elements[-1]
         return self.elements[index]
 
