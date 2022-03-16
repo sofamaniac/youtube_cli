@@ -4,11 +4,11 @@ import player
 from panel import Panel
 
 from gui.screen import Directions, CurseString
-import gui.textbox as textbox
+from gui import textbox
 
 import time
 
-import parser.primitives as primitives
+from parser import primitives
 
 class Application:
     def __init__(self, stdscr):

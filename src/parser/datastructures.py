@@ -49,6 +49,8 @@ class Scope:
     def addFun(self, fun):
         self.functions[fun.name] = fun
 
+globalScope = Scope(None)
+
 class Command:
     def __init__(self, action, args=[], continuation=None, scope=None):
         self.action = action
@@ -73,6 +75,11 @@ class Command:
             self.action.function(*self.args)
             return self.continuation.evaluate()
         return self.action.function(*self.args)
+
+    def setScope(self, scope):
+        self.scope = scope
+        if self.continuation:
+            self.continuation.setScope(scope)
 
 class Action:
 
@@ -113,6 +120,11 @@ class Function:
     def evaluate(self):
         return self.function
 
+    def setScope(self, scope):
+        self.scope = scope
+        self.scope.addFun(self)
+        self.block.setScope(Scope(parent=self.scope))
+
 
 class Constante:
     def __init__(self, value=None, scope=None):
@@ -124,6 +136,9 @@ class Constante:
 
     def __str__(self):
         return f"{self.value}"
+
+    def setScope(self, scope):
+        self.scope = scope
 
 class Variable:
     
@@ -144,12 +159,17 @@ class Variable:
     def __str__(self):
         return f"{self.name} = {self.value}"
 
+    def setScope(self, scope):
+        self.scope = scope
+        1/0
+        self.scope.addVar(self)
+
 class Property(Variable):
     """
     Provides a way to interact with variables of the actual youtube_cli program
     """
-    def __init__(self, name, object, scope):
-        Variable.__init__(self, name, None, scope)
+    def __init__(self, name, object):
+        Variable.__init__(self, name, None, globalScope)
         self.getter = lambda: getattr(object, name)
         self.setter = lambda v: setattr(object, name, v)
 
@@ -163,10 +183,13 @@ class Property(Variable):
     def __str__(self):
         return f"{self.name} = {self.getter()}"
 
+    def setScope(self):
+        pass
+
 
 class Assignment:
-    def __init__(self, target, command, continuation=None, scope=None):
-        self.target = target
+    def __init__(self, targetName, command, continuation=None, scope=None):
+        self.targetName = targetName
         self.command = command
         self.continuation = continuation
         self.scope = scope
@@ -180,6 +203,11 @@ class Assignment:
         if self.continuation:
             return self.continuation.evaluate()
         return r
+
+    def setScope(self, scope):
+        self.scope = scope
+        self.target = self.scope.findVar(self.targetName)
+        self.continuation.setScope(scope)
 
 class Block:
     def __init__(self, commands=[], continuation=None, scope=None):
@@ -203,6 +231,12 @@ class Block:
             return self.continuation.evaluate()
         return last_return
 
+    def setScope(self, scope):
+        self.scope = scope
+        for c in self.commands:
+            c.setScope(scope)
+        self.continuation.setScope(scope.parent)
+
 class Conditional:
     def __init__(self, condition, if_block, else_block=None, scope=None, continuation=None):
 
@@ -210,14 +244,22 @@ class Conditional:
         self.if_block = if_block
         self.else_block = else_block
 
-        self.scope = None
-        self.continuation = None
+        self.scope = scope
+        self.continuation = continuation
 
     def evaluate(self):
         if self.condition.evaluate():
             return self.if_block.evaluate()
         else:
             return self.else_block.evaluate()
+
+    def setScope(self, scope):
+        self.scope = scope
+        self.if_block.setScope(Scope(parent=self.scope))
+        if self.else_block:
+            self.else_block.setScope(Scope(parent=self.scope))
+        if self.continuation:
+            self.continuation.setScope(scope)
 
 
 class Loop:
@@ -231,3 +273,9 @@ class Loop:
     def evaluate(self):
         while self.condition.evaluate():
             self.block.evaluate()
+
+    def setScope(self, scope):
+        self.scope = scope
+        self.block.setScope(Scope(parent=self.scope))
+        if self.continuation:
+            self.continuation.setScope(scope)

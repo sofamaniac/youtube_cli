@@ -172,28 +172,6 @@ class ListItems:
             result = who(**what).execute()
         return result
 
-    def _addVideos(self, idList):
-
-        to_request = "id, snippet, status, contentDetails"
-        args = { "part": to_request,
-                 "id": ','.join(idList),
-                 }
-        response = self.request(youtube.videos().list, **args)
-        
-        nb_added = 0
-        for v in response["items"]:
-            if not self.checkVideoAvailability(v):
-                continue
-            self.elements.append(
-                Video(
-                    v["id"],
-                    v["snippet"]["title"],
-                    v["snippet"]["description"],
-                    v["snippet"]["channelTitle"],
-                )
-            )
-            nb_added += 1
-        return nb_added
 
     def loadNextPage(self):
         pass
@@ -215,7 +193,7 @@ class ListItems:
 
         while index > self.nb_loaded and self.nextPage != None:
             self.loadNextPage()
-        if index >= self.size:
+        if index >= self.nb_loaded:
             return self.elements[-1]
         return self.elements[index]
 
@@ -261,6 +239,31 @@ class Playlist(ListItems):
         self.loadNextPage()  # we load the first page
 
         self.order = [i for i in range(self.size)]  # used for playlist shuffling
+
+    def _addVideos(self, idList):
+
+        to_request = "id, snippet, status, contentDetails"
+        args = { "part": to_request,
+                 "id": ','.join(idList),
+                 }
+        response = self.request(youtube.videos().list, **args)
+        
+        nb_added = 0
+        for v in response["items"]:
+            if not self.checkVideoAvailability(v):
+                self.size -= 1
+                self.removeMax()
+                continue
+            self.elements.append(
+                Video(
+                    v["id"],
+                    v["snippet"]["title"],
+                    v["snippet"]["description"],
+                    v["snippet"]["channelTitle"],
+                )
+            )
+            nb_added += 1
+        return nb_added
 
     def checkVideoAvailability(self, video):
         # this condition is maybe too strong as it excludes non-repertoriated
@@ -344,6 +347,12 @@ class Playlist(ListItems):
                 break
         self.request(youtube.playlistItems().delete, id=playlistItemId)
         self.reload()
+    
+    def removeMax(self):
+        index_max = max(range(len(self.order)), key=self.order.__getitem__)
+        if self.order[index_max] >= self.size:
+            self.order.pop(index_max)
+            self.removeMax()  # Hopefully it will never go deep
 
     def __str__(self):
         return self.title
@@ -424,7 +433,7 @@ class PlaylistList(ListItems):
             self.size = self.nb_loaded
 
 
-class Search(ListItems):
+class Search(Playlist):
     def __init__(self, query):
 
         ListItems.__init__(self)

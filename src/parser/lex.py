@@ -1,5 +1,5 @@
 import ply.lex as lex
-from parser.primitives import getScope
+from parser.datastructures import globalScope
 
 reserved = {
         'if'    : 'IF',
@@ -44,7 +44,7 @@ def t_NEWLINE(t):
 
 def t_ACTION(t):
     r'[a-zA-Z_]+'
-    if getScope().containsFun(t.value):
+    if globalScope.containsFun(t.value):
         t.type = "ACTION"
     else:
         for r in reserved:
