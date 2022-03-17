@@ -254,7 +254,7 @@ class Application:
     def setPlaylist(self):
         if not self.inPlaylist:
             self.playlist = self.playlistPanel.getSelected()
-            self.shuffled = False
+            self.shuffled = self.shuffled  # force update
             self.playlist.currentIndex = self.contentPanel.selected
             self.player.stop()
             self.play(self.playlist.getCurrent())
@@ -339,7 +339,7 @@ class Application:
         self.playing = to_play
         # when nothing is playing, the volume might not get updated on the backend
         # therefore we update it manually each time something is played
-        # TODO not working
+        # TODO not working or maybe it is
         self.increaseVolume(0)
 
     def stop(self):

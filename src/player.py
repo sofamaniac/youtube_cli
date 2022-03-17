@@ -5,7 +5,7 @@ from mpv import ShutdownError as MPVDeadError
 class PlayerDeadError(Exception):
     pass
 
-class AudioPlayer:
+class AudioPlayerMPD:
 
     def __init__(self):
 
@@ -25,6 +25,7 @@ class AudioPlayer:
         self.client.stop()
 
     def quit(self):
+        self.client.stop()
         self.client.close()
         self.client.disconnect()
 
@@ -36,8 +37,7 @@ class AudioPlayer:
         self.client.seekcur(dt)
 
     def seek_percent(self, percent):
-        duration = self.get_duration()
-        self.client.seekcur(duration * percent / 100)
+        self.client.seekcur(self.duration * percent / 100)
 
     def get_property(self, prop: str, default):
         properties = self.client.status()
@@ -76,8 +76,8 @@ class AudioPlayer:
 
 class VideoPlayer:
 
-    def __init__(self):
-        self.player = MPV(video="auto", ytdl=True)
+    def __init__(self, video="auto"):
+        self.player = MPV(video=video, ytdl=True)
 
     def play(self, url):
         self.player.play(url)
@@ -125,3 +125,9 @@ class VideoPlayer:
 
     def is_song_finished(self):
         return not self.is_playing()
+
+class AudioPlayer(VideoPlayer):
+
+    def __init__(self):
+        VideoPlayer.__init__(self, video=False)
+

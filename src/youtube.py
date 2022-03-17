@@ -155,11 +155,10 @@ class ListItems:
         for v in self.elements:
             if v.id == item:
                 return True
-        last_index = len(self.elements)-1
         while self.nextPage != None:
+            last_index = len(self.elements)-1
             self.loadNextPage()
             for v in self.elements[last_index:]:
-                last_index += 1
                 if v.id == item:
                     return True
         return False
@@ -170,6 +169,7 @@ class ListItems:
         except google.auth.exceptions.RefreshError as _:
             get_authenticated_service(refresh=True)
             result = who(**what).execute()
+            # further error handling should be done where this function is called
         return result
 
 
@@ -235,10 +235,10 @@ class Playlist(ListItems):
         self.title = title
         self.id = id
         self.size = nb_videos
+        self.order = [i for i in range(self.size)]  # used for playlist shuffling
 
         self.loadNextPage()  # we load the first page
 
-        self.order = [i for i in range(self.size)]  # used for playlist shuffling
 
     def _addVideos(self, idList):
 
@@ -349,6 +349,8 @@ class Playlist(ListItems):
         self.reload()
     
     def removeMax(self):
+        if not self.order:
+            return
         index_max = max(range(len(self.order)), key=self.order.__getitem__)
         if self.order[index_max] >= self.size:
             self.order.pop(index_max)
@@ -362,10 +364,6 @@ class LikedVideos(Playlist):
     def __init__(self, title):
 
         Playlist.__init__(self, "Liked", title, 0)
-
-        self.loadNextPage()  # we load the first page
-
-        self.order = [i for i in range(self.size)]  # used for playlist shuffling
 
     def loadNextPage(self):
         to_request = "id, snippet, status, contentDetails"
