@@ -83,7 +83,7 @@ class VideoPlayer:
         self.player.play(url)
 
     def stop(self):
-        self.player.stop
+        self.player.stop()
 
     def pause(self):
         self.player.command("cycle", "pause")
@@ -104,7 +104,7 @@ class VideoPlayer:
             raise PlayerDeadError
 
     def is_playing(self):
-        return self.player.media_title != ""
+        return self.player.media_title
 
     @property
     def duration(self):
@@ -121,6 +121,7 @@ class VideoPlayer:
         self.player.command("seek", f"{dt}", "absolute-percent")
 
     def quit(self):
+        self.stop()
         del self.player
 
     def is_song_finished(self):
