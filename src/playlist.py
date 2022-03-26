@@ -18,8 +18,11 @@ class Playable:
     def __str__(self):
         return self.title
 
-    def getUrl(self):
+    def getUrl(self, video=False):
         return self.title
+
+    def checkSkip(self, time):
+        return False
 
 class Playlist:
 
@@ -90,3 +93,30 @@ class Playlist:
 
     def __str__(self):
         return self.title
+
+
+class PlaylistList():
+
+    def __init__(self):
+
+        self.elements = []
+        self.size = 0
+
+    def addPlaylist(self, p):
+        self.elements.append(p)
+        self.size += 1
+
+    def getAtIndex(self, index):
+        """If the index is greater than the number of elements in the list,
+        does NOT raise an error but return the last element of the list instead"""
+        if index >= self.size:
+            return self.elements[-1]
+        return self.elements[index]
+
+    def getItemList(self, start, end):
+        max_index = min(end, self.size)
+        return self.elements[start:max_index]
+
+    def getMaxIndex(self):
+        return self.size - 1
+

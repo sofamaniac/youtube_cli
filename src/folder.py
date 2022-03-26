@@ -10,7 +10,7 @@ class LocalFile(Playable):
         Playable.__init__(self, title, author, path)
         self.path = path
 
-    def getUrl(self):
+    def getUrl(self, video=False):
         return self.path
 
 class Folder(Playlist):
@@ -27,7 +27,6 @@ class Folder(Playlist):
         self.elements = []
 
         for dirpath, _, filenames in walk(self.path):
-
             for f in filenames:
                 path = joinpath(dirpath, f)
                 audioFile = eyed3.load(path)
@@ -38,7 +37,7 @@ class Folder(Playlist):
                         title = tag.title
                     artist = artist if artist else "unknown"
                     title = title if title else f
-                    self.elements.append(Playable(title, artist, path))
+                    self.elements.append(LocalFile(title, artist, path))
 
         self.size = len(self.elements)
 
@@ -47,7 +46,7 @@ class FolderList(Playlist):
     def __init__(self):
         Playlist.__init__(self)
 
-        self.foldersPaths = ["/home/sofamaniac/Muscis/"]
+        self.foldersPaths = ["/home/sofamaniac/Musics/"]
         self.elements = []
 
         for p in self.foldersPaths:
