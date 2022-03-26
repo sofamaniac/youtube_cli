@@ -10,6 +10,8 @@ import time
 
 from parser import primitives
 
+from folder import Folder, FolderList
+
 class Application:
     def __init__(self, stdscr):
         self.scr = screen.Screen(stdscr)
@@ -18,6 +20,9 @@ class Application:
 
         self.playlistPanel = Panel(self.scr.playlistsWin, "Playlists")
         self.playlistPanel.source = youtube.PlaylistList()
+        self.playlistPanel.source.elements.append(Folder("/home/sofamaniac/Musics/"))
+        self.playlistPanel.source.nb_loaded += 1
+        self.playlistPanel.source.size += 1
         self.getPlaylist()
 
         self.playerPanel = Panel(self.scr.playerWin, "Player Information")
@@ -28,7 +33,7 @@ class Application:
 
         self.informationPanel = Panel(self.scr.informationWin, "Informations")
 
-        self.panelsList = [self.playlistPanel, self.contentPanel]
+        self.panelsList = [self.playlistPanel, self.contentPanel, self.folderPanel]
         self.currentPanel = 0
 
         self.searchPanel = Panel(self.scr.searchWin, "Search")
@@ -46,7 +51,7 @@ class Application:
         self.playing = youtube.Video() 
 
         self.inPlaylist = False
-        self.playlist = youtube.ListItems()
+        self.playlist = youtube.YoutubeList()
         self.playlistIndex = 0
         self.repeat = "No"
         self.shuffled = False
@@ -152,6 +157,7 @@ class Application:
 
         # Drawing all the windows
         self.playlistPanel.update()
+        self.folderPanel.update()
         self.contentPanel.update()
         self.drawPlayer()
         self.drawOptions()

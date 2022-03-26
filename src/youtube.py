@@ -4,6 +4,7 @@ import pickle
 import subprocess
 import shlex
 from random import shuffle
+from playlist import *
 
 # === Google API === #
 import google_auth_oauthlib.flow
@@ -12,34 +13,52 @@ import googleapiclient.errors
 import google.auth.exceptions
 
 
-scopes = ["https://www.googleapis.com/auth/youtube"]
-data_path = "data/"
-client_secrets_file = data_path + "client_secret.json"
-api_service_name = "youtube"
-api_version = "v3"
-cache_path = data_path + "cache.json"
 
 MAX_RESULTS = 50
-youtube = None
 
-def get_authenticated_service(refresh=False):
-    global youtube
-    path = data_path + "CREDENTIALS_PICKLE_FILE"
-    if not refresh and os.path.exists(path):
-        with open(path, "rb") as f:
-            credentials = pickle.load(f)
-    else:
-        flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-            client_secrets_file, scopes
+class Youtube():
+    def __init__(self):
+
+        self.youtube = None
+        self.get_authenticated_service()
+
+    def get_authenticated_service(self, refresh=False):
+        scopes = ["https://www.googleapis.com/auth/youtube"]
+        data_path = "data/"
+        client_secrets_file = data_path + "client_secret.json"
+        api_service_name = "youtube"
+        api_version = "v3"
+        path = data_path + "CREDENTIALS_PICKLE_FILE"
+        if not refresh and os.path.exists(path):
+            with open(path, "rb") as f:
+                credentials = pickle.load(f)
+        else:
+            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
+                client_secrets_file, scopes
+            )
+            credentials = flow.run_local_server()
+            with open(path, "wb") as f:
+                pickle.dump(credentials, f)
+        self.youtube = googleapiclient.discovery.build(
+            api_service_name, api_version, credentials=credentials
         )
-        credentials = flow.run_local_server()
-        with open(path, "wb") as f:
-            pickle.dump(credentials, f)
-    youtube = googleapiclient.discovery.build(
-        api_service_name, api_version, credentials=credentials
-    )
 
-get_authenticated_service()
+    def videos(self):
+        return self.youtube.videos()
+
+    def videosList(self):
+        return self.youtube.videos().list
+
+    def search(self):
+        return self.youtube.search()
+
+    def playlistItems(self):
+        return self.youtube.playlistItems()
+
+    def playlists(self):
+        return self.youtube.playlists()
+
+youtube = Youtube()
 
 # ================== #
 
@@ -84,12 +103,10 @@ def run_with_limited_time(func, args, kwargs, time):
 
 # ============================= #
 
-class Video:
+class Video(Playable):
     def __init__(self, id="", title="", description="", author="", playlistItemId=""):
-        self.title = title
-        self.id = id
+        Playable.__init__(self, title, author, id)
         self.description = description
-        self.author = author
         self.playlistItemId = playlistItemId  # useful for editing playlist
         self.skipSegments = []
 
@@ -132,12 +149,9 @@ class Video:
             if skip.start <= time <= skip.end:
                 return skip.end
         return False
-    
-    def __str__(self):
-        return self.title
 
 
-class ListItems:
+class YoutubeList(Playlist):
     def __init__(self):
         self.currentIndex = 0
         self.nextPage = None
@@ -167,9 +181,9 @@ class ListItems:
         try:
             result = who(**what).execute()
         except google.auth.exceptions.RefreshError as _:
-            get_authenticated_service(refresh=True)
+            youtube.get_authenticated_service(refresh=True)
             result = who(**what).execute()
-            # further error handling should be done where this function is called
+            # TODO this error handling cannot work since the youtube object has changed, so [who] is obsolete
         return result
 
 
@@ -183,9 +197,6 @@ class ListItems:
         self.prevPage = (
             response["prevPageToken"] if "prevPageToken" in response else None
         )
-
-    def getCurrent(self):
-        return self.elements[self.currentIndex]
 
     def getAtIndex(self, index):
         """If the index is greater than the number of elements in the list,
@@ -220,22 +231,17 @@ class ListItems:
     def getMaxIndex(self):
         return self.nb_loaded - 1
 
-    def shuffle(self):
-        pass
 
-    def unshuffle(self):
-        pass
-
-
-class Playlist(ListItems):
+class YoutubePlaylist(YoutubeList):
     def __init__(self, id, title, nb_videos):
 
-        ListItems.__init__(self)
+        YoutubeList.__init__(self)
 
         self.title = title
         self.id = id
         self.size = nb_videos
         self.order = [i for i in range(self.size)]  # used for playlist shuffling
+        self.api_function = youtube.playlistItems
 
         self.loadNextPage()  # we load the first page
 
@@ -283,49 +289,13 @@ class Playlist(ListItems):
                 "maxResults": MAX_RESULTS,
                 "pageToken": self.nextPage,
                 }
-        response = self.request(youtube.playlistItems().list, **args)
+        response = self.request(self.api_function().list, **args)
 
         idList = []
         for v in response["items"]:
             idList.append(v["snippet"]["resourceId"]["videoId"])
         self.nb_loaded += self._addVideos(idList)
         self.updateTokens(response)
-
-    def getVideoUrl(self, index):
-        return self.getAtIndex(index).getUrl()
-
-    def shuffle(self):
-        self.order = [i for i in range(self.size)]
-        shuffle(self.order)
-
-    def unshuffle(self):
-        self.order = [i for i in range(self.size)]
-
-    def next(self):
-        if self.currentIndex >= self.size:
-            return
-        self.currentIndex += 1
-        shuffled_index = self.order[self.currentIndex]
-        return self.getAtIndex(shuffled_index)
-
-    def prev(self):
-        if self.currentIndex == 0:
-            return
-        self.currentIndex -= 1
-        shuffled_index = self.order[self.currentIndex]
-        return self.getAtIndex(shuffled_index)
-
-    def getCurrent(self):
-        shuffled_index = self.order[self.currentIndex]
-        return self.getAtIndex(shuffled_index)
-
-    def getMaxIndex(self):
-        return self.size - 1
-
-    def setEffectiveIndex(self, index):
-        self.currentIndex = 0
-        while self.currentIndex < self.size and self.order[self.currentIndex] != index:
-            self.currentIndex += 1
 
     def add(self, video):
         args = { "part": "snippet",
@@ -337,7 +307,7 @@ class Playlist(ListItems):
                     "position": 0,
                 },
         }
-        self.request(youtube.playlistItems().insert,**args)
+        self.request(self.api_function().insert,**args)
         self.reload()  # we refresh the content
 
     def remove(self, video):
@@ -345,7 +315,7 @@ class Playlist(ListItems):
             if v.id == video.id:
                 playlistItemId = v.playlistItemId
                 break
-        self.request(youtube.playlistItems().delete, id=playlistItemId)
+        self.request(self.api_function().delete, id=playlistItemId)
         self.reload()
     
     def removeMax(self):
@@ -356,14 +326,12 @@ class Playlist(ListItems):
             self.order.pop(index_max)
             self.removeMax()  # Hopefully it will never go deep
 
-    def __str__(self):
-        return self.title
 
-
-class LikedVideos(Playlist):
+class LikedVideos(YoutubePlaylist):
     def __init__(self, title):
 
-        Playlist.__init__(self, "Liked", title, 0)
+        YoutubePlaylist.__init__(self, "Liked", title, 0)
+        self.api_function = youtube.videos
 
     def loadNextPage(self):
         to_request = "id, snippet, status, contentDetails"
@@ -372,7 +340,7 @@ class LikedVideos(Playlist):
                 "maxResults": MAX_RESULTS,
                 "pageToken": self.nextPage,
                 }
-        response = self.request(youtube.videos().list, **args)
+        response = self.request(youtube.videosList(), **args)
 
         idList = []
         for v in response["items"]:
@@ -385,7 +353,7 @@ class LikedVideos(Playlist):
 
     def shuffle(self):
         self.loadAll()
-        Playlist.shuffle(self)
+        YoutubePlaylist.shuffle(self)
 
     def getMaxIndex(self):
         if self.nextPage != None:
@@ -394,19 +362,20 @@ class LikedVideos(Playlist):
             return self.size - 1
 
     def add(self, video):
-        self.request(youtube.Videos.rate, id=video.id, rating="like")
+        self.request(self.api_function().rate, id=video.id, rating="like")
         self.reload()  # we refresh the content
 
     def remove(self, video):
-        self.request(youtube.Videos.rate, id=video.id, rating="none")
+        self.request(self.api_function().rate, id=video.id, rating="none")
         self.reload()  # we refresh the content
 
 
-class PlaylistList(ListItems):
+class PlaylistList(YoutubeList):
     def __init__(self):
-        ListItems.__init__(self)
+        YoutubeList.__init__(self)
         self.elements = [LikedVideos("Liked Videos")]
         self.nb_loaded = 1
+        self.api_function = youtube.playlists
 
         self.loadNextPage()
         self.loadAll()
@@ -417,11 +386,11 @@ class PlaylistList(ListItems):
                 "mine": True,
                 "pageToken": self.nextPage,
                 }
-        response = self.request(youtube.playlists().list, **args)
+        response = self.request(self.api_function().list, **args)
 
         for p in response["items"]:
             self.elements.append(
-                Playlist(
+                YoutubePlaylist(
                     p["id"], p["snippet"]["title"], p["contentDetails"]["itemCount"]
                 )
             )
@@ -430,13 +399,20 @@ class PlaylistList(ListItems):
         if self.nextPage == None:
             self.size = self.nb_loaded
 
+    def shuffle(self):
+        return
 
-class Search(Playlist):
+    def unshuffle(self):
+        return
+
+
+class Search(YoutubePlaylist):
     def __init__(self, query):
 
-        ListItems.__init__(self)
+        YoutubeList.__init__(self)
         self.query = query
         self.size = 1e99
+        self.api_function = youtube.search
 
         self.loadNextPage()
 
@@ -449,7 +425,7 @@ class Search(Playlist):
                 "type": "video",
                 }
 
-        response = self.request(youtube.search().list, **args)
+        response = self.request(self.api_function().list, **args)
         idList = []
         for v in response["items"]:
             idList.append(v["id"]["videoId"])
@@ -459,3 +435,9 @@ class Search(Playlist):
 
         if self.nextPage == None:
             self.size = self.nb_loaded
+
+    def shuffle(self):
+        return
+
+    def unshuffle(self):
+        return
