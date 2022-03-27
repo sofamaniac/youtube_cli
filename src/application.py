@@ -1,3 +1,5 @@
+"""Main component of the program, where most of the logic is handled"""
+
 import youtube
 import gui.screen as screen
 import player
