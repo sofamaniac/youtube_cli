@@ -1,8 +1,10 @@
+"""Module that (re)implement some input boxes for curses"""
 import curses
 import curses.ascii
 import _curses
 
 class Textbox:
+    """Input box"""
     def __init__(self, win):
         self.win = win
         self.win.keypad(True)  # needed to interpret special keys such as arrows and backspace
@@ -16,43 +18,43 @@ class Textbox:
         size = self.win.getmaxyx()[1] - 2
         while True:
             try:
-                c = self.win.get_wch()
+                char = self.win.get_wch()
             except _curses.error:
                 continue
 
-            if type(c) is int:
-                if c == -1:
+            if isinstance(char, int):
+                if char == -1:
                     continue
-                if c == curses.ascii.ESC:
+                elif char == curses.ascii.ESC:
                     self.reset()
                     return
-                if c == curses.ascii.BEL or c == curses.ascii.NL:
+                elif char in [curses.ascii.BEL, curses.ascii.NL]:
                     return
-                elif c == curses.KEY_DC or c == curses.KEY_BACKSPACE or c == curses.ascii.BS:
-                    if len(self.content) > 0:
-                        self.content.pop(self.editingpos)
-                        self.editingpos -= 1
-                elif c == curses.KEY_LEFT:
+                elif ( char in [curses.KEY_DC, curses.KEY_BACKSPACE, curses.ascii.BS] 
+                        and len(self.content) > 0 ):
+                    self.content.pop(self.editingpos)
+                    self.editingpos -= 1
+                elif char == curses.KEY_LEFT:
                     self.editingpos -= 1
                     self.editingpos = max(0, self.editingpos)
-                elif c == curses.KEY_RIGHT:
+                elif char == curses.KEY_RIGHT:
                     self.editingpos += 1
                     self.editingpos = min(len(self.content)-1, self.editingpos)
             else:
-                if c == '\n':
+                if char == '\n':
                     return
-                elif ord(c) == curses.ascii.ESC:  # may break other function keys
+                elif ord(char) == curses.ascii.ESC:  # may break other function keys
                     self.reset()
                     return
                 self.editingpos += 1
-                self.content.insert(self.editingpos, c)
+                self.content.insert(self.editingpos, char)
 
             if update:
                 update()
 
             self.win.erase()
 
-            # as the text may be too long to fit, 
+            # as the text may be too long to fit,
             # we make sure the cursor is on screen
             # ie the text scroll with the cursors
             beg = max(0, self.editingpos+1-size)
@@ -69,14 +71,16 @@ class Textbox:
                     self.content[self.editingpos+1],
                     curses.A_STANDOUT,
                 )
-            else:  # if content is empty or the cursor is after content (ie where inputting at the end)
+            else:  # if content is empty or the cursor is after content (ie inputting at the end)
                 self.win.addstr(0, 0, str_to_show + "\u2588")
 
             self.win.refresh()
 
     def gather(self):
+        """Return the string currently in the input box"""
         return "".join(self.content[1:])
 
     def reset(self):
+        """"Reset the input box to its original state"""
         self.content = ['\0']
         self.editingpos = 0

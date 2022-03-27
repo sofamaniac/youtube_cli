@@ -1,15 +1,15 @@
-from gui.screen import Screen, Directions
+"""Entry point for youtube_cli"""
+
+import curses
+from parser import primitives
 
 from application import Application
 from keylistener import Listener
-
-import curses
-
 from keyconfig import KeyConfiguration
 
-import parser.primitives as primitives
 
 def initialize(stdscr):
+    """Initialize the different component of the application"""
     app = Application(stdscr)
     config = KeyConfiguration(app)
     listener = Listener(app)
@@ -18,18 +18,20 @@ def initialize(stdscr):
     return main(app, listener, config)
 
 def main(app, listener, config):
+    """Entry point of the program"""
     last_event = None
     while True:
-        c = app.scr.get_wch()
-        if c == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
+        char = app.scr.get_wch()
+        if char == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
             app.scr.resize()
         else:
-            config.checkAction(c)
-        last_event = c
+            config.checkAction(char)
+        last_event = char
         app.update()
-    quit(listener, app)
+    end(listener, app)
 
-def quit(listener, app):
+def end(listener, app):
+    """Gracefully quit everything"""
     listener.stop()
     app.quit()
 

@@ -1,4 +1,4 @@
-from playlist import *
+from playlist import Playable, Playlist, PlaylistList
 from os import walk
 from os.path import join as joinpath
 
@@ -41,7 +41,7 @@ class Folder(Playlist):
 
         self.size = len(self.elements)
 
-class FolderList(Playlist):
+class FolderList(PlaylistList):
 
     def __init__(self):
         Playlist.__init__(self)
