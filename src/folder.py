@@ -5,6 +5,7 @@ import eyed3
 
 from playlist import Playable, Playlist, PlaylistList
 
+
 class LocalFile(Playable):
     def __init__(self, title, author, path):
 

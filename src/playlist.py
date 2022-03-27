@@ -59,11 +59,11 @@ class Playlist:
         return self.get_at_index(index).getUrl()
 
     def shuffle(self):
-        self.order = [i for i in range(self.size)]
+        self.order = list(range(self.size))
         shuffle(self.order)
 
     def unshuffle(self):
-        self.order = [i for i in range(self.size)]
+        self.order = list(range(self.size))
 
     def next(self):
         if self.currentIndex >= self.size:

@@ -2,8 +2,7 @@
 
 import curses
 from gui.screen import CurseString, Directions
-import gui.screen as screen
-
+from gui import screen
 
 class Panel:
     """Basic component of the interface"""
@@ -38,10 +37,10 @@ class Panel:
         if not to_display and self.source:
             to_display = self.get_content(off, page_size + off)
 
-        for i in range(len(to_display)):
+        for i, s in enumerate(to_display):
             if i + off == self.selected and draw_select:
-                to_display[i].set_attr(curses.A_STANDOUT)
-            to_display[i].draw_to_win(self.win, i + 1, 1, width)
+                s.set_attr(curses.A_STANDOUT)
+            s.draw_to_win(self.win, i + 1, 1, width)
         self.win.noutrefresh()
 
     def clear(self, refresh=True):

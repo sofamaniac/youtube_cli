@@ -175,6 +175,9 @@ class Application:
         if self.in_search:
             self.search_panel.update()
 
+        if self.in_add_to_playlist:
+            self.draw_add_to_playlist()
+
         self.scr.update()
 
     def draw_info(self):
@@ -262,7 +265,7 @@ class Application:
             and direction in [Directions.LEFT, Directions.RIGHT]
             and self.get_current_panel() == self.content_panel
         ):
-            self.getPlaylist()
+            self.get_playlist()
             self.content_panel.selected = 0
 
     def set_playlist(self):
@@ -309,7 +312,7 @@ class Application:
             self.play()
 
     def escape(self):
-        if self.get_current_panel() == self.add_to_playlist_panel:
+        if self.in_add_to_playlist:
             self.in_add_to_playlist = False
             self.add_to_playlist_panel.toggle_visible()
 
@@ -355,6 +358,7 @@ class Application:
         # therefore we update it manually each time something is played
         # TODO not working or maybe it is
         self.increase_volume(0)
+
     def stop(self):
         self.player.stop()
         self.playing = youtube.Video()

@@ -44,14 +44,22 @@ class KeyConfiguration:
             "_": [app.seek_percent, 80],
             "ç": [app.seek_percent, 90],
             ":": [app.command],
+            curses.ascii.ESC: [app.escape]
         }
 
     def check_action(self, keycode):
         """Given a keycode, check if there is an action bind to it,
         and if so runs it"""
+
         if keycode in self.actions:
             action = self.actions[keycode][0]
             args = self.actions[keycode][1:]
+            action(*args)
+
+        if isinstance(keycode, str) and ord(keycode) in self.actions:
+            code = ord(keycode)
+            action = self.actions[code][0]
+            args = self.actions[code][1:]
             action(*args)
 
     def add_action(self, key, action, args):

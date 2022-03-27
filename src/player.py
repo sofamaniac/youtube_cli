@@ -15,8 +15,8 @@ class AudioPlayerMPD:
         self.client.connect("localhost", 6600)
 
     def play(self, url: str):
-        id = self.client.addid(url)
-        self.client.playid(id)
+        file_id = self.client.addid(url)
+        self.client.playid(file_id)
 
     def pause(self):
         is_paused = self.client.status()["state"] == "pause"
@@ -48,12 +48,12 @@ class AudioPlayerMPD:
             return default
 
     @property
-    def time(self, default=0):
-        return float(self.get_property("elapsed", default))
+    def time(self):
+        return float(self.get_property("elapsed", 0))
 
     @property
-    def duration(self, default=0):
-        return float(self.get_property("duration", default))
+    def duration(self):
+        return float(self.get_property("duration", 0))
 
     def set_repeat(self, state: str):
         if state == "No":
@@ -65,9 +65,7 @@ class AudioPlayerMPD:
         self.client.setvol(vol)
 
     def check_alive(self):
-        if True:
-            return
-        raise PlayerDeadError
+        return True
 
     def is_playing(self):
         return self.get_property("state", "stop") != "stop"
@@ -102,7 +100,7 @@ class VideoPlayer:
         try:
             self.player.check_core_alive()
         except MPVDeadError:
-            raise PlayerDeadError
+            raise PlayerDeadError from MPVDeadError
 
     def is_playing(self):
         return self.player.media_title
