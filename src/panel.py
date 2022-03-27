@@ -1,43 +1,47 @@
+"""Module providing basic panel components for the program"""
 
+import curses
 from gui.screen import CurseString, Directions
 import gui.screen as screen
-import curses
+
 
 class Panel:
+    """Basic component of the interface"""
+
     def __init__(self, win, title):
         self.source = None
         self.selected = 0
         self.win = win
         self.title = CurseString(title)
-        self.title.setAttr(curses.A_BOLD)
+        self.title.set_attr(curses.A_BOLD)
         self.page = 0
         self.visible = True
 
-    def drawBox(self, color=screen.COLOR_BORDER):
+    def draw_box(self, color=screen.COLOR_BORDER):
         self.win.attrset(curses.color_pair(color))
         self.win.box()
         self.win.attrset(0)
 
-    def update(self, drawSelect=True, to_display=[]):
+    def update(self, draw_select=True, to_display=[]):
         if not self.visible:
             return
 
-        page_size = self.getPageSize()
+        page_size = self.get_page_size()
         self.win.erase()
-        self.drawBox()
+        self.draw_box()
 
         off = self.page * page_size
-        width = self.win.getmaxyx()[1]-2
+        width = self.win.getmaxyx()[1] - 2
 
-        self.title.drawToWin(self.win, 0, 1, width) 
+        self.title.draw_to_win(self.win, 0, 1, width)
 
         if not to_display and self.source:
-            to_display = self.getContent(off, page_size + off)
+            to_display = self.get_content(off, page_size + off)
 
         for i in range(len(to_display)):
-            if i + off == self.selected and drawSelect:
-                to_display[i].setAttr(curses.A_STANDOUT)
-            to_display[i].drawToWin(self.win, i+1, 1, width)
+            if i + off == self.selected and draw_select:
+                to_display[i].set_attr(curses.A_STANDOUT)
+            to_display[i].draw_to_win(self.win, i + 1, 1, width)
         self.win.noutrefresh()
 
     def clear(self, refresh=True):
@@ -45,39 +49,39 @@ class Panel:
         if refresh:
             self.win.refresh()
 
-    def toggleVisible(self):
+    def toggle_visible(self):
         self.visible = not self.visible
         self.clear()
 
     def select(self, direction):
-        off = self.getPageSize() * self.page
-        if direction == Directions.Up:
+        off = self.get_page_size() * self.page
+        if direction == Directions.UP:
             self.selected = max(0, self.selected - 1)
             if self.selected < off:
                 self.page -= 1
-        elif direction == Directions.Down:
+        elif direction == Directions.DOWN:
             self.selected += 1
-            if self.selected > self.source.getMaxIndex():
+            if self.selected > self.source.get_max_index():
                 self.selected -= 1
-            if self.selected >= off + self.getPageSize():
+            if self.selected >= off + self.get_page_size():
                 self.page += 1
 
-    def getSelected(self):
-        return self.source.getAtIndex(self.selected)
+    def get_selected(self):
+        return self.source.get_at_index(self.selected)
 
-    def getPageSize(self):
+    def get_page_size(self):
         return self.win.getmaxyx()[0] - 2
 
-    def getContent(self, start, end):
-        content = self.source.getItemList(start, end)
+    def get_content(self, start, end):
+        content = self.source.get_item_list(start, end)
         return [CurseString(str(c)) for c in content]
 
     def next_page(self):
-        if self.selected + self.getPageSize() <= self.source.getMaxIndex():
+        if self.selected + self.get_page_size() <= self.source.getMaxIndex():
             self.page += 1
-            self.selected = self.selected + self.getPageSize()
+            self.selected = self.selected + self.get_page_size()
 
     def prev_page(self):
         page_incr = max(0, self.page - 1) - self.page
         self.page += page_incr
-        self.selected += self.getPageSize() * page_incr
+        self.selected += self.get_page_size() * page_incr

@@ -4,6 +4,7 @@ from os.path import join as joinpath
 
 import eyed3
 
+
 class LocalFile(Playable):
     def __init__(self, title, author, path):
 
@@ -13,8 +14,8 @@ class LocalFile(Playable):
     def getUrl(self, video=False):
         return self.path
 
-class Folder(Playlist):
 
+class Folder(Playlist):
     def __init__(self, path):
         Playlist.__init__(self)
 
@@ -41,8 +42,8 @@ class Folder(Playlist):
 
         self.size = len(self.elements)
 
-class FolderList(PlaylistList):
 
+class FolderList(PlaylistList):
     def __init__(self):
         Playlist.__init__(self)
 
@@ -52,8 +53,3 @@ class FolderList(PlaylistList):
         for p in self.foldersPaths:
             self.elements.append(Folder(p))
         self.size = len(self.elements)
-
-
-
-
-

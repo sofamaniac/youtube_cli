@@ -13,10 +13,10 @@ import googleapiclient.errors
 import google.auth.exceptions
 
 
-
 MAX_RESULTS = 50
 
-class Youtube():
+
+class Youtube:
     def __init__(self):
 
         self.youtube = None
@@ -46,17 +46,18 @@ class Youtube():
     def videos(self):
         return self.youtube.videos()
 
-    def videosList(self):
+    def videos_list(self):
         return self.youtube.videos().list
 
     def search(self):
         return self.youtube.search()
 
-    def playlistItems(self):
+    def playlist_items(self):
         return self.youtube.playlistItems()
 
     def playlists(self):
         return self.youtube.playlists()
+
 
 youtube = Youtube()
 
@@ -65,6 +66,7 @@ youtube = Youtube()
 
 # === SponsorBlock === #
 import sponsorblock as sb
+
 sponsorBlock = sb.Client()
 useSponsorBlock = True
 sponsorBlockTimeout = 5  # timeout in seconds
@@ -74,9 +76,13 @@ toSkip = ["sponsor", "selfpromo", "music_offtopic"]
 # === Timeout on functions === #
 # code found at https://stackoverflow.com/a/26664130
 from multiprocessing import Process, Queue
+
 queue = Queue()
 
-class TimeoutException(Exception): pass
+
+class TimeoutException(Exception):
+    pass
+
 
 def run_with_limited_time(func, args, kwargs, time):
     """Runs a function with time limit
@@ -101,7 +107,9 @@ def run_with_limited_time(func, args, kwargs, time):
         result = queue.get()
         return result
 
+
 # ============================= #
+
 
 class Video(Playable):
     def __init__(self, id="", title="", description="", author="", playlistItemId=""):
@@ -110,7 +118,7 @@ class Video(Playable):
         self.playlistItemId = playlistItemId  # useful for editing playlist
         self.skipSegments = []
 
-    def getUrl(self, video=False):
+    def get_url(self, video=False):
         """Return the url for the audio stream of the video"""
 
         if video:
@@ -125,26 +133,33 @@ class Video(Playable):
         urls = urls.stdout.splitlines()
         if urls:
             if useSponsorBlock:
-                self.getSkipSegment()
-            return urls[0]
+                self.get_skip_segment()
         else:
             return ""
 
-    def __getSkipSegment(self):
+    def __get_skip_segment(self):
         try:
-            skipSegments = sponsorBlock.get_skip_segments(video_id=self.id, categories=toSkip)
-        except (sb.errors.NotFoundException, sb.errors.ServerException, sb.errors.ServerException) as _:
+            skipSegments = sponsorBlock.get_skip_segments(
+                video_id=self.id, categories=toSkip
+            )
+        except (
+            sb.errors.NotFoundException,
+            sb.errors.ServerException,
+            sb.errors.ServerException,
+        ) as _:
             skipSegments = []
         finally:
             queue.put(skipSegments)
 
-    def getSkipSegment(self):
+    def get_skip_segment(self):
         try:
-            self.skipSegments = run_with_limited_time(self.__getSkipSegment, (), {}, sponsorBlockTimeout)
+            self.skipSegments = run_with_limited_time(
+                self.__get_skip_segment, (), {}, sponsorBlockTimeout
+            )
         except (TimeoutException) as _:
             self.skipSegments = []
 
-    def checkSkip(self, time):
+    def check_skip(self, time):
         for skip in self.skipSegments:
             if skip.start <= time <= skip.end:
                 return skip.end
@@ -170,13 +185,13 @@ class YoutubeList(Playlist):
             if v.id == item:
                 return True
         while self.nextPage != None:
-            last_index = len(self.elements)-1
-            self.loadNextPage()
+            last_index = len(self.elements) - 1
+            self.load_next_page()
             for v in self.elements[last_index:]:
                 if v.id == item:
                     return True
         return False
-    
+
     def request(self, who, **what):
         try:
             result = who(**what).execute()
@@ -186,11 +201,10 @@ class YoutubeList(Playlist):
             # TODO this error handling cannot work since the youtube object has changed, so [who] is obsolete
         return result
 
-
-    def loadNextPage(self):
+    def load_next_page(self):
         pass
 
-    def updateTokens(self, response):
+    def update_tokens(self, response):
         self.nextPage = (
             response["nextPageToken"] if "nextPageToken" in response else None
         )
@@ -198,25 +212,25 @@ class YoutubeList(Playlist):
             response["prevPageToken"] if "prevPageToken" in response else None
         )
 
-    def getAtIndex(self, index):
+    def get_at_index(self, index):
         """If the index is greater than the number of elements in the list,
         does NOT raise an error but return the last element of the list instead"""
 
         while index > self.nb_loaded and self.nextPage != None:
-            self.loadNextPage()
+            self.load_next_page()
         if index >= self.nb_loaded:
             return self.elements[-1]
         return self.elements[index]
 
-    def getItemList(self, start, end):
+    def get_item_list(self, start, end):
         while end + 1 > self.nb_loaded and self.nextPage != None:
-            self.loadNextPage()
+            self.load_next_page()
         max_index = min(end, self.nb_loaded)
         return self.elements[start:max_index]
 
-    def loadAll(self):
+    def load_all(self):
         while self.nextPage != None or self.nb_loaded == 0:
-            self.loadNextPage()
+            self.load_next_page()
         self.size = self.nb_loaded
 
     def reload(self):
@@ -226,9 +240,9 @@ class YoutubeList(Playlist):
         self.nextPage = None
         self.prevPage = None
 
-        self.loadNextPage()
+        self.load_next_page()
 
-    def getMaxIndex(self):
+    def get_max_index(self):
         return self.nb_loaded - 1
 
 
@@ -241,23 +255,22 @@ class YoutubePlaylist(YoutubeList):
         self.id = id
         self.size = nb_videos
         self.order = [i for i in range(self.size)]  # used for playlist shuffling
-        self.api_function = youtube.playlistItems
+        self.api_function = youtube.playlist_items
 
-        self.loadNextPage()  # we load the first page
+        self.load_next_page()  # we load the first page
 
-
-    def _addVideos(self, idList):
+    def _add_videos(self, idList):
 
         to_request = "id, snippet, status, contentDetails"
-        args = { "part": to_request,
-                 "id": ','.join(idList),
-                 }
+        args = {
+            "part": to_request,
+            "id": ",".join(idList),
+        }
         response = self.request(youtube.videos().list, **args)
-        
+
         nb_added = 0
         for v in response["items"]:
-            if not self.checkVideoAvailability(v):
-                self.size -= 1
+            if not self.check_video_availability(v):
                 self.removeMax()
                 continue
             self.elements.append(
@@ -271,7 +284,7 @@ class YoutubePlaylist(YoutubeList):
             nb_added += 1
         return nb_added
 
-    def checkVideoAvailability(self, video):
+    def check_video_availability(self, video):
         # this condition is maybe too strong as it excludes non-repertoriated
         result = video["status"]["privacyStatus"] == "public"
         if "regionRestriction" in video["contentDetails"]:
@@ -282,32 +295,34 @@ class YoutubePlaylist(YoutubeList):
                 result = result and "FR" in t["allowed"]
         return result
 
-    def loadNextPage(self):
+    def load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
-        args = { "part": to_request,
-                "playlistId": self.id,
-                "maxResults": MAX_RESULTS,
-                "pageToken": self.nextPage,
-                }
+        args = {
+            "part": to_request,
+            "playlistId": self.id,
+            "maxResults": MAX_RESULTS,
+            "pageToken": self.nextPage,
+        }
         response = self.request(self.api_function().list, **args)
 
         idList = []
         for v in response["items"]:
             idList.append(v["snippet"]["resourceId"]["videoId"])
-        self.nb_loaded += self._addVideos(idList)
-        self.updateTokens(response)
+        self.nb_loaded += self._add_videos(idList)
+        self.update_tokens(response)
 
     def add(self, video):
-        args = { "part": "snippet",
-                "body": {
-                    "snippet": {
-                        "playlistId": self.id,
-                        "resourceId": {"kind": "youtube#video", "videoId": video.id},
-                    },
-                    "position": 0,
+        args = {
+            "part": "snippet",
+            "body": {
+                "snippet": {
+                    "playlistId": self.id,
+                    "resourceId": {"kind": "youtube#video", "videoId": video.id},
                 },
+                "position": 0,
+            },
         }
-        self.request(self.api_function().insert,**args)
+        self.request(self.api_function().insert, **args)
         self.reload()  # we refresh the content
 
     def remove(self, video):
@@ -317,7 +332,7 @@ class YoutubePlaylist(YoutubeList):
                 break
         self.request(self.api_function().delete, id=playlistItemId)
         self.reload()
-    
+
     def removeMax(self):
         if not self.order:
             return
@@ -333,29 +348,30 @@ class LikedVideos(YoutubePlaylist):
         YoutubePlaylist.__init__(self, "Liked", title, 0)
         self.api_function = youtube.videos
 
-    def loadNextPage(self):
+    def load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
-        args = { "part": to_request,
-                "myRating": "like",
-                "maxResults": MAX_RESULTS,
-                "pageToken": self.nextPage,
-                }
-        response = self.request(youtube.videosList(), **args)
+        args = {
+            "part": to_request,
+            "myRating": "like",
+            "maxResults": MAX_RESULTS,
+            "pageToken": self.nextPage,
+        }
+        response = self.request(youtube.videos_list(), **args)
 
         idList = []
         for v in response["items"]:
             idList.append(v["id"])
-        nb_loaded = self._addVideos(idList)
+        nb_loaded = self._add_videos(idList)
 
         self.size += nb_loaded
         self.nb_loaded += nb_loaded
-        self.updateTokens(response)
+        self.update_tokens(response)
 
     def shuffle(self):
-        self.loadAll()
+        self.load_all()
         YoutubePlaylist.shuffle(self)
 
-    def getMaxIndex(self):
+    def get_max_index(self):
         if self.nextPage != None:
             return 1e99
         else:
@@ -377,15 +393,16 @@ class PlaylistList(YoutubeList):
         self.nb_loaded = 1
         self.api_function = youtube.playlists
 
-        self.loadNextPage()
-        self.loadAll()
+        self.load_next_page()
+        self.load_all()
 
-    def loadNextPage(self):
-        args = {"part": "id, snippet, contentDetails",
-                "maxResults": MAX_RESULTS,
-                "mine": True,
-                "pageToken": self.nextPage,
-                }
+    def load_next_page(self):
+        args = {
+            "part": "id, snippet, contentDetails",
+            "maxResults": MAX_RESULTS,
+            "mine": True,
+            "pageToken": self.nextPage,
+        }
         response = self.request(self.api_function().list, **args)
 
         for p in response["items"]:
@@ -394,7 +411,7 @@ class PlaylistList(YoutubeList):
                     p["id"], p["snippet"]["title"], p["contentDetails"]["itemCount"]
                 )
             )
-        self.updateTokens(response)
+        self.update_tokens(response)
         self.nb_loaded += len(response["items"])
         if self.nextPage == None:
             self.size = self.nb_loaded
@@ -416,22 +433,23 @@ class Search(YoutubePlaylist):
 
         self.loadNextPage()
 
-    def loadNextPage(self):
+    def load_next_page(self):
 
-        args = {"part": "id, snippet, contentDetails",
-                "maxResults": MAX_RESULTS,
-                "pageToken": self.nextPage,
-                "q": self.query,
-                "type": "video",
-                }
+        args = {
+            "part": "id, snippet, contentDetails",
+            "maxResults": MAX_RESULTS,
+            "pageToken": self.nextPage,
+            "q": self.query,
+            "type": "video",
+        }
 
         response = self.request(self.api_function().list, **args)
         idList = []
         for v in response["items"]:
             idList.append(v["id"]["videoId"])
 
-        self.nb_loaded += self._addVideos(idList)
-        self.updateTokens(response)
+        self.nb_loaded += self._add_videos(idList)
+        self.update_tokens(response)
 
         if self.nextPage == None:
             self.size = self.nb_loaded

@@ -3,12 +3,16 @@ import curses
 import curses.ascii
 import _curses
 
+
 class Textbox:
     """Input box"""
+
     def __init__(self, win):
         self.win = win
-        self.win.keypad(True)  # needed to interpret special keys such as arrows and backspace
-        self.content = ['\0']
+        self.win.keypad(
+            True
+        )  # needed to interpret special keys such as arrows and backspace
+        self.content = ["\0"]
         self.editingpos = 0  # position of the letter right in front of the cursor
 
     def edit(self, update=None):
@@ -30,8 +34,10 @@ class Textbox:
                     return
                 elif char in [curses.ascii.BEL, curses.ascii.NL]:
                     return
-                elif ( char in [curses.KEY_DC, curses.KEY_BACKSPACE, curses.ascii.BS] 
-                        and len(self.content) > 0 ):
+                elif (
+                    char in [curses.KEY_DC, curses.KEY_BACKSPACE, curses.ascii.BS]
+                    and len(self.content) > 0
+                ):
                     self.content.pop(self.editingpos)
                     self.editingpos -= 1
                 elif char == curses.KEY_LEFT:
@@ -39,9 +45,9 @@ class Textbox:
                     self.editingpos = max(0, self.editingpos)
                 elif char == curses.KEY_RIGHT:
                     self.editingpos += 1
-                    self.editingpos = min(len(self.content)-1, self.editingpos)
+                    self.editingpos = min(len(self.content) - 1, self.editingpos)
             else:
-                if char == '\n':
+                if char == "\n":
                     return
                 elif ord(char) == curses.ascii.ESC:  # may break other function keys
                     self.reset()
@@ -57,7 +63,7 @@ class Textbox:
             # as the text may be too long to fit,
             # we make sure the cursor is on screen
             # ie the text scroll with the cursors
-            beg = max(0, self.editingpos+1-size)
+            beg = max(0, self.editingpos + 1 - size)
             end = min(len(self.content), beg + size + 1)
 
             str_to_show = self.gather()[beg:end]
@@ -68,7 +74,7 @@ class Textbox:
                 self.win.addch(
                     0,
                     self.editingpos - beg,
-                    self.content[self.editingpos+1],
+                    self.content[self.editingpos + 1],
                     curses.A_STANDOUT,
                 )
             else:  # if content is empty or the cursor is after content (ie inputting at the end)
@@ -81,6 +87,6 @@ class Textbox:
         return "".join(self.content[1:])
 
     def reset(self):
-        """"Reset the input box to its original state"""
-        self.content = ['\0']
+        """ "Reset the input box to its original state"""
+        self.content = ["\0"]
         self.editingpos = 0

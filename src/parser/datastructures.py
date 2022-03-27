@@ -3,8 +3,12 @@
 
 class UndefinedFunction(Exception):
     pass
+
+
 class WrongArity(Exception):
     pass
+
+
 class UnknowIdentifier(Exception):
     pass
 
@@ -49,7 +53,9 @@ class Scope:
     def addFun(self, fun):
         self.functions[fun.name] = fun
 
+
 globalScope = Scope(None)
+
 
 class Command:
     def __init__(self, action, args=[], continuation=None, scope=None):
@@ -61,7 +67,7 @@ class Command:
     def __str__(self):
         s_args = ""
         for a in self.args:
-            s_args += str(a) + ' '
+            s_args += str(a) + " "
         if self.continuation:
             return f"{self.action} {s_args};\n{self.continuation}"
         else:
@@ -69,7 +75,9 @@ class Command:
 
     def evaluate(self):
         if len(self.args) != self.action.arity:
-            raise WrongArity(f"got {len(self.args)} argument(s) instead of {self.action.arity}")
+            raise WrongArity(
+                f"got {len(self.args)} argument(s) instead of {self.action.arity}"
+            )
 
         if self.continuation:
             self.action.function(*self.args)
@@ -81,8 +89,8 @@ class Command:
         if self.continuation:
             self.continuation.setScope(scope)
 
-class Action:
 
+class Action:
     def __init__(self, name, function, arity, scope=None):
         self.function = function
         self.arity = arity
@@ -93,6 +101,7 @@ class Action:
 
     def evaluate(self):
         return self.function
+
 
 class Function:
     def __init__(self, name, argsName, block, scope=None, continuation=None):
@@ -140,8 +149,8 @@ class Constante:
     def setScope(self, scope):
         self.scope = scope
 
+
 class Variable:
-    
     def __init__(self, name="", value=None, scope=None):
         self.value = value
         self.scope = scope
@@ -161,13 +170,15 @@ class Variable:
 
     def setScope(self, scope):
         self.scope = scope
-        1/0
+        1 / 0
         self.scope.addVar(self)
+
 
 class Property(Variable):
     """
     Provides a way to interact with variables of the actual youtube_cli program
     """
+
     def __init__(self, name, object):
         Variable.__init__(self, name, None, globalScope)
         self.getter = lambda: getattr(object, name)
@@ -209,6 +220,7 @@ class Assignment:
         self.target = self.scope.findVar(self.targetName)
         self.continuation.setScope(scope)
 
+
 class Block:
     def __init__(self, commands=[], continuation=None, scope=None):
         self.commands = commands
@@ -219,7 +231,7 @@ class Block:
         s = ""
         for c in self.commands:
             s += str(c)
-        return "{\n" + s +"}\n"
+        return "{\n" + s + "}\n"
 
     def evaluate(self):
         last_return = None
@@ -237,8 +249,11 @@ class Block:
             c.setScope(scope)
         self.continuation.setScope(scope.parent)
 
+
 class Conditional:
-    def __init__(self, condition, if_block, else_block=None, scope=None, continuation=None):
+    def __init__(
+        self, condition, if_block, else_block=None, scope=None, continuation=None
+    ):
 
         self.condition = condition
         self.if_block = if_block
@@ -264,7 +279,7 @@ class Conditional:
 
 class Loop:
     def __init__(self, condition, block, scope=None, continuation=None):
-        
+
         self.condition = condition
         self.block = block
         self.scope = scope

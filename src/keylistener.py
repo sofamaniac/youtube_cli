@@ -1,8 +1,10 @@
 """Module to capture key event globally"""
 from pynput import keyboard
 
+
 class Listener:
     """This class listen in permanence to check if media keys are used"""
+
     def __init__(self, application):
         self.app = application
         self.keys_down = set()

@@ -2,11 +2,12 @@ from mpd import MPDClient
 from mpv import MPV
 from mpv import ShutdownError as MPVDeadError
 
+
 class PlayerDeadError(Exception):
     pass
 
-class AudioPlayerMPD:
 
+class AudioPlayerMPD:
     def __init__(self):
 
         self.client = MPDClient()
@@ -31,7 +32,7 @@ class AudioPlayerMPD:
 
     def seek(self, dt: int):
         if dt >= 0:
-            dt = '+' + str(dt)
+            dt = "+" + str(dt)
         else:
             dt = str(dt)
         self.client.seekcur(dt)
@@ -74,8 +75,8 @@ class AudioPlayerMPD:
     def is_song_finished(self):
         return self.get_property("state", "") == "stop"
 
-class VideoPlayer:
 
+class VideoPlayer:
     def __init__(self, video="auto"):
         self.player = MPV(video=video, ytdl=True)
 
@@ -127,8 +128,7 @@ class VideoPlayer:
     def is_song_finished(self):
         return not self.is_playing()
 
-class AudioPlayer(VideoPlayer):
 
+class AudioPlayer(VideoPlayer):
     def __init__(self):
         VideoPlayer.__init__(self, video=False)
-

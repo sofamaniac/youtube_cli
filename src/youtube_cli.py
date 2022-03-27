@@ -17,6 +17,7 @@ def initialize(stdscr):
     primitives.init(app)
     return main(app, listener, config)
 
+
 def main(app, listener, config):
     """Entry point of the program"""
     last_event = None
@@ -25,10 +26,11 @@ def main(app, listener, config):
         if char == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
             app.scr.resize()
         else:
-            config.checkAction(char)
+            config.check_action(char)
         last_event = char
         app.update()
     end(listener, app)
+
 
 def end(listener, app):
     """Gracefully quit everything"""
