@@ -134,6 +134,7 @@ class Video(Playable):
         if urls:
             if useSponsorBlock:
                 self.get_skip_segment()
+            return urls[0]
         else:
             return ""
 
@@ -168,9 +169,9 @@ class Video(Playable):
 
 class YoutubeList(Playlist):
     def __init__(self):
-        self.currentIndex = 0
-        self.nextPage = None
-        self.prevPage = None
+        self.current_index = 0
+        self.next_page = None
+        self.prev_page = None
 
         self.nb_loaded = 0
         self.elements = []
@@ -184,7 +185,7 @@ class YoutubeList(Playlist):
         for v in self.elements:
             if v.id == item:
                 return True
-        while self.nextPage != None:
+        while self.next_page != None:
             last_index = len(self.elements) - 1
             self.load_next_page()
             for v in self.elements[last_index:]:
@@ -205,10 +206,10 @@ class YoutubeList(Playlist):
         pass
 
     def update_tokens(self, response):
-        self.nextPage = (
+        self.next_page = (
             response["nextPageToken"] if "nextPageToken" in response else None
         )
-        self.prevPage = (
+        self.prev_page = (
             response["prevPageToken"] if "prevPageToken" in response else None
         )
 
@@ -216,20 +217,20 @@ class YoutubeList(Playlist):
         """If the index is greater than the number of elements in the list,
         does NOT raise an error but return the last element of the list instead"""
 
-        while index > self.nb_loaded and self.nextPage != None:
+        while index > self.nb_loaded and self.next_page != None:
             self.load_next_page()
         if index >= self.nb_loaded:
             return self.elements[-1]
         return self.elements[index]
 
     def get_item_list(self, start, end):
-        while end + 1 > self.nb_loaded and self.nextPage != None:
+        while end + 1 > self.nb_loaded and self.next_page != None:
             self.load_next_page()
         max_index = min(end, self.nb_loaded)
         return self.elements[start:max_index]
 
     def load_all(self):
-        while self.nextPage != None or self.nb_loaded == 0:
+        while self.next_page != None or self.nb_loaded == 0:
             self.load_next_page()
         self.size = self.nb_loaded
 
@@ -237,8 +238,8 @@ class YoutubeList(Playlist):
         self.nb_loaded = 0
         self.size = 0
         self.elements = []
-        self.nextPage = None
-        self.prevPage = None
+        self.next_page = None
+        self.prev_page = None
 
         self.load_next_page()
 
@@ -301,7 +302,7 @@ class YoutubePlaylist(YoutubeList):
             "part": to_request,
             "playlistId": self.id,
             "maxResults": MAX_RESULTS,
-            "pageToken": self.nextPage,
+            "pageToken": self.next_page,
         }
         response = self.request(self.api_function().list, **args)
 
@@ -354,7 +355,7 @@ class LikedVideos(YoutubePlaylist):
             "part": to_request,
             "myRating": "like",
             "maxResults": MAX_RESULTS,
-            "pageToken": self.nextPage,
+            "pageToken": self.next_page,
         }
         response = self.request(youtube.videos_list(), **args)
 
@@ -372,7 +373,7 @@ class LikedVideos(YoutubePlaylist):
         YoutubePlaylist.shuffle(self)
 
     def get_max_index(self):
-        if self.nextPage != None:
+        if self.next_page != None:
             return 1e99
         else:
             return self.size - 1
@@ -386,7 +387,7 @@ class LikedVideos(YoutubePlaylist):
         self.reload()  # we refresh the content
 
 
-class PlaylistList(YoutubeList):
+class YoutubePlaylistList(YoutubeList):
     def __init__(self):
         YoutubeList.__init__(self)
         self.elements = [LikedVideos("Liked Videos")]
@@ -401,7 +402,7 @@ class PlaylistList(YoutubeList):
             "part": "id, snippet, contentDetails",
             "maxResults": MAX_RESULTS,
             "mine": True,
-            "pageToken": self.nextPage,
+            "pageToken": self.next_page,
         }
         response = self.request(self.api_function().list, **args)
 
@@ -413,7 +414,7 @@ class PlaylistList(YoutubeList):
             )
         self.update_tokens(response)
         self.nb_loaded += len(response["items"])
-        if self.nextPage == None:
+        if self.next_page == None:
             self.size = self.nb_loaded
 
     def shuffle(self):
@@ -431,27 +432,27 @@ class Search(YoutubePlaylist):
         self.size = 1e99
         self.api_function = youtube.search
 
-        self.loadNextPage()
+        self.load_next_page()
 
     def load_next_page(self):
 
         args = {
             "part": "id, snippet, contentDetails",
             "maxResults": MAX_RESULTS,
-            "pageToken": self.nextPage,
+            "pageToken": self.next_page,
             "q": self.query,
             "type": "video",
         }
 
         response = self.request(self.api_function().list, **args)
-        idList = []
+        id_list = []
         for v in response["items"]:
-            idList.append(v["id"]["videoId"])
+            id_list.append(v["id"]["videoId"])
 
-        self.nb_loaded += self._add_videos(idList)
+        self.nb_loaded += self._add_videos(id_list)
         self.update_tokens(response)
 
-        if self.nextPage == None:
+        if self.next_page == None:
             self.size = self.nb_loaded
 
     def shuffle(self):

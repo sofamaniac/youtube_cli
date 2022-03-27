@@ -1,9 +1,9 @@
-from playlist import Playable, Playlist, PlaylistList
 from os import walk
 from os.path import join as joinpath
 
 import eyed3
 
+from playlist import Playable, Playlist, PlaylistList
 
 class LocalFile(Playable):
     def __init__(self, title, author, path):
@@ -11,7 +11,7 @@ class LocalFile(Playable):
         Playable.__init__(self, title, author, path)
         self.path = path
 
-    def getUrl(self, video=False):
+    def get_url(self, video=False):
         return self.path
 
 
@@ -20,10 +20,10 @@ class Folder(Playlist):
         Playlist.__init__(self)
 
         self.path = path
-        self.loadFiles()
         self.title = path
+        self.load_files()
 
-    def loadFiles(self):
+    def load_files(self):
 
         self.elements = []
 
@@ -45,7 +45,7 @@ class Folder(Playlist):
 
 class FolderList(PlaylistList):
     def __init__(self):
-        Playlist.__init__(self)
+        PlaylistList.__init__(self)
 
         self.foldersPaths = ["/home/sofamaniac/Musics/"]
         self.elements = []

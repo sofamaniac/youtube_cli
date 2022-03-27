@@ -22,13 +22,13 @@ class Application:
 
         self.playlist_panel = Panel(self.scr.playlists_win, "Playlists")
         self.playlist_panel.source = PlaylistList()
-        youtubePlaylists = youtube.PlaylistList()
+        youtubePlaylists = youtube.YoutubePlaylistList()
         for p in youtubePlaylists.elements:
             self.playlist_panel.source.add_playlist(p)
         folders = FolderList()
         for f in folders.elements:
             self.playlist_panel.source.add_playlist(f)
-        self.getPlaylist()
+        self.get_playlist()
 
         self.player_panel = Panel(self.scr.player_win, "Player Information")
         self.player_panel.selected = -1
@@ -118,7 +118,7 @@ class Application:
         self.stop()
         self.create_player()
 
-    def skipSegment(self):
+    def skip_segment(self):
         time = self.player.time
         time = time if time else 0
         check = self.playing.check_skip(time)
@@ -158,15 +158,13 @@ class Application:
             self.create_player()
 
         # checking for segments to skip
-        self.skipSegment()
+        self.skip_segment()
 
         # Drawing all the windows
         self.playlist_panel.update()
         self.content_panel.update()
-        self.drawPlayer()
-        self.drawOptions()
-        self.drawInfo()
-        self.drawAddToPlaylist()
+        self.draw_player()
+        self.draw_options()
 
         # checking if there is something playing
         if (
@@ -179,7 +177,7 @@ class Application:
 
         self.scr.update()
 
-    def drawInfo(self):
+    def draw_info(self):
         selection = self.content_panel.get_selected()
         content = []
         content.append(CurseString(f"Title: {selection.title}"))
@@ -187,7 +185,7 @@ class Application:
         content.append(CurseString(f"Id: {selection.id}"))
         self.information_panel.update(draw_select=False, to_display=content)
 
-    def drawOptions(self):
+    def draw_options(self):
         content = []
 
         content.append(CurseString(f"Auto: {self.in_playlist}"))
@@ -197,7 +195,7 @@ class Application:
         content.append(CurseString(f"Mode: {'Video' if self.video_mode else 'Audio'}"))
         self.option_panel.update(draw_select=False, to_display=content)
 
-    def drawPlayer(self):
+    def draw_player(self):
         title = self.playing.title
         dur = self.player.duration
 
@@ -227,7 +225,7 @@ class Application:
 
         self.player_panel.update(draw_select=False, to_display=content)
 
-    def drawAddToPlaylist(self):
+    def draw_add_to_playlist(self):
 
         if not self.add_to_playlist_panel.visible:
             return
@@ -248,7 +246,7 @@ class Application:
         doUpdate = False
         if direction == Directions.UP or direction == Directions.DOWN:
             doUpdate = True
-            self.getCurrentPanel().select(direction)
+            self.get_current_panel().select(direction)
         elif direction == Directions.LEFT and self.current_panel > 0:
             doUpdate = True
             self.current_panel -= 1
@@ -262,12 +260,12 @@ class Application:
         if (
             doUpdate
             and direction in [Directions.LEFT, Directions.RIGHT]
-            and self.getCurrentPanel() == self.content_panel
+            and self.get_current_panel() == self.content_panel
         ):
             self.getPlaylist()
             self.content_panel.selected = 0
 
-    def setPlaylist(self):
+    def set_playlist(self):
         if not self.in_playlist:
             self.playlist = self.playlist_panel.get_selected()
             self.shuffled = self.shuffled  # force update
@@ -276,14 +274,14 @@ class Application:
             self.play(self.playlist.get_current())
         self.in_playlist = not self.in_playlist
 
-    def getPlaylist(self):
+    def get_playlist(self):
         self.content_panel.source = self.playlist_panel.get_selected()
 
-    def addToPlaylist(self):
+    def add_to_playlist(self):
         self.in_add_to_playlist = True
         self.add_to_playlist_panel.toggle_visible()
 
-    def editPlaylist(self):
+    def edit_playlist(self):
         currSelection = self.content_panel.get_selected()
         currPlaylist = self.add_to_playlist_panel.get_selected()
         if currSelection in currPlaylist:
@@ -293,25 +291,25 @@ class Application:
         self.in_add_to_playlist = False
         self.add_to_playlist_panel.toggle_visible()
 
-    def getCurrentPanel(self):
+    def get_current_panel(self):
         if self.in_add_to_playlist:
             return self.add_to_playlist_panel
         else:
             return self.panels_list[self.current_panel]
 
     def enter(self):
-        if self.getCurrentPanel() == self.playlist_panel:
-            self.getPlaylist()
+        if self.get_current_panel() == self.playlist_panel:
+            self.get_playlist()
             self.current_panel = 1
-        elif self.getCurrentPanel() == self.add_to_playlist_panel:
-            self.editPlaylist()
+        elif self.get_current_panel() == self.add_to_playlist_panel:
+            self.edit_playlist()
         else:
             if self.in_playlist:
                 self.playlist.set_effective_index(self.content_panel.selected)
             self.play()
 
     def escape(self):
-        if self.getCurrentPanel() == self.add_to_playlist_panel:
+        if self.get_current_panel() == self.add_to_playlist_panel:
             self.in_add_to_playlist = False
             self.add_to_playlist_panel.toggle_visible()
 
@@ -340,11 +338,11 @@ class Application:
             panel.select(Directions.UP)
             self.play()
 
-    def nextPage(self):
-        self.getCurrentPanel().next_page()
+    def next_page(self):
+        self.get_current_panel().next_page()
 
-    def prevPage(self):
-        self.getCurrentPanel().prev_page()
+    def prev_page(self):
+        self.get_current_panel().prev_page()
 
     def play(self, to_play=youtube.Video()):
         selected = self.content_panel.get_selected()
@@ -356,8 +354,7 @@ class Application:
         # when nothing is playing, the volume might not get updated on the backend
         # therefore we update it manually each time something is played
         # TODO not working or maybe it is
-        self.increaseVolume(0)
-
+        self.increase_volume(0)
     def stop(self):
         self.player.stop()
         self.playing = youtube.Video()
@@ -365,7 +362,7 @@ class Application:
     def pause(self):
         self.player.pause()
 
-    def toggleRepeat(self):
+    def toggle_repeat(self):
         values = ["No", "Song", "Playlist"]
         self.repeat = values[values.index(self.repeat)]
         self.player.set_repeat(self.repeat)
@@ -375,15 +372,15 @@ class Application:
             return
         self.player.seek(dt)
 
-    def seekPercent(self, percent):
+    def seek_percent(self, percent):
         if not self.player.is_playing():
             return
         self.player.seek_percent(percent)
 
-    def increaseVolume(self, dv):
+    def increase_volume(self, dv):
         self.volume += dv
 
-    def toggleMute(self):
+    def toggle_mute(self):
         self.muted = not self.muted
 
     def create_player(self):
@@ -392,10 +389,10 @@ class Application:
         else:
             self.player = player.AudioPlayer()
 
-    def toggleVideo(self):
+    def toggle_video(self):
         self.video_mode = not self.video_mode
 
-    def toggleShuffle(self):
+    def toggle_shuffle(self):
         self.shuffled = not self.shuffled
 
     def quit(self):
