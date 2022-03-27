@@ -44,7 +44,7 @@ class KeyConfiguration:
             "_": [app.seek_percent, 80],
             "ç": [app.seek_percent, 90],
             ":": [app.command],
-            curses.ascii.ESC: [app.escape]
+            curses.ascii.ESC: [app.escape],
         }
 
     def check_action(self, keycode):

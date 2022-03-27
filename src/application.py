@@ -17,6 +17,8 @@ from playlist import PlaylistList
 
 
 class Application:
+    """The core of the application"""
+
     def __init__(self, stdscr):
         self.scr = screen.Screen(stdscr)
 

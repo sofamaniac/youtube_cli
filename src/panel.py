@@ -4,6 +4,7 @@ import curses
 from gui.screen import CurseString, Directions
 from gui import screen
 
+
 class Panel:
     """Basic component of the interface"""
 
