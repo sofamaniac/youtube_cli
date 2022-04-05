@@ -77,7 +77,7 @@ class Panel:
         return [CurseString(str(c)) for c in content]
 
     def next_page(self):
-        if self.selected + self.get_page_size() <= self.source.getMaxIndex():
+        if self.selected + self.get_page_size() <= self.source.get_max_index():
             self.page += 1
             self.selected = self.selected + self.get_page_size()
 

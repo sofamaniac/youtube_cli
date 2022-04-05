@@ -48,7 +48,19 @@ class FolderList(PlaylistList):
     def __init__(self):
         PlaylistList.__init__(self)
 
-        self.foldersPaths = ["/home/sofamaniac/Musics/"]
+        folder_prefix = "/home/sofamaniac/Musics/"
+
+        folder_suffixes = [
+            "",
+            "Youtube",
+            "soundcloud",
+            "How To Train Your Dragon OST",
+            "How To Train Tour Dragon 2 OST",
+            "Classique",
+        ]
+
+        self.foldersPaths = [folder_prefix + s for s in folder_suffixes]
+
         self.elements = []
 
         for p in self.foldersPaths:
