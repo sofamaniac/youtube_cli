@@ -90,7 +90,7 @@ class VideoPlayer:
     def set_repeat(self, state):
         if state == "Song":
             self.player.loop_file = "inf"
-        elif state == "No":
+        else:
             self.player.loop_file = "no"
 
     def set_volume(self, vol):
