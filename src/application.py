@@ -62,7 +62,7 @@ class Application:
         self.in_playlist = False
         self.playlist = youtube.YoutubeList()
         self.playlist_index = 0
-        self.repeat = "No"
+        self._repeat = "No"
         self.shuffled = False
 
         self.volume = 50
@@ -372,7 +372,7 @@ class Application:
 
     def toggle_repeat(self):
         values = ["No", "Song", "Playlist"]
-        self.repeat = values[values.index(self.repeat)]
+        self.repeat = values[(values.index(self.repeat) + 1) % len(values)]
         self.player.set_repeat(self.repeat)
 
     def forward(self, dt):
