@@ -2,25 +2,45 @@
 
 import curses
 from gui.screen import CurseString, Directions
-from gui import screen
+from gui import screen, panel
 
 
-class Panel:
+class Widget(panel.Panel):
     """Basic component of the interface"""
 
-    def __init__(self, win, title):
+    def __init__(
+        self,
+        title,
+        x,
+        y,
+        width,
+        height,
+        right_to=None,
+        left_to=None,
+        below_of=None,
+        above_of=None,
+        screen=None,
+    ):
+
+        panel.Panel.__init__(
+            self,
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            right_to=right_to,
+            left_to=left_to,
+            below_of=below_of,
+            above_of=above_of,
+            screen=screen,
+        )
+
         self.source = None
         self.selected = 0
-        self.win = win
         self.title = CurseString(title)
         self.title.set_attr(curses.A_BOLD)
         self.page = 0
         self.visible = True
-
-    def draw_box(self, color=screen.COLOR_BORDER):
-        self.win.attrset(curses.color_pair(color))
-        self.win.box()
-        self.win.attrset(0)
 
     def update(self, draw_select=True, to_display=[]):
         if not self.visible:

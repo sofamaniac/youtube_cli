@@ -96,27 +96,7 @@ class Screen:
 
         self.initSizes()
 
-        self.player_win = curses.newwin(PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 0)
-        self.playlists_win = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
-        self.content_win = curses.newwin(
-            CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH
-        )
-        self.option_win = curses.newwin(
-            OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT, 0
-        )
-        self.information_win = curses.newwin(
-            INFO_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT + OPTION_HEIGHT, 0
-        )
-        self.search_win = curses.newwin(SEARCH_HEIGHT, SEARCH_WIDTH, 0, 0)
-        self.center(self.search_win)
-        y, x = self.search_win.getbegyx()
-        self.search_field = self.search_win.subwin(
-            SEARCH_HEIGHT - 2, SEARCH_WIDTH - 2, y + 1, x + 1
-        )
-        self.add_playlist_win = curses.newwin(PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
-        self.center(self.add_playlist_win)
-
-        self.command_field = curses.newwin(1, PLAYER_WIDTH, self.max_y - 1, 0)
+        self.wins = []
 
         # Redefining some colours to be less eye tiring
         curses.init_color(GREY, 825, 800, 800)
@@ -174,33 +154,24 @@ class Screen:
         SEARCH_WIDTH = 3 * self.max_x // 5
         SEARCH_HEIGHT = 3
 
-    def resizeWindows(self):
-        def aux(window, size_y, size_x, start_y, start_x):
-            window.resize(size_y, size_x)
-            window.mvwin(start_y, start_x)
-
-        aux(self.playlists_win, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
-        aux(self.option_win, OPTION_HEIGHT, PLAYLIST_WIDTH, PLAYLIST_HEIGHT, 0)
-        aux(
-            self.information_win,
-            INFO_HEIGHT,
-            PLAYLIST_WIDTH,
-            PLAYLIST_HEIGHT + OPTION_HEIGHT,
-            0,
-        )
-        aux(self.content_win, CONTENT_HEIGHT, CONTENT_WIDTH, 0, PLAYLIST_WIDTH)
-        aux(self.player_win, PLAYER_HEIGHT, PLAYER_WIDTH, CONTENT_HEIGHT, 0)
-
-        aux(self.add_playlist_win, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, 0, 0)
-        self.center(self.add_playlist_win)
-
-        aux(self.search_win, SEARCH_HEIGHT, SEARCH_WIDTH, 0, 0)
-        self.center(self.search_win)
-        y, x = self.search_win.getbegyx()
-        aux(self.search_field, SEARCH_HEIGHT - 2, SEARCH_WIDTH - 2, y + 1, x + 1)
+    def resizeWindows(self, old_w, old_h):
+        """Tries to resize all windows while preserving their previous proportions, [old_w] and [old_h]
+        are the previous dimensions of the whole screen"""
+        # TODO: may be necessary to order the windows first to avoid errors (ordre usuel sur NxN)
+        for w in self.wins:
+            # TODO : tenter de préserver les proportions tout en réduisant la taille
+            pass
 
     def resize(self):
+        old_w = self.max_x
+        old_h = self.max_y
         curses.resizeterm(*self.stdscr.getmaxyx())
         self.initSizes()
-        self.resizeWindows()
+        self.resizeWindows(old_w, old_h)
         self.stdscr.erase()
+
+    def add_win(self, y, x, h, w):
+        """Add window to current string"""
+
+        self.wins.append(curses.newwin(h, w, y, x))
+        return self.wins[-1]

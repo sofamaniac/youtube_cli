@@ -3,7 +3,7 @@
 import youtube
 import gui.screen as screen
 import player
-from panel import Panel
+from widget import Widget
 
 from gui.screen import Directions, CurseString
 from gui import textbox
@@ -22,9 +22,21 @@ class Application:
     def __init__(self, stdscr):
         self.scr = screen.Screen(stdscr)
 
-        self.content_panel = Panel(self.scr.content_win, "Videos")
+        self.playlist_panel = Widget("Playlists", 0, 0, 20, 30, screen=self.scr)
+        self.content_panel = Widget("Videos", 0, 0, 80, 88, screen=self.scr)
+        self.content_panel.set_right_to(self.playlist_panel)
 
-        self.playlist_panel = Panel(self.scr.playlists_win, "Playlists")
+        self.player_panel = Widget("Player Information", 0, 0, 100, 12, screen=self.scr)
+        self.player_panel.set_below_of(self.content_panel)
+        self.player_panel.selected = -1
+
+        self.option_panel = Widget("Options", 0, 0, 20, 20, screen=self.scr)
+        self.option_panel.set_below_of(self.playlist_panel)
+        self.option_panel.selected = -1
+
+        self.information_panel = Widget("Informations", 0, 0, 20, 15, screen=self.scr)
+        self.information_panel.set_below_of(self.option_panel)
+
         self.playlist_panel.source = PlaylistList()
         youtubePlaylists = youtube.YoutubePlaylistList()
         for p in youtubePlaylists.elements:
@@ -34,23 +46,17 @@ class Application:
             self.playlist_panel.source.add_playlist(f)
         self.get_playlist()
 
-        self.player_panel = Panel(self.scr.player_win, "Player Information")
-        self.player_panel.selected = -1
-
-        self.option_panel = Panel(self.scr.option_win, "Options")
-        self.option_panel.selected = -1
-
-        self.information_panel = Panel(self.scr.information_win, "Informations")
-
         self.panels_list = [self.playlist_panel, self.content_panel]
         self.current_panel = 0
 
-        self.search_panel = Panel(self.scr.search_win, "Search")
+        self.search_panel = Widget("Search", 0, 0, 20, 4, screen=self.scr)
         self.in_search = False
-        self.textbox = textbox.Textbox(self.scr.search_field)
-        self.command_field = textbox.Textbox(self.scr.command_field)
+        # self.textbox = textbox.Textbox(self.scr.search_field)
+        # self.command_field = textbox.Textbox(self.scr.command_field)
 
-        self.add_to_playlist_panel = Panel(self.scr.add_playlist_win, "Add to playlist")
+        self.add_to_playlist_panel = Widget(
+            "Add to playlist", 0, 0, 20, 20, screen=self.scr
+        )
         self.add_to_playlist_panel.source = self.playlist_panel.source
         self.add_to_playlist_panel.toggle_visible()  # make window invisible
         self.in_add_to_playlist = False
@@ -169,6 +175,7 @@ class Application:
         self.content_panel.update()
         self.draw_player()
         self.draw_options()
+        self.draw_info()
 
         # checking if there is something playing
         if (
