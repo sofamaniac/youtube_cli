@@ -51,7 +51,7 @@ class Panel:
 
     @property
     def width(self):
-        return max(int(self.screen.max_x * self._width / 100), self.min_width)
+        return max(round(self.screen.max_x * self._width / 100), self.min_width)
         # TODO : handle absolute mode
 
     @width.setter
@@ -62,7 +62,7 @@ class Panel:
 
     @property
     def height(self):
-        return max(int(self.screen.max_y * self._height / 100), self.min_height)
+        return max(round(self.screen.max_y * self._height / 100), self.min_height)
 
     @height.setter
     def height(self, new_val):
