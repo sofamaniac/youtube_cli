@@ -15,6 +15,8 @@ class Widget(panel.Panel):
         y,
         width,
         height,
+        min_width=0,
+        min_height=0,
         right_to=None,
         left_to=None,
         below_of=None,
@@ -28,6 +30,8 @@ class Widget(panel.Panel):
             y=y,
             width=width,
             height=height,
+            min_width=min_width,
+            min_height=min_height,
             right_to=right_to,
             left_to=left_to,
             below_of=below_of,
@@ -57,6 +61,9 @@ class Widget(panel.Panel):
 
         if not to_display and self.source:
             to_display = self.get_content(off, page_size + off)
+
+        if len(to_display) > page_size:
+            to_display = to_display[:page_size]
 
         for i, s in enumerate(to_display):
             if i + off == self.selected and draw_select:

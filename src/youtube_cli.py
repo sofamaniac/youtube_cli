@@ -24,7 +24,7 @@ def main(app, listener, config):
     while True:
         char = app.scr.get_wch()
         if char == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
-            app.scr.resize()
+            app.resize()
         else:
             config.check_action(char)
         last_event = char

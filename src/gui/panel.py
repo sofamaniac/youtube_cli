@@ -1,6 +1,5 @@
 from gui import screen
 import curses
-import _curses
 
 RELATIVE_MODE = "relative"  # in % of the screen dimensions
 ABSOLUTE_MODE = "absolute"  # in absolute number of cells
@@ -13,6 +12,8 @@ class Panel:
         y=0,
         width=0,
         height=0,
+        min_width=0,
+        min_height=0,
         w_mode=RELATIVE_MODE,
         h_mode=RELATIVE_MODE,
         right_to=None,
@@ -27,6 +28,9 @@ class Panel:
 
         self._width = width
         self._height = height
+
+        self.min_width = min_width
+        self.min_height = min_height
 
         self.width_mode = w_mode
         self.height_mode = h_mode
@@ -47,7 +51,7 @@ class Panel:
 
     @property
     def width(self):
-        return int(self.screen.max_x * self._width / 100)
+        return max(int(self.screen.max_x * self._width / 100), self.min_width)
         # TODO : handle absolute mode
 
     @width.setter
@@ -58,7 +62,7 @@ class Panel:
 
     @property
     def height(self):
-        return int(self.screen.max_y * self._height / 100)
+        return max(int(self.screen.max_y * self._height / 100), self.min_height)
 
     @height.setter
     def height(self, new_val):
@@ -86,12 +90,14 @@ class Panel:
     def resize(self, new_w=None, new_h=None):
         """Resize the panel to the given dimension"""
 
-        self._width = self.width if new_w is None else new_w
-        self._height = self.height if new_h is None else new_h
+        self._width = self._width if new_w is None else new_w
+        self._height = self._height if new_h is None else new_h
 
         self.win.resize(self.height, self.width)
         self.set_left_to(self.left_to)
+        self.set_right_to(self.right_to)
         self.set_above_of(self.above_of)
+        self.set_below_of(self.below_of)
 
     def draw_box(self, color=screen.COLOR_BORDER):
         self.win.attrset(curses.color_pair(color))
@@ -125,3 +131,12 @@ class Panel:
         below_of.above_of = self
 
         self.y = below_of.y + below_of.height
+
+    def center(self):
+        max_x = self.screen.max_x
+        max_y = self.screen.max_y
+
+        new_x = (max_x - self.width) // 2
+        new_y = (max_y - self.height) // 2
+
+        self.win.mvwin(new_y, new_x)

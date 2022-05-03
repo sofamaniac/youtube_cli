@@ -26,7 +26,9 @@ class Application:
         self.content_panel = Widget("Videos", 0, 0, 80, 88, screen=self.scr)
         self.content_panel.set_right_to(self.playlist_panel)
 
-        self.player_panel = Widget("Player Information", 0, 0, 100, 12, screen=self.scr)
+        self.player_panel = Widget(
+            "Player Information", 0, 0, 100, 12, min_width=4, screen=self.scr
+        )
         self.player_panel.set_below_of(self.content_panel)
         self.player_panel.selected = -1
 
@@ -49,16 +51,17 @@ class Application:
         self.panels_list = [self.playlist_panel, self.content_panel]
         self.current_panel = 0
 
-        self.search_panel = Widget("Search", 0, 0, 20, 4, screen=self.scr)
+        self.search_panel = Widget("Search", 0, 0, 80, 12, screen=self.scr)
         self.in_search = False
-        # self.textbox = textbox.Textbox(self.scr.search_field)
-        # self.command_field = textbox.Textbox(self.scr.command_field)
+        self.textbox = textbox.Textbox(0, 0, 80, 12, screen=self.scr)
+        self.command_field = textbox.Textbox(0, 10, 1000, 12, screen=self.scr)
 
         self.add_to_playlist_panel = Widget(
             "Add to playlist", 0, 0, 20, 20, screen=self.scr
         )
         self.add_to_playlist_panel.source = self.playlist_panel.source
         self.add_to_playlist_panel.toggle_visible()  # make window invisible
+        self.add_to_playlist_panel.center()
         self.in_add_to_playlist = False
 
         self._video_mode = False  # should the video be played alongside the audio
@@ -226,7 +229,7 @@ class Application:
         time_pos = time_pos if time_pos else 0
         dur = dur if dur else 0
         frac_time = time_pos / (dur + 1)
-        width = screen.PLAYER_WIDTH - 5 - len(" {}/{}".format(t, d))
+        width = self.player_panel.width - 5 - len(" {}/{}".format(t, d))
         whole = "\u2588" * int(frac_time * width)
         space = "\u2500" * (width - len(whole))
         bar = whole + space
@@ -237,7 +240,12 @@ class Application:
                 s.color(screen.COLOR_SEG, i, i + 1)
         content.append(s)
 
-        self.player_panel.update(draw_select=False, to_display=content)
+        try:
+            self.player_panel.update(draw_select=False, to_display=content)
+        except:
+            raise Exception(
+                f"{self.player_panel.x}, {self.player_panel.y}, {self.player_panel.width}, {self.player_panel._width}, {self.player_panel.height}, {self.scr.max_x}, {self.scr.max_y}"
+            )
 
     def draw_add_to_playlist(self):
 
@@ -414,3 +422,11 @@ class Application:
         self.stop()
         self.player.quit()
         return
+
+    def resize(self):
+        self.scr.resize()
+        self.playlist_panel.resize()
+        self.content_panel.resize()
+        self.player_panel.resize()
+        self.information_panel.resize()
+        self.option_panel.resize()

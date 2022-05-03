@@ -63,23 +63,6 @@ COLOR_SEG = 3
 GREY = 8
 DARK_GREY = 9
 
-# Windows dimensions
-PLAYLIST_WIDTH = 30
-PLAYLIST_HEIGHT = 15
-
-CONTENT_WIDTH = -1
-CONTENT_HEIGHT = -1
-
-PLAYER_WIDTH = -1
-PLAYER_HEIGHT = 5
-
-NB_OPTIONS = 5
-OPTION_HEIGHT = 2 + NB_OPTIONS
-INFO_HEIGHT = 5
-
-SEARCH_WIDTH = 80
-SEARCH_HEIGHT = 3
-
 
 class Screen:
     def __init__(self, stdscr):
@@ -93,8 +76,6 @@ class Screen:
         curses.use_default_colors()
 
         self.stdscr = stdscr
-
-        self.initSizes()
 
         self.wins = []
 
@@ -135,39 +116,8 @@ class Screen:
     def update(self):
         curses.doupdate()
 
-    def initSizes(self):
-        global PLAYER_WIDTH, PLAYER_HEIGHT, PLAYLIST_HEIGHT, PLAYLIST_WIDTH, CONTENT_WIDTH, CONTENT_HEIGHT, OPTION_HEIGHT, INFO_HEIGHT, SEARCH_WIDTH, SEARCH_HEIGHT
-
-        PLAYER_WIDTH = self.max_x
-        PLAYER_HEIGHT = 4
-
-        PLAYLIST_WIDTH = max(1, self.max_x // 5)
-        PLAYLIST_HEIGHT = min(15, self.max_y // 4)
-
-        CONTENT_WIDTH = self.max_x - PLAYLIST_WIDTH
-        CONTENT_HEIGHT = self.max_y - PLAYER_HEIGHT
-
-        OPTION_HEIGHT = 2 + NB_OPTIONS
-
-        INFO_HEIGHT = 5
-
-        SEARCH_WIDTH = 3 * self.max_x // 5
-        SEARCH_HEIGHT = 3
-
-    def resizeWindows(self, old_w, old_h):
-        """Tries to resize all windows while preserving their previous proportions, [old_w] and [old_h]
-        are the previous dimensions of the whole screen"""
-        # TODO: may be necessary to order the windows first to avoid errors (ordre usuel sur NxN)
-        for w in self.wins:
-            # TODO : tenter de préserver les proportions tout en réduisant la taille
-            pass
-
     def resize(self):
-        old_w = self.max_x
-        old_h = self.max_y
         curses.resizeterm(*self.stdscr.getmaxyx())
-        self.initSizes()
-        self.resizeWindows(old_w, old_h)
         self.stdscr.erase()
 
     def add_win(self, y, x, h, w):
