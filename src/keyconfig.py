@@ -1,7 +1,7 @@
 """This module provide a class that links keyboard event to actions"""
 
 import curses
-from gui.screen import Directions
+from gui.screen import Directions, PanelDirections
 
 
 class KeyConfiguration:
@@ -15,6 +15,10 @@ class KeyConfiguration:
             "k": [app.select, Directions.UP],
             "h": [app.select, Directions.LEFT],
             "l": [app.select, Directions.RIGHT],
+            "J": [app.select, PanelDirections.DOWN],
+            "K": [app.select, PanelDirections.UP],
+            "H": [app.select, PanelDirections.LEFT],
+            "L": [app.select, PanelDirections.RIGHT],
             " ": [app.pause],
             ">": [app.next],
             "<": [app.prev],
@@ -31,8 +35,6 @@ class KeyConfiguration:
             "s": [app.search],
             "c": [app.reload],
             "v": [app.toggle_video],
-            curses.KEY_LEFT: [app.forward, -5],
-            curses.KEY_RIGHT: [app.forward, 5],
             "à": [app.seek_percent, 0],
             "&": [app.seek_percent, 10],
             "é": [app.seek_percent, 20],
@@ -44,6 +46,8 @@ class KeyConfiguration:
             "_": [app.seek_percent, 80],
             "ç": [app.seek_percent, 90],
             ":": [app.command],
+            curses.KEY_LEFT: [app.forward, -5],
+            curses.KEY_RIGHT: [app.forward, 5],
             curses.ascii.ESC: [app.escape],
         }
 

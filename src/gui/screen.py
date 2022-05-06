@@ -13,6 +13,13 @@ class Directions(Enum):
     RIGHT = 3
 
 
+class PanelDirections(Enum):
+    UP = 0
+    DOWN = 1
+    LEFT = 2
+    RIGHT = 3
+
+
 class CurseString:
     def __init__(self, string):
         self.string = string

@@ -5,7 +5,7 @@ import gui.screen as screen
 import player
 from widget import Widget
 
-from gui.screen import Directions, CurseString
+from gui.screen import Directions, CurseString, PanelDirections
 from gui import textbox
 
 import time
@@ -30,14 +30,15 @@ class Application:
             "Player Information", 0, 0, 100, 12, min_width=4, screen=self.scr
         )
         self.player_panel.set_below_of(self.content_panel)
-        self.player_panel.selected = -1
+        self.player_panel.selectable = False
 
         self.option_panel = Widget("Options", 0, 0, 20, 20, screen=self.scr)
         self.option_panel.set_below_of(self.playlist_panel)
-        self.option_panel.selected = -1
+        self.option_panel.selectable = False
 
         self.information_panel = Widget("Informations", 0, 0, 20, 15, screen=self.scr)
         self.information_panel.set_below_of(self.option_panel)
+        self.information_panel.selectable = False
 
         self.playlist_panel.source = PlaylistList()
         youtubePlaylists = youtube.YoutubePlaylistList()
@@ -48,8 +49,7 @@ class Application:
             self.playlist_panel.source.add_playlist(f)
         self.get_playlist()
 
-        self.panels_list = [self.playlist_panel, self.content_panel]
-        self.current_panel = 0
+        self.current_panel = self.playlist_panel
 
         self.search_panel = Widget("Search", 0, 0, 80, 12, screen=self.scr)
         self.in_search = False
@@ -149,7 +149,7 @@ class Application:
         if search_term:
             self.search_panel.content = [CurseString(search_term)]
             self.content_panel.source = youtube.Search(search_term)
-            self.current_panel = 1
+            self.current_panel = self.content_panel
         self.search_panel.clear()
         self.in_search = False
         self.update()
@@ -266,23 +266,18 @@ class Application:
 
     def select(self, direction):
         doUpdate = False
-        if direction == Directions.UP or direction == Directions.DOWN:
+        if isinstance(direction, Directions):
             doUpdate = True
-            self.get_current_panel().select(direction)
-        elif direction == Directions.LEFT and self.current_panel > 0:
-            doUpdate = True
-            self.current_panel -= 1
-        elif (
-            direction == Directions.RIGHT
-            and self.current_panel < len(self.panels_list) - 1
-        ):
-            doUpdate = True
-            self.current_panel += 1
+            self.current_panel.select(direction)
+        elif isinstance(direction, PanelDirections):
+            tmp = self.current_panel.get_next_selectable_neighbour(direction)
+            if tmp:
+                self.current_panel = tmp
 
         if (
             doUpdate
             and direction in [Directions.LEFT, Directions.RIGHT]
-            and self.get_current_panel() == self.content_panel
+            and self.current_panel == self.content_panel
         ):
             self.get_playlist()
             self.content_panel.selected = 0
@@ -313,17 +308,11 @@ class Application:
         self.in_add_to_playlist = False
         self.add_to_playlist_panel.toggle_visible()
 
-    def get_current_panel(self):
-        if self.in_add_to_playlist:
-            return self.add_to_playlist_panel
-        else:
-            return self.panels_list[self.current_panel]
-
     def enter(self):
-        if self.get_current_panel() == self.playlist_panel:
+        if self.current_panel == self.playlist_panel:
             self.get_playlist()
-            self.current_panel = 1
-        elif self.get_current_panel() == self.add_to_playlist_panel:
+            self.current_panel = self.content_panel
+        elif self.current_panel == self.add_to_playlist_panel:
             self.edit_playlist()
         else:
             if self.in_playlist:
@@ -361,10 +350,10 @@ class Application:
             self.play()
 
     def next_page(self):
-        self.get_current_panel().next_page()
+        self.current_panel.next_page()
 
     def prev_page(self):
-        self.get_current_panel().prev_page()
+        self.current_panel.prev_page()
 
     def play(self, to_play=youtube.Video()):
         selected = self.content_panel.get_selected()

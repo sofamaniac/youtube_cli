@@ -1,7 +1,7 @@
 """Module providing basic panel components for the program"""
 
 import curses
-from gui.screen import CurseString, Directions
+from gui.screen import CurseString, Directions, PanelDirections
 from gui import screen, panel
 
 
@@ -45,6 +45,7 @@ class Widget(panel.Panel):
         self.title.set_attr(curses.A_BOLD)
         self.page = 0
         self.visible = True
+        self.selectable = True
 
     def update(self, draw_select=True, to_display=[]):
         if not self.visible:
@@ -66,7 +67,7 @@ class Widget(panel.Panel):
             to_display = to_display[:page_size]
 
         for i, s in enumerate(to_display):
-            if i + off == self.selected and draw_select:
+            if self.selectable and i + off == self.selected and draw_select:
                 s.set_attr(curses.A_STANDOUT)
             s.draw_to_win(self.win, i + 1, 1, width)
         self.win.noutrefresh()
@@ -81,6 +82,9 @@ class Widget(panel.Panel):
         self.clear()
 
     def select(self, direction):
+
+        if not self.selectable:
+            return
         off = self.get_page_size() * self.page
         if direction == Directions.UP:
             self.selected = max(0, self.selected - 1)
@@ -112,3 +116,22 @@ class Widget(panel.Panel):
         page_incr = max(0, self.page - 1) - self.page
         self.page += page_incr
         self.selected += self.get_page_size() * page_incr
+
+    def get_next_selectable_neighbour(self, direction):
+        next = None
+        match direction:
+            case PanelDirections.UP:
+                next = self.below_of
+            case PanelDirections.DOWN:
+                next = self.above_of
+            case PanelDirections.LEFT:
+                next = self.right_to
+            case PanelDirections.RIGHT:
+                next = self.left_to
+
+        if next and next.selectable:
+            return next
+        elif next:
+            return next.get_next_selectable_neighbour(direction)
+        else:
+            return next
