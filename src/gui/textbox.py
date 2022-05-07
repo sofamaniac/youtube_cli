@@ -8,36 +8,8 @@ from gui import panel
 class Textbox(panel.Panel):
     """Input box"""
 
-    def __init__(
-        self,
-        x,
-        y,
-        width,
-        height,
-        w_mode=panel.RELATIVE_MODE,
-        h_mode=panel.RELATIVE_MODE,
-        right_to=None,
-        left_to=None,
-        below_of=None,
-        above_of=None,
-        screen=None,
-    ):
-        panel.Panel.__init__(
-            self,
-            x=x,
-            y=y,
-            width=width,
-            height=height,
-            min_width=1,
-            min_height=1,
-            w_mode=w_mode,
-            h_mode=h_mode,
-            right_to=right_to,
-            left_to=left_to,
-            below_of=below_of,
-            above_of=above_of,
-            screen=screen,
-        )
+    def __init__(self, *args, **kwargs):
+        super(Textbox, self).__init__(*args, **kwargs)
         self.win.keypad(
             True
         )  # needed to interpret special keys such as arrows and backspace
