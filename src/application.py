@@ -3,7 +3,7 @@
 import youtube
 import gui.screen as screen
 import player
-from widget import Widget
+from widget import Widget, PlaylistPanel
 
 from gui.screen import Directions, CurseString, PanelDirections
 from gui import textbox
@@ -22,9 +22,15 @@ class Application:
     def __init__(self, stdscr):
         self.scr = screen.Screen(stdscr)
 
-        self.playlist_panel = Widget("Playlists", 0, 0, 20, 30, screen=self.scr)
+        self.yt_playlist_panel = PlaylistPanel(
+            "Youtube Playlists", 0, 0, 20, 20, screen=self.scr
+        )
+        self.local_playlist_panel = PlaylistPanel(
+            "Local Playlists", 0, 0, 20, 20, screen=self.scr
+        )
+        self.local_playlist_panel.set_below_of(self.yt_playlist_panel)
         self.content_panel = Widget("Videos", 0, 0, 80, 88, screen=self.scr)
-        self.content_panel.set_right_to(self.playlist_panel)
+        self.content_panel.set_right_to(self.yt_playlist_panel)
 
         self.player_panel = Widget(
             "Player Information", 0, 0, 100, 12, min_width=4, screen=self.scr
@@ -33,23 +39,23 @@ class Application:
         self.player_panel.selectable = False
 
         self.option_panel = Widget("Options", 0, 0, 20, 20, screen=self.scr)
-        self.option_panel.set_below_of(self.playlist_panel)
+        self.option_panel.set_below_of(self.local_playlist_panel)
         self.option_panel.selectable = False
 
         self.information_panel = Widget("Informations", 0, 0, 20, 15, screen=self.scr)
         self.information_panel.set_below_of(self.option_panel)
         self.information_panel.selectable = False
 
-        self.playlist_panel.source = PlaylistList()
+        self.yt_playlist_panel.source = PlaylistList()
+        self.local_playlist_panel.source = PlaylistList()
         youtubePlaylists = youtube.YoutubePlaylistList()
         for p in youtubePlaylists.elements:
-            self.playlist_panel.source.add_playlist(p)
+            self.yt_playlist_panel.source.add_playlist(p)
         folders = FolderList()
         for f in folders.elements:
-            self.playlist_panel.source.add_playlist(f)
+            self.local_playlist_panel.source.add_playlist(f)
+        self.current_panel = self.yt_playlist_panel
         self.get_playlist()
-
-        self.current_panel = self.playlist_panel
 
         self.search_panel = Widget("Search", 0, 0, 80, 12, screen=self.scr)
         self.in_search = False
@@ -59,7 +65,7 @@ class Application:
         self.add_to_playlist_panel = Widget(
             "Add to playlist", 0, 0, 20, 20, screen=self.scr
         )
-        self.add_to_playlist_panel.source = self.playlist_panel.source
+        self.add_to_playlist_panel.source = self.yt_playlist_panel.source
         self.add_to_playlist_panel.toggle_visible()  # make window invisible
         self.add_to_playlist_panel.center()
         self.in_add_to_playlist = False
@@ -174,8 +180,13 @@ class Application:
         self.skip_segment()
 
         # Drawing all the windows
-        self.playlist_panel.update()
-        self.content_panel.update()
+        self.yt_playlist_panel.update(
+            draw_select=self.current_panel == self.yt_playlist_panel
+        )
+        self.local_playlist_panel.update(
+            draw_select=self.current_panel == self.local_playlist_panel
+        )
+        self.content_panel.update(draw_select=self.current_panel == self.content_panel)
         self.draw_player()
         self.draw_options()
         self.draw_info()
@@ -200,7 +211,7 @@ class Application:
         content.append(CurseString(f"Title: {selection.title}"))
         content.append(CurseString(f"Author: {selection.author}"))
         content.append(CurseString(f"Id: {selection.id}"))
-        self.information_panel.update(draw_select=False, to_display=content)
+        self.information_panel.update(to_display=content)
 
     def draw_options(self):
         content = []
@@ -210,7 +221,7 @@ class Application:
         content.append(CurseString(f"Shuffle: {self.shuffled}"))
         content.append(CurseString(f"Volume : {self.volume:02d} / 100"))
         content.append(CurseString(f"Mode: {'Video' if self.video_mode else 'Audio'}"))
-        self.option_panel.update(draw_select=False, to_display=content)
+        self.option_panel.update(to_display=content)
 
     def draw_player(self):
         title = self.playing.title
@@ -240,12 +251,7 @@ class Application:
                 s.color(screen.COLOR_SEG, i, i + 1)
         content.append(s)
 
-        try:
-            self.player_panel.update(draw_select=False, to_display=content)
-        except:
-            raise Exception(
-                f"{self.player_panel.x}, {self.player_panel.y}, {self.player_panel.width}, {self.player_panel._width}, {self.player_panel.height}, {self.scr.max_x}, {self.scr.max_y}"
-            )
+        self.player_panel.update(to_display=content)
 
     def draw_add_to_playlist(self):
 
@@ -255,7 +261,7 @@ class Application:
         currSelection = self.content_panel.get_selected()
         content = []
 
-        for p in self.playlist_panel.source.elements:
+        for p in self.yt_playlist_panel.source.elements:
             if currSelection in p:
                 checkbox = "[x]"
             else:
@@ -284,7 +290,7 @@ class Application:
 
     def set_playlist(self):
         if not self.in_playlist:
-            self.playlist = self.playlist_panel.get_selected()
+            self.playlist = self.yt_playlist_panel.get_selected()
             self.shuffled = self.shuffled  # force update
             self.playlist.currentIndex = self.content_panel.selected
             self.player.stop()
@@ -292,7 +298,8 @@ class Application:
         self.in_playlist = not self.in_playlist
 
     def get_playlist(self):
-        self.content_panel.source = self.playlist_panel.get_selected()
+        if isinstance(self.current_panel, PlaylistPanel):
+            self.content_panel.source = self.current_panel.get_selected()
 
     def add_to_playlist(self):
         self.in_add_to_playlist = True
@@ -309,7 +316,7 @@ class Application:
         self.add_to_playlist_panel.toggle_visible()
 
     def enter(self):
-        if self.current_panel == self.playlist_panel:
+        if isinstance(self.current_panel, PlaylistPanel):
             self.get_playlist()
             self.current_panel = self.content_panel
         elif self.current_panel == self.add_to_playlist_panel:
@@ -414,7 +421,7 @@ class Application:
 
     def resize(self):
         self.scr.resize()
-        self.playlist_panel.resize()
+        self.yt_playlist_panel.resize()
         self.content_panel.resize()
         self.player_panel.resize()
         self.information_panel.resize()

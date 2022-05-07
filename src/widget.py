@@ -135,3 +135,37 @@ class Widget(panel.Panel):
             return next.get_next_selectable_neighbour(direction)
         else:
             return next
+
+
+class PlaylistPanel(Widget):
+    def __init__(
+        self,
+        title,
+        x,
+        y,
+        width,
+        height,
+        min_width=0,
+        min_height=0,
+        right_to=None,
+        left_to=None,
+        below_of=None,
+        above_of=None,
+        screen=None,
+    ):
+
+        Widget.__init__(
+            self,
+            title,
+            x=x,
+            y=y,
+            width=width,
+            height=height,
+            min_width=min_width,
+            min_height=min_height,
+            right_to=right_to,
+            left_to=left_to,
+            below_of=below_of,
+            above_of=above_of,
+            screen=screen,
+        )
