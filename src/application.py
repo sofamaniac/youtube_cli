@@ -200,8 +200,7 @@ class Application:
         if self.in_search:
             self.search_panel.update()
 
-        if self.in_add_to_playlist:
-            self.draw_add_to_playlist()
+        self.draw_add_to_playlist()
 
         self.scr.update()
 
@@ -255,9 +254,6 @@ class Application:
 
     def draw_add_to_playlist(self):
 
-        if not self.add_to_playlist_panel.visible:
-            return
-
         currSelection = self.content_panel.get_selected()
         content = []
 
@@ -271,20 +267,19 @@ class Application:
         self.add_to_playlist_panel.update(to_display=content)
 
     def select(self, direction):
-        doUpdate = False
+        do_update = False
+        reset_pos = False
         if isinstance(direction, Directions):
-            doUpdate = True
+            do_update = True
             self.current_panel.select(direction)
         elif isinstance(direction, PanelDirections):
             tmp = self.current_panel.get_next_selectable_neighbour(direction)
             if tmp:
+                do_update = True
                 self.current_panel = tmp
+            reset_pos = tmp == self.content_panel
 
-        if (
-            doUpdate
-            and direction in [Directions.LEFT, Directions.RIGHT]
-            and self.current_panel == self.content_panel
-        ):
+        if do_update and reset_pos and self.current_panel == self.content_panel:
             self.get_playlist()
             self.content_panel.selected = 0
 
@@ -304,6 +299,7 @@ class Application:
     def add_to_playlist(self):
         self.in_add_to_playlist = True
         self.add_to_playlist_panel.toggle_visible()
+        self.current_panel = self.add_to_playlist_panel
 
     def edit_playlist(self):
         currSelection = self.content_panel.get_selected()
@@ -314,6 +310,7 @@ class Application:
             currPlaylist.add(currSelection)
         self.in_add_to_playlist = False
         self.add_to_playlist_panel.toggle_visible()
+        self.current_panel = self.content_panel
 
     def enter(self):
         if isinstance(self.current_panel, PlaylistPanel):
@@ -330,6 +327,7 @@ class Application:
         if self.in_add_to_playlist:
             self.in_add_to_playlist = False
             self.add_to_playlist_panel.toggle_visible()
+            self.current_panel = self.content_panel
 
     def reload(self):
         self.content_panel.source.reload()
@@ -426,3 +424,8 @@ class Application:
         self.player_panel.resize()
         self.information_panel.resize()
         self.option_panel.resize()
+
+    def jump_to_current_playing(self):
+        self.current_panel = self.content_panel
+        self.current_panel.jump_to_selection()
+        self.update()

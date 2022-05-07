@@ -19,6 +19,7 @@ class KeyConfiguration:
             "K": [app.select, PanelDirections.UP],
             "H": [app.select, PanelDirections.LEFT],
             "L": [app.select, PanelDirections.RIGHT],
+            "g": [app.jump_to_current_playing],
             " ": [app.pause],
             ">": [app.next],
             "<": [app.prev],

@@ -73,6 +73,14 @@ class Widget(panel.Panel):
     def get_selected(self):
         return self.source.get_at_index(self.selected)
 
+    def jump_to_selection(self):
+        self.selected = self.source.get_current_index()
+        page_size = self.get_page_size()
+        while self.page * page_size + page_size > self.selected:
+            self.page -= 1
+        while self.page * page_size + page_size < self.selected:
+            self.page += 1
+
     def get_page_size(self):
         return self.win.getmaxyx()[0] - 2
 
