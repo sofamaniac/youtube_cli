@@ -51,18 +51,22 @@ class Panel:
 
     @property
     def width(self):
-        return max(round(self.screen.max_x * self._width / 100), self.min_width)
-        # TODO : handle absolute mode
+        if self.width_mode == ABSOLUTE_MODE:
+            return self._width
+        else:
+            return max(round(self.screen.max_x * self._width / 100), self.min_width)
 
     @width.setter
     def width(self, new_val):
         self._width = new_val
         self.resize()
-        # TODO : trigger resize
 
     @property
     def height(self):
-        return max(round(self.screen.max_y * self._height / 100), self.min_height)
+        if self.height_mode == ABSOLUTE_MODE:
+            return self._height
+        else:
+            return max(round(self.screen.max_y * self._height / 100), self.min_height)
 
     @height.setter
     def height(self, new_val):
@@ -94,10 +98,14 @@ class Panel:
         self._height = self._height if new_h is None else new_h
 
         self.win.resize(self.height, self.width)
-        self.set_left_to(self.left_to)
-        self.set_right_to(self.right_to)
-        self.set_above_of(self.above_of)
-        self.set_below_of(self.below_of)
+        for r in self.right_to:
+            self.set_right_to(r)
+        for l in self.left_to:
+            self.set_left_to(l)
+        for b in self.below_of:
+            self.set_below_of(b)
+        for a in self.above_of:
+            self.set_above_of(a)
 
     def draw_box(self, color=screen.COLOR_BORDER):
         self.win.attrset(curses.color_pair(color))
@@ -107,30 +115,43 @@ class Panel:
     def set_right_to(self, right_to):
         if not right_to:
             return
-        self.right_to.append(right_to)
-        right_to.left_to.append(self)
 
-        self.x = max(self.x, right_to.x + right_to.width)
+        if right_to not in self.right_to:
+            self.right_to.append(right_to)
+            right_to.left_to.append(self)
+
+        new_x = max([r.x + r.width for r in self.right_to])
+        if new_x + self.width > self.screen.max_x:
+            self.x = self.screen.max_x - self.height
+        else:
+            self.x = new_x
 
     def set_left_to(self, left_to):
         if not left_to:
             return
-        self.left_to.append(left_to)
-        left_to.right_to.append(self)
+        if left_to not in self.left_to:
+            self.left_to.append(left_to)
+            left_to.right_to.append(self)
 
     def set_above_of(self, above_of):
         if not above_of:
             return
-        self.above_of.append(above_of)
-        above_of.below_of.append(self)
+        if above_of not in self.above_of:
+            self.above_of.append(above_of)
+            above_of.below_of.append(self)
 
     def set_below_of(self, below_of):
         if not below_of:
             return
-        self.below_of.append(below_of)
-        below_of.above_of.append(self)
+        if below_of not in self.below_of:
+            self.below_of.append(below_of)
+            below_of.above_of.append(self)
 
-        self.y = max(self.y, below_of.y + below_of.height)
+        new_y = max([b.y + b.height for b in self.below_of])
+        if new_y + self.height > self.screen.max_y:
+            self.y = self.screen.max_y - self.height
+        else:
+            self.y = new_y
 
     def center(self):
         max_x = self.screen.max_x

@@ -7,6 +7,7 @@ from widget import Widget, PlaylistPanel
 
 from gui.screen import Directions, CurseString, PanelDirections
 from gui import textbox
+from gui import panel
 
 import time
 
@@ -34,7 +35,13 @@ class Application:
         self.content_panel.set_right_to(self.local_playlist_panel)
 
         self.player_panel = Widget(
-            "Player Information", 0, 0, 100, 12, min_width=4, screen=self.scr
+            "Player Information",
+            0,
+            0,
+            100,
+            4,
+            h_mode=panel.ABSOLUTE_MODE,
+            screen=self.scr,
         )
         self.player_panel.set_below_of(self.content_panel)
         self.player_panel.selectable = False
