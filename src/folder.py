@@ -1,5 +1,5 @@
 from os import walk
-from os.path import join as joinpath
+import os.path
 
 import eyed3
 
@@ -21,7 +21,7 @@ class Folder(Playlist):
         Playlist.__init__(self)
 
         self.path = path
-        self.title = path
+        self.title = os.path.basename(path)
         self.load_files()
 
     def load_files(self):
@@ -30,7 +30,7 @@ class Folder(Playlist):
 
         for dirpath, _, filenames in walk(self.path):
             for f in filenames:
-                path = joinpath(dirpath, f)
+                path = os.path.join(dirpath, f)
                 audioFile = eyed3.load(path)
                 if audioFile:
                     tag = audioFile.tag
@@ -38,7 +38,7 @@ class Folder(Playlist):
                         artist = tag.artist
                         title = tag.title
                     artist = artist if artist else "unknown"
-                    title = title if title else f
+                    title = title if title else os.path.basename(f)
                     self.elements.append(LocalFile(title, artist, path))
 
         self.size = len(self.elements)
@@ -48,7 +48,7 @@ class FolderList(PlaylistList):
     def __init__(self):
         PlaylistList.__init__(self)
 
-        folder_prefix = "/home/sofamaniac/Musics/"
+        folder_prefix = "/home/sofamaniac/Musics"
 
         folder_suffixes = [
             "",
@@ -59,7 +59,9 @@ class FolderList(PlaylistList):
             "Classique",
         ]
 
-        self.foldersPaths = [folder_prefix + s for s in folder_suffixes]
+        self.foldersPaths = [
+            folder_prefix + ("/" + s if s else "") for s in folder_suffixes
+        ]
 
         self.elements = []
 
