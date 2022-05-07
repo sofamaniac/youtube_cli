@@ -31,6 +31,7 @@ class Application:
         self.local_playlist_panel.set_below_of(self.yt_playlist_panel)
         self.content_panel = Widget("Videos", 0, 0, 80, 88, screen=self.scr)
         self.content_panel.set_right_to(self.yt_playlist_panel)
+        self.content_panel.set_right_to(self.local_playlist_panel)
 
         self.player_panel = Widget(
             "Player Information", 0, 0, 100, 12, min_width=4, screen=self.scr
@@ -254,6 +255,9 @@ class Application:
 
     def draw_add_to_playlist(self):
 
+        if not self.in_add_to_playlist:
+            return
+
         currSelection = self.content_panel.get_selected()
         content = []
 
@@ -284,13 +288,15 @@ class Application:
             self.content_panel.selected = 0
 
     def set_playlist(self):
-        if not self.in_playlist:
-            self.playlist = self.yt_playlist_panel.get_selected()
+        if not self.in_playlist and isinstance(self.current_panel, PlaylistPanel):
+            self.playlist = self.current_panel.get_selected()
             self.shuffled = self.shuffled  # force update
             self.playlist.currentIndex = self.content_panel.selected
             self.player.stop()
             self.play(self.playlist.get_current())
-        self.in_playlist = not self.in_playlist
+            self.in_playlist = True
+        else:
+            self.in_playlist = False
 
     def get_playlist(self):
         if isinstance(self.current_panel, PlaylistPanel):

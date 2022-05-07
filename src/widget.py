@@ -110,10 +110,10 @@ class Widget(panel.Panel):
             case PanelDirections.RIGHT:
                 next = self.left_to
 
-        if next and next.selectable:
-            return next
+        if next and next[0].selectable:
+            return next[0]
         elif next:
-            return next.get_next_selectable_neighbour(direction)
+            return next[0].get_next_selectable_neighbour(direction)
         else:
             return next
 

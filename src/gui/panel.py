@@ -35,10 +35,10 @@ class Panel:
         self.width_mode = w_mode
         self.height_mode = h_mode
 
-        self.right_to = right_to
-        self.left_to = left_to
-        self.below_of = below_of
-        self.above_of = above_of
+        self.right_to = []
+        self.left_to = []
+        self.below_of = []
+        self.above_of = []
 
         self.set_right_to(right_to)
         self.set_left_to(left_to)
@@ -105,32 +105,32 @@ class Panel:
         self.win.attrset(0)
 
     def set_right_to(self, right_to):
-        self.right_to = right_to
         if not right_to:
             return
-        right_to.left_to = self
+        self.right_to.append(right_to)
+        right_to.left_to.append(self)
 
-        self.x = right_to.x + right_to.width
+        self.x = max(self.x, right_to.x + right_to.width)
 
     def set_left_to(self, left_to):
-        self.left_to = left_to
         if not left_to:
             return
-        left_to.right_to = self
+        self.left_to.append(left_to)
+        left_to.right_to.append(self)
 
     def set_above_of(self, above_of):
-        self.above_of = above_of
         if not above_of:
             return
-        above_of.below_of = self
+        self.above_of.append(above_of)
+        above_of.below_of.append(self)
 
     def set_below_of(self, below_of):
-        self.below_of = below_of
         if not below_of:
             return
-        below_of.above_of = self
+        self.below_of.append(below_of)
+        below_of.above_of.append(self)
 
-        self.y = below_of.y + below_of.height
+        self.y = max(self.y, below_of.y + below_of.height)
 
     def center(self):
         max_x = self.screen.max_x
