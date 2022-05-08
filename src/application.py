@@ -357,15 +357,22 @@ class Application:
             self.play()
 
     def prev(self):
-        if self.in_playlist:
-            if self.playlist.currentIndex > 0:
-                self.play(self.playlist.prev())
+
+        # if the song was started less than 10 seconds ago
+        if self.player.time < 10:
+            if self.in_playlist:
+                if self.playlist.currentIndex > 0:
+                    self.play(self.playlist.prev())
+                else:
+                    self.player.stop()
             else:
-                self.player.stop()
+                panel = self.content_panel
+                panel.select(Directions.UP)
+                self.play()
+
+        # else we start the same song
         else:
-            panel = self.content_panel
-            panel.select(Directions.UP)
-            self.play()
+            self.player.seek_percent(0)
 
     def next_page(self):
         self.current_panel.next_page()
