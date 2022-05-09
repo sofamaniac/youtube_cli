@@ -83,6 +83,11 @@ class Playlist:
         shuffled_index = self.order[self.currentIndex]
         return self.get_at_index(shuffled_index)
 
+    def get_next(self):
+        index = (self.currentIndex + 1) % self.size
+        shuffled_index = self.order[index]
+        return self.get_at_index(shuffled_index)
+
     def get_current_index(self):
         return self.order[self.currentIndex]
 

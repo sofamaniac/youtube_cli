@@ -300,8 +300,8 @@ class Application:
             self.shuffled = self.shuffled  # force update
             self.playlist.currentIndex = self.content_panel.selected
             self.player.stop()
-            self.play(self.playlist.get_current())
             self.in_playlist = True
+            self.play(self.playlist.get_current())
         else:
             self.in_playlist = False
 
@@ -391,6 +391,11 @@ class Application:
         # therefore we update it manually each time something is played
         # TODO not working or maybe it is
         self.increase_volume(0)
+
+        # fetch the next song url to save time if in playlist
+        if self.in_playlist:
+            next = self.playlist.get_next()
+            next.fetch_url(self.video_mode)
 
     def stop(self):
         self.player.stop()

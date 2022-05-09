@@ -174,9 +174,17 @@ class Video(Playable):
         self.description = description
         self.playlistItemId = playlistItemId  # useful for editing playlist
         self.skipSegments = []
+        self.skipSegmentsDone = False
+        self.url = ""
 
-    def get_url(self, video=False):
+    def fetch_url(self, video=False):
+        self.url = self.get_url(video)
+
+    def get_url(self, video=False, refresh=False):
         """Return the url for the audio stream of the video"""
+
+        if self.url and not refresh:
+            return self.url
 
         if video:
             format = "best"
@@ -189,7 +197,7 @@ class Video(Playable):
         urls = subprocess.run(shlex.split(command), capture_output=True, text=True)
         urls = urls.stdout.splitlines()
         if urls:
-            if useSponsorBlock:
+            if useSponsorBlock and not self.skipSegmentsDone:
                 self.get_skip_segment()
             return urls[0]
         else:
@@ -211,6 +219,7 @@ class Video(Playable):
 
     def get_skip_segment(self):
         try:
+            self.skipSegmentsDone = True
             self.skipSegments = run_with_limited_time(
                 self.__get_skip_segment, (), {}, sponsorBlockTimeout
             )
