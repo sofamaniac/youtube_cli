@@ -178,11 +178,14 @@ class Video(Playable):
         self.url = ""
 
     def fetch_url(self, video=False):
-        self.url = self.get_url(video)
+        # self.url = self.get_url(video)
+        f = lambda: queue.put(self.get_url(video))
+        self.url = run_with_limited_time(f, (), {}, 5)
 
     def get_url(self, video=False, refresh=False):
         """Return the url for the audio stream of the video"""
 
+        # TODO get expiration time of url, to check if still valid
         if self.url and not refresh:
             return self.url
 
