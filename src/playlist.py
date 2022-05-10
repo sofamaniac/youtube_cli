@@ -27,7 +27,7 @@ class Playable:
 
 class Playlist:
     def __init__(self):
-        self.currentIndex = 0
+        self.current_index = 0
         self.nextPage = None
         self.prevPage = None
 
@@ -66,38 +66,40 @@ class Playlist:
         self.order = list(range(self.size))
 
     def next(self):
-        if self.currentIndex >= self.size:
+        if self.current_index >= self.size:
             return Playable()
-        self.currentIndex += 1
-        shuffled_index = self.order[self.currentIndex]
+        self.current_index += 1
+        shuffled_index = self.order[self.current_index]
         return self.get_at_index(shuffled_index)
 
     def prev(self):
-        if self.currentIndex == 0:
+        if self.current_index == 0:
             return Playable()
-        self.currentIndex -= 1
-        shuffled_index = self.order[self.currentIndex]
+        self.current_index -= 1
+        shuffled_index = self.order[self.current_index]
         return self.get_at_index(shuffled_index)
 
     def get_current(self):
-        shuffled_index = self.order[self.currentIndex]
+        shuffled_index = self.order[self.current_index]
         return self.get_at_index(shuffled_index)
 
     def get_next(self):
-        index = (self.currentIndex + 1) % self.size
+        index = (self.current_index + 1) % self.size
         shuffled_index = self.order[index]
         return self.get_at_index(shuffled_index)
 
     def get_current_index(self):
-        return self.order[self.currentIndex]
+        return self.order[self.current_index]
 
     def get_max_index(self):
         return self.size - 1
 
     def set_effective_index(self, index):
-        self.currentIndex = 0
-        while self.currentIndex < self.size and self.order[self.currentIndex] != index:
-            self.currentIndex += 1
+        self.current_index = 0
+        while (
+            self.current_index < self.size and self.order[self.current_index] != index
+        ):
+            self.current_index += 1
 
     def __str__(self):
         return self.title
