@@ -5,7 +5,5 @@ logging.basicConfig(
     level=logging.DEBUG,
     filename="parselog.txt",
     filemode="w",
-    format="%(filename)10s:%(lineno)4d:%(message)s",
+    format="%(asctime)s:%(filename)10s:%(message)s",
 )
-
-log = logging.getLogger()
