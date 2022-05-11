@@ -180,7 +180,7 @@ class Video(Playable):
     def fetch_url(self, video=False):
         # self.url = self.get_url(video)
         f = lambda: queue.put(self.get_url(video))
-        self.url = run_with_limited_time(f, (), {}, 5)
+        self.url = run_with_limited_time(f, (), {}, 10)
 
     def get_url(self, video=False, refresh=False):
         """Return the url for the audio stream of the video"""
@@ -329,17 +329,18 @@ class YoutubePlaylist(YoutubeList):
 
         self.load_next_page()  # we load the first page
 
-    def _add_videos(self, idList):
+    def _add_videos(self, id_list):
 
         to_request = "id, snippet, status, contentDetails"
+        video_id_list = [v[0] for v in id_list]
         args = {
             "part": to_request,
-            "id": ",".join(idList),
+            "id": ",".join(video_id_list),
         }
         response = self.request(youtube.videos.list, **args)
 
         nb_added = 0
-        for v in response["items"]:
+        for i, v in enumerate(response["items"]):
             if not self.check_video_availability(v):
                 self.removeMax()
                 continue
@@ -349,6 +350,8 @@ class YoutubePlaylist(YoutubeList):
                     v["snippet"]["title"],
                     v["snippet"]["description"],
                     v["snippet"]["channelTitle"],
+                    id_list[i][1]  # playlist_items_id
+                    # TODO: not sure if order is preserved
                 )
             )
             nb_added += 1
@@ -377,7 +380,7 @@ class YoutubePlaylist(YoutubeList):
 
         idList = []
         for v in response["items"]:
-            idList.append(v["snippet"]["resourceId"]["videoId"])
+            idList.append((v["snippet"]["resourceId"]["videoId"], v["id"]))
         self.nb_loaded += self._add_videos(idList)
         self.update_tokens(response)
 
@@ -396,6 +399,7 @@ class YoutubePlaylist(YoutubeList):
         self.reload()  # we refresh the content
 
     def remove(self, video):
+        playlistItemId = ""
         for v in self.elements:
             if v.id == video.id:
                 playlistItemId = v.playlistItemId
@@ -430,7 +434,7 @@ class LikedVideos(YoutubePlaylist):
 
         idList = []
         for v in response["items"]:
-            idList.append(v["id"])
+            idList.append((v["id"], ""))
         nb_loaded = self._add_videos(idList)
 
         self.size += nb_loaded
@@ -516,7 +520,7 @@ class Search(YoutubePlaylist):
         response = self.request(self.api_object.list, **args)
         id_list = []
         for v in response["items"]:
-            id_list.append(v["id"]["videoId"])
+            id_list.append((v["id"]["videoId"], ""))
 
         self.nb_loaded += self._add_videos(id_list)
         self.update_tokens(response)
