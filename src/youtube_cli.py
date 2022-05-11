@@ -1,7 +1,6 @@
 """Entry point for youtube_cli"""
 
 import curses
-from parser import primitives
 
 from application import Application
 from keylistener import Listener
@@ -14,7 +13,6 @@ def initialize(stdscr):
     config = KeyConfiguration(app)
     listener = Listener(app)
     listener.start()
-    primitives.init(app)
     return main(app, listener, config)
 
 

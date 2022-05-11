@@ -10,8 +10,7 @@ from gui import textbox
 from gui import panel
 
 import time
-
-from parser import primitives
+import logging
 
 from folder import FolderList
 from playlist import PlaylistList
@@ -173,7 +172,9 @@ class Application:
         self.command_field.edit(update=self.update)
         command = self.command_field.gather()
         if command:
-            primitives.evaluate(command)
+            # TODO
+            logging.info("command passed")
+            pass
 
     def update(self):
 
