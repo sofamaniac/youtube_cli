@@ -125,15 +125,63 @@ youtube = Youtube()
 # === SponsorBlock === #
 import sponsorblock as sb
 
-sponsorBlock = sb.Client()
 useSponsorBlock = True
 sponsorBlockTimeout = 5  # timeout in seconds
 toSkip = ["sponsor", "selfpromo", "music_offtopic"]
+
+import jsonpickle
+
+
+class SponsorBlockCache:
+    def __init__(self, path="data/sponsorBlock.cache"):
+
+        self.path = path
+        with open(path, "r") as f:
+            self.data = jsonpickle.decode(f.read())
+
+    def add_entry(self, video_id, block_list):
+
+        if video_id in self.data and self.data[video_id] == block_list:
+            return
+
+        self.data[video_id] = block_list
+        with open(self.path, "w") as f:
+            f.write(jsonpickle.encode(self.data))
+
+    def query(self, video_id):
+
+        if video_id in self.data:
+            return self.data[video_id]
+        else:
+            return None
+
+
+class SponsorBlock:
+    def __init__(self):
+        self.cache = SponsorBlockCache()
+        self.client = sb.Client()
+
+    def get_skip_segments(self, video_id="", categories=toSkip):
+
+        tmp = self.cache.query(video_id)
+
+        if tmp:
+            return tmp
+        else:
+            block_list = self.client.get_skip_segments(
+                video_id=video_id, categories=categories
+            )
+            self.cache.add_entry(video_id, block_list)
+            return block_list
+
+
+sponsorBlock = SponsorBlock()
+
 # ==================== #
 
 # === Timeout on functions === #
 # code found at https://stackoverflow.com/a/26664130
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Queue, Manager
 
 queue = Queue()
 
@@ -179,9 +227,10 @@ class Video(Playable):
         self.url = ""
 
     def fetch_url(self, video=False):
-        # self.url = self.get_url(video)
-        f = lambda: queue.put(self.get_url(video))
-        self.url = run_with_limited_time(f, (), {}, 10)
+        self.url = self.get_url(video)
+
+    # f = lambda: queue.put(self.get_url(video))
+    # self.url = run_with_limited_time(f, (), {}, 15)
 
     def get_url(self, video=False, refresh=False):
         """Return the url for the audio stream of the video"""
