@@ -355,6 +355,7 @@ class Application:
                 self.player.stop()
             else:
                 self.play(self.playlist.next())
+            self.playlist.get_next().fetch_url()
         else:
             panel = self.content_panel
             panel.select(Directions.DOWN)

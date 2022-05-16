@@ -231,6 +231,10 @@ class Video(Playable):
         self.skipSegmentsDone = False
         self.url = ""
 
+    def fetch_url(self, video=False):
+        thread = Thread(target=self.get_url, kwargs={"video": video}, daemon=True)
+        thread.start()
+
     def get_url(self, video=False):
         """Return the url for the audio stream of the video"""
 
@@ -384,13 +388,6 @@ class YoutubePlaylist(YoutubeList):
         self.api_object = youtube.playlist_items
 
         self.load_next_page()  # we load the first page
-
-    def load_all_videos(self):
-        self.load_all()
-        for v in self.elements:
-            t = Thread(target=v.get_url, daemon=True)
-            t.start()
-            sleep(2)
 
     def _add_videos(self, id_list):
 
@@ -553,13 +550,8 @@ class YoutubePlaylistList(YoutubeList):
 
         self.load_next_page()
         self.load_all()
-        loader = Thread(target=self.load_all_playlists, daemon=True)
+        loader = Thread(target=self.load_all, daemon=True)
         loader.start()
-
-    def load_all_playlists(self):
-        self.load_all()
-        for p in self.elements:
-            p.load_all_videos()
 
     def load_next_page(self):
         args = {
