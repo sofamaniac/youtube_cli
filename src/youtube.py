@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 import os
 import pickle
-import subprocess
 import shlex
 from random import shuffle
 from playlist import *
 import logging
+from threading import Thread
+import subprocess
 
 # === Google API === #
 import google_auth_oauthlib.flow
@@ -216,6 +217,10 @@ def run_with_limited_time(func, args, kwargs, time):
 
 # ============================= #
 
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
+from time import time, sleep
+
 
 class Video(Playable):
     def __init__(self, id="", title="", description="", author="", playlistItemId=""):
@@ -226,18 +231,15 @@ class Video(Playable):
         self.skipSegmentsDone = False
         self.url = ""
 
-    def fetch_url(self, video=False):
-        self.url = self.get_url(video)
-
-    # f = lambda: queue.put(self.get_url(video))
-    # self.url = run_with_limited_time(f, (), {}, 15)
-
-    def get_url(self, video=False, refresh=False):
+    def get_url(self, video=False):
         """Return the url for the audio stream of the video"""
 
         # TODO get expiration time of url, to check if still valid
-        if self.url and not refresh:
-            return self.url
+        if self.url:
+            parsed_url = urlparse(self.url)
+            expire = int(parse_qs(parsed_url.query)["expire"][0])
+            if expire < time():
+                return self.url
 
         if video:
             format = "best"
@@ -339,6 +341,8 @@ class YoutubeList(Playlist):
 
         while index > self.nb_loaded and self.next_page != None:
             self.load_next_page()
+        if self.nb_loaded == 0:
+            self.load_next_page()
         if index >= self.nb_loaded:
             logging.warning("index greater than size")
             return self.elements[-1]
@@ -380,6 +384,13 @@ class YoutubePlaylist(YoutubeList):
         self.api_object = youtube.playlist_items
 
         self.load_next_page()  # we load the first page
+
+    def load_all_videos(self):
+        self.load_all()
+        for v in self.elements:
+            t = Thread(target=v.get_url, daemon=True)
+            t.start()
+            sleep(2)
 
     def _add_videos(self, id_list):
 
@@ -542,6 +553,13 @@ class YoutubePlaylistList(YoutubeList):
 
         self.load_next_page()
         self.load_all()
+        loader = Thread(target=self.load_all_playlists, daemon=True)
+        loader.start()
+
+    def load_all_playlists(self):
+        self.load_all()
+        for p in self.elements:
+            p.load_all_videos()
 
     def load_next_page(self):
         args = {

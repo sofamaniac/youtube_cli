@@ -296,10 +296,13 @@ class Application:
             self.content_panel.selected = 0
 
     def set_playlist(self):
-        if not self.in_playlist and isinstance(self.current_panel, PlaylistPanel):
-            self.playlist = self.current_panel.get_selected()
+        if not self.in_playlist:
+            if isinstance(self.current_panel, PlaylistPanel):
+                self.playlist = self.current_panel.get_selected()
+            else:
+                self.playlist = self.content_panel.source
             self.shuffled = self.shuffled  # force update
-            self.playlist.currentIndex = self.content_panel.selected
+            self.playlist.current_index = self.content_panel.selected
             self.player.stop()
             self.in_playlist = True
             self.play(self.playlist.get_current())
@@ -348,7 +351,7 @@ class Application:
 
     def next(self):
         if self.in_playlist:
-            if self.playlist.currentIndex > self.playlist.size:
+            if self.playlist.current_index > self.playlist.size:
                 self.player.stop()
             else:
                 self.play(self.playlist.next())
@@ -362,7 +365,7 @@ class Application:
         # if the song was started less than 10 seconds ago
         if self.player.time < 10:
             if self.in_playlist:
-                if self.playlist.currentIndex > 0:
+                if self.playlist.current_index > 0:
                     self.play(self.playlist.prev())
                 else:
                     self.player.stop()
@@ -392,11 +395,6 @@ class Application:
         # therefore we update it manually each time something is played
         # TODO not working or maybe it is
         self.increase_volume(0)
-
-        # fetch the next song url to save time if in playlist
-        if self.in_playlist:
-            next = self.playlist.get_next()
-            next.fetch_url(self.video_mode)
 
     def stop(self):
         self.player.stop()
