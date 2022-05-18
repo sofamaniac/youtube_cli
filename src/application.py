@@ -12,6 +12,8 @@ from gui import panel
 import time
 import logging
 
+log = logging.getLogger(__name__)
+
 from folder import FolderList
 from playlist import PlaylistList
 
@@ -173,7 +175,7 @@ class Application:
         command = self.command_field.gather()
         if command:
             # TODO
-            logging.info("command passed")
+            log.info("command passed")
             pass
 
     def update(self):
