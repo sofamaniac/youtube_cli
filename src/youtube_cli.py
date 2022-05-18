@@ -10,7 +10,7 @@ from keyconfig import KeyConfiguration
 import logging
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.WARNING,
     filename="youtube_cli.log",
     filemode="w",
     format="%(asctime)s:%(filename)10s:%(message)s",
