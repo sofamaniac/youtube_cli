@@ -4,7 +4,6 @@ import pickle
 import shlex
 from random import shuffle
 from playlist import *
-import logging
 from threading import Thread
 import subprocess
 
@@ -14,6 +13,9 @@ import googleapiclient.discovery
 import googleapiclient.errors
 import google.auth.exceptions
 
+import logging
+
+log = logging.getLogger(__name__)
 
 MAX_RESULTS = 50
 
@@ -283,7 +285,7 @@ class Video(Playable):
                 self.__get_skip_segment, (), {}, sponsorBlockTimeout
             )
         except (TimeoutException) as _:
-            logging.warning("SponsorBlock timed out")
+            log.warning("SponsorBlock timed out")
             self.skipSegments = []
 
     def check_skip(self, time):
@@ -325,7 +327,7 @@ class YoutubeList(Playlist):
         except google.auth.exceptions.RefreshError as _:
             youtube.get_authenticated_service(refresh=True)
             result = who(**what).execute()
-            logging.warning("Error with request")
+            log.warning("Error with request")
         return result
 
     def load_next_page(self):
@@ -348,7 +350,7 @@ class YoutubeList(Playlist):
         if self.nb_loaded == 0:
             self.load_next_page()
         if index >= self.nb_loaded:
-            logging.warning("index greater than size")
+            log.warning("index greater than size")
             return self.elements[-1]
         return self.elements[index]
 
@@ -400,7 +402,7 @@ class YoutubePlaylist(YoutubeList):
         try:
             response = self.request(youtube.videos.list, **args)
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while adding videos to playlist")
+            log.critical("Error while adding videos to playlist")
 
         nb_added = 0
         for i, v in enumerate(response["items"]):
@@ -442,7 +444,7 @@ class YoutubePlaylist(YoutubeList):
         try:
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
-            logging.critical("Error when querying playlist")
+            log.critical("Error when querying playlist")
 
         idList = []
         for v in response["items"]:
@@ -464,7 +466,7 @@ class YoutubePlaylist(YoutubeList):
         try:
             self.request(self.api_object.insert, **args)
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while adding video to playlist")
+            log.critical("Error while adding video to playlist")
         self.reload()  # we refresh the content
 
     def remove(self, video):
@@ -476,7 +478,7 @@ class YoutubePlaylist(YoutubeList):
         try:
             self.request(self.api_object.delete, id=playlistItemId)
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while removing video from playlist")
+            log.critical("Error while removing video from playlist")
         self.reload()
 
     def removeMax(self):
@@ -505,7 +507,7 @@ class LikedVideos(YoutubePlaylist):
         try:
             response = self.request(youtube.videos.list, **args)
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while loading liked videos")
+            log.critical("Error while loading liked videos")
 
         idList = []
         for v in response["items"]:
@@ -530,14 +532,14 @@ class LikedVideos(YoutubePlaylist):
         try:
             self.request(self.api_object.rate, id=video.id, rating="like")
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while adding videos to liked videos")
+            log.critical("Error while adding videos to liked videos")
         self.reload()  # we refresh the content
 
     def remove(self, video):
         try:
             self.request(self.api_object.rate, id=video.id, rating="none")
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while removing like from video")
+            log.critical("Error while removing like from video")
         self.reload()  # we refresh the content
 
 
@@ -563,7 +565,7 @@ class YoutubePlaylistList(YoutubeList):
         try:
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while loading list of playlists")
+            log.critical("Error while loading list of playlists")
 
         for p in response["items"]:
             self.elements.append(
@@ -606,7 +608,7 @@ class Search(YoutubePlaylist):
         try:
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
-            logging.critical("Error while searching for videos")
+            log.critical("Error while searching for videos")
 
         id_list = []
         for v in response["items"]:

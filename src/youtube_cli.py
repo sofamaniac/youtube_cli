@@ -6,6 +6,16 @@ from application import Application
 from keylistener import Listener
 from keyconfig import KeyConfiguration
 
+# setting up logger
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,
+    filename="youtube_cli.log",
+    filemode="w",
+    format="%(asctime)s:%(filename)10s:%(message)s",
+)
+
 
 def initialize(stdscr):
     """Initialize the different component of the application"""
