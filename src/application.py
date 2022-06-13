@@ -17,11 +17,14 @@ log = logging.getLogger(__name__)
 from folder import FolderList
 from playlist import PlaylistList
 
+from property import Property
+
 
 class Application:
     """The core of the application"""
 
     def __init__(self, stdscr):
+        self.property_list = []
         self.scr = screen.Screen(stdscr)
 
         self.yt_playlist_panel = PlaylistPanel(
@@ -79,72 +82,64 @@ class Application:
         self.add_to_playlist_panel.center()
         self.in_add_to_playlist = False
 
-        self._video_mode = False  # should the video be played alongside the audio
+        # should the video be played alongside the audio
+        self.__add_property("video_mode", False)
         self.create_player()
         self.playing = youtube.Video()
 
-        self.in_playlist = False
+        self.__add_property("in_playlist", False)
         self.playlist = youtube.YoutubeList()
         self.playlist_index = 0
-        self._repeat = "No"
-        self.shuffled = False
+        self.__add_property("repeat", "No")
+        self.__add_property("shuffled", False)
 
-        self.volume = 50
-        self.muted = False
+        self.__add_property("volume", 50)
+        self.__add_property("muted", False)
 
-    @property
-    def volume(self):
-        return self._volume
+    def __add_property(self, name, value=None):
+        self.__dict__[name] = Property(name, value)
+        self.property_list.append(name)
 
-    @volume.setter
-    def volume(self, vol):
-        if not 0 <= vol <= 100:
-            return
-        self._volume = vol
-        self.player.set_volume(self.volume)
+    def __set_property(self, name, value):
+        if name in self.property_list:
+            self.__dict__[name].set(value)
 
-    @property
-    def repeat(self):
-        return self._repeat
-
-    @repeat.setter
-    def repeat(self, value):
-        self._repeat = value
-        self.player.set_repeat(self.repeat)
-
-    @property
-    def muted(self):
-        return self._muted
-
-    @muted.setter
-    def muted(self, value):
-        self._muted = value
-        if self.muted:
-            self.player.set_volume(0)
+    def __getattribute__(self, name):
+        if name == "property_list" or not name in self.property_list:
+            return super(Application, self).__getattribute__(name)
         else:
-            self.player.set_volume(self.volume)
+            return self.__dict__[name].get()
 
-    @property
-    def shuffled(self):
-        return self._shuffled
-
-    @shuffled.setter
-    def shuffled(self, val):
-        self._shuffled = val
-        if self._shuffled:
-            self.playlist.shuffle()
-        else:
-            self.playlist.unshuffle()
-
-    @property
-    def video_mode(self):
-        return self._video_mode
-
-    @video_mode.setter
-    def video_mode(self, val):
-        self._video_mode = val
-        self.stop()
-        self.create_player()
+    def __setattr__(self, name, value):
+        match name:
+            case "volume":
+                if not 0 <= value <= 100:
+                    return
+                self.__set_property(name, value)
+                self.player.set_volume(self.volume)
+            case "in_playlist":
+                self.__set_property(name, value)
+            case "repeat":
+                self.__set_property(name, value)
+                self.player.set_repeat(self.repeat)
+            case "muted":
+                self.__set_property(name, value)
+                if self.muted:
+                    self.player.set_volume(0)
+                else:
+                    self.player.set_volume(self.volume)
+            case "shuffled":
+                self.__set_property(name, value)
+                if self.shuffled:
+                    self.playlist.shuffle()
+                else:
+                    self.playlist.unshuffle()
+            case "video_mode":
+                self.__set_property(name, value)
+                self.stop()
+                self.create_player()
+            case _:
+                super(Application, self).__setattr__(name, value)
 
     def skip_segment(self):
         time = self.player.time
