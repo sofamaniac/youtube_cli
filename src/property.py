@@ -12,7 +12,10 @@ class AllProperties:
         return None
 
     def add_property(self, prop):
-        self.properties.append(prop)
+        if p := self.find_property(prop.name):
+            p.set(prop.value)
+        else:
+            self.properties.append(prop)
 
 
 global_properties = AllProperties()

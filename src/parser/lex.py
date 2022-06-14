@@ -8,8 +8,6 @@ log = logging.getLogger(__name__)
 reserved = {
     "if": "IF",
     "else": "ELSE",
-    "{": "BEGIN",
-    "}": "END",
     "let": "LET",
     "true": "TRUE",
     "false": "FALSE",
@@ -25,6 +23,8 @@ tokens = list(reserved.values()) + [
     "CSEP",
     "SPACE",
     "COMMENT",
+    "BEGIN",
+    "END",
     "LPAREN",
     "RPAREN",
     "ASSIGN",
@@ -59,6 +59,10 @@ t_STRING = r"\"([^\\\n]|(\\.))*?\""
 t_CSEP = r"[ ]*;[ ]*"
 t_SPACE = r"[ ]+"
 t_ASSIGN = r"[ ]*=[ ]*"
+t_BEGIN = r"[ ]*\{[ ]*"
+t_END = r"[ ]*\}[ ]*"
+t_LPAREN = r"[ ]*\([ ]*"
+t_RPAREN = r"[ ]*\)[ ]*"
 
 
 def t_INT(t):

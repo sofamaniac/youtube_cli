@@ -7,17 +7,18 @@ program     : commandlist                                   o
 command     : ACTION                                        o
             | ACTION SPACE paramlist                        o
             | NAME ASSIGN param                             o
-            | SET SPACE NAME SPACE param
-            | param
+            | SET SPACE NAME SPACE param                    o
+            | param                                         o
             | LET NAME ASSIGN param                         o
-            | LPAREN command RPAREN
-            | param BINOP param
-            | if
-            | block
+            | if                                            o
+            | block                                         o
+            | while                                         o
+            | param BINOP param                             x
 
 commandlist : command CSEP commandlist                      o
             | command NEWLINE commandlist                   o
             | command NEWLINE                               o
+            | command                                       o
 
 constant    : STRING                                        o
             | INT                                           o
@@ -33,14 +34,20 @@ bool        : TRUE                                          o
 paramlist   : param SPACE paramlist                         o
             | param                                         o
 
-block       : BEGIN commandlist END
+block       : BEGIN commandlist END                         o
 
-if          : IF LPAREN command RPAREN block ELSE block
+if          : IF LPAREN command RPAREN block ELSE block     o
+            | IF LPAREN command RPAREN block                o
+
+while       : WHILE LPAREN command RPAREN block             o
 
 function    : FUN NAME arglist BEGIN program END            o
 
 arglist     : NAME SPACE NAME                               o
             | NAME                                          o
+
+Remarks: SET needs cannot be a function since it does not
+its parameter must not be passed by name
 """
 
 from ply.yacc import yacc
@@ -49,6 +56,7 @@ from parser import lex
 from parser import datastructures
 from parser.datastructures import *
 from parser import lex
+from parser import primitives
 
 tokens = lex.tokens
 
@@ -154,9 +162,35 @@ def p_param_list(p):
 
 def p_function_decl(p):
     """
-    function : FUN NAME arglist BEGIN program END
+    function : FUN NAME arglist block
     """
-    p[0] = FunctionDecleration(p[2], p[3], p[5])
+    p[0] = FunctionDecleration(p[2], p[3], p[4])
+
+
+def p_block(p):
+    """
+    block : BEGIN commandlist END
+    """
+    p[0] = CodeBlock(p[2])
+
+
+def p_if_else(p):
+    """
+    if : IF LPAREN command RPAREN block ELSE block
+       | IF LPAREN command RPAREN block
+    """
+    if len(p) < 8:
+        else_block = None
+    else:
+        else_block = p[7]
+    p[0] = IfElse(p[3], p[5], else_block)
+
+
+def p_while(p):
+    """
+    while : WHILE LPAREN command RPAREN block
+    """
+    p[0] = While(p[3], p[5])
 
 
 def p_command_decl(p):
@@ -191,11 +225,40 @@ def p_command_action(p):
         p[0] = FunctionCall(p[1], p[3])
 
 
+def p_command_param(p):
+    """
+    command : param
+    """
+    p[0] = p[1]
+
+
+def p_command_if(p):
+    """
+    command : if
+    """
+    p[0] = p[1]
+
+
+def p_command_while(p):
+    """
+    command : while
+    """
+    p[0] = p[1]
+
+
+def p_command_block(p):
+    """
+    command : block
+    """
+    p[0] = p[1]
+
+
 def p_command_list(p):
     """
     commandlist : command CSEP commandlist
                 | command NEWLINE commandlist
                 | command NEWLINE
+                | command
     """
     if len(p) < 4:
         p[0] = [p[1]]
