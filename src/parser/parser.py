@@ -1,51 +1,51 @@
 """File containing the grammar of the language
 
-program     : commandlist                                   o
-            | function                                      o
-            | program program                               o
+program     : commandlist
+            | function
+            | program program
 
-command     : ACTION                                        o
-            | ACTION SPACE paramlist                        o
-            | NAME ASSIGN param                             o
-            | SET SPACE NAME SPACE param                    o
-            | param                                         o
-            | LET NAME ASSIGN param                         o
-            | if                                            o
-            | block                                         o
-            | while                                         o
-            | param binop param                             o
+command     : ACTION
+            | ACTION SPACE paramlist
+            | NAME ASSIGN param
+            | SET SPACE NAME SPACE param
+            | param
+            | LET NAME ASSIGN param
+            | if
+            | block
+            | while
+            | param binop param
             | MINUS param
 
-commandlist : command CSEP commandlist                      o
-            | command NEWLINE commandlist                   o
-            | command NEWLINE                               o
-            | command                                       o
+commandlist : command CSEP commandlist
+            | command NEWLINE commandlist
+            | command NEWLINE
+            | command
 
-constant    : STRING                                        o
-            | INT                                           o
-            | bool                                          o
+constant    : STRING
+            | INT
+            | bool
 
-param       : NAME                                          o
-            | LPAREN command RPAREN                         o
-            | constant                                      o
+param       : NAME
+            | LPAREN command RPAREN
+            | constant
 
-bool        : TRUE                                          o
-            | FALSE                                         o
+bool        : TRUE
+            | FALSE
 
-paramlist   : param SPACE paramlist                         o
-            | param                                         o
+paramlist   : param SPACE paramlist
+            | param
 
-block       : BEGIN commandlist END                         o
+block       : BEGIN commandlist END
 
-if          : IF LPAREN command RPAREN block ELSE block     o
-            | IF LPAREN command RPAREN block                o
+if          : IF LPAREN command RPAREN block ELSE block
+            | IF LPAREN command RPAREN block
 
-while       : WHILE LPAREN command RPAREN block             o
+while       : WHILE LPAREN command RPAREN block
 
-function    : FUN NAME arglist BEGIN program END            o
+function    : FUN NAME arglist BEGIN program END
 
-arglist     : NAME SPACE NAME                               o
-            | NAME                                          o
+arglist     : NAME SPACE NAME
+            | NAME
 
 binop       : PLUS
             | MINUS
