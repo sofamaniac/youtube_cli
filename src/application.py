@@ -1,23 +1,21 @@
 """Main component of the program, where most of the logic is handled"""
 
-import youtube
-import gui.screen as screen
-import player
-from widget import Widget, PlaylistPanel
-
-from gui.screen import Directions, CurseString, PanelDirections
-from gui import textbox
-from gui import panel
-
 import time
 import logging
 
-log = logging.getLogger(__name__)
+import youtube
+import player
+
+from widget import Widget, PlaylistPanel
+from gui import screen, textbox, panel
+from gui.screen import Directions, CurseString, PanelDirections
 
 from folder import FolderList
 from playlist import PlaylistList
 
 from property import Property
+
+log = logging.getLogger(__name__)
 
 
 class Application:
@@ -83,21 +81,27 @@ class Application:
         self.in_add_to_playlist = False
 
         # should the video be played alongside the audio
-        self.__add_property("video_mode", False)
+        self.video_mode = None  # avoid linting errors
+        self.__add_property("video_mode", False, self._change_video_mode)
         self.create_player()
         self.playing = youtube.Video()
 
+        self.in_playlist = None
         self.__add_property("in_playlist", False)
         self.playlist = youtube.YoutubeList()
         self.playlist_index = 0
-        self.__add_property("repeat", "No")
-        self.__add_property("shuffled", False)
+        self.repeat = None
+        self.__add_property("repeat", "No", self._change_repeat)
+        self.shuffled = None
+        self.__add_property("shuffled", False, self._change_shuffled)
 
-        self.__add_property("volume", 50)
-        self.__add_property("muted", False)
+        self.volume = None
+        self.__add_property("volume", 50, self._change_volume)
+        self.muted = None
+        self.__add_property("muted", False, self._change_muted)
 
-    def __add_property(self, name, value=None):
-        self.__dict__[name] = Property(name, value)
+    def __add_property(self, name, value=None, on_change=None):
+        self.__dict__[name] = Property(name, value, on_change)
         self.property_list.append(name)
 
     def __set_property(self, name, value):
@@ -106,45 +110,42 @@ class Application:
 
     def __getattribute__(self, name):
         if name == "property_list" or not name in self.property_list:
-            return super(Application, self).__getattribute__(name)
+            return super().__getattribute__(name)
+        return self.__dict__[name].get()
+
+    def _change_volume(self, value):
+        if 0 <= value <= 100:
+            self.player.set_volume(value)
+
+    def _change_repeat(self, value):
+        self.player.set_repeat(value)
+
+    def _change_muted(self, value):
+        if value:
+            self.player.set_volume(self.volume)
         else:
-            return self.__dict__[name].get()
+            self.player.set_volume(0)
+
+    def _change_shuffled(self, value):
+        if value:
+            self.playlist.shuffle()
+        else:
+            self.playlist.unshuffle()
+
+    def _change_video_mode(self, _):
+        self.stop()
+        self.create_player()
 
     def __setattr__(self, name, value):
-        match name:
-            case "volume":
-                if not 0 <= value <= 100:
-                    return
-                self.__set_property(name, value)
-                self.player.set_volume(self.volume)
-            case "in_playlist":
-                self.__set_property(name, value)
-            case "repeat":
-                self.__set_property(name, value)
-                self.player.set_repeat(self.repeat)
-            case "muted":
-                self.__set_property(name, value)
-                if self.muted:
-                    self.player.set_volume(0)
-                else:
-                    self.player.set_volume(self.volume)
-            case "shuffled":
-                self.__set_property(name, value)
-                if self.shuffled:
-                    self.playlist.shuffle()
-                else:
-                    self.playlist.unshuffle()
-            case "video_mode":
-                self.__set_property(name, value)
-                self.stop()
-                self.create_player()
-            case _:
-                super(Application, self).__setattr__(name, value)
+        if name == "property_list" or not name in self.property_list:
+            super().__setattr__(name, value)
+        else:
+            self.__set_property(name, value)
 
     def skip_segment(self):
-        time = self.player.time
-        time = time if time else 0
-        check = self.playing.check_skip(time)
+        timestamp = self.player.time
+        timestamp = timestamp if timestamp else 0
+        check = self.playing.check_skip(timestamp)
         duration = self.player.duration
         if check and duration:
             jump = min(check, duration)
@@ -171,7 +172,6 @@ class Application:
         if command:
             # TODO
             log.info("command passed")
-            pass
 
     def update(self):
 
@@ -248,10 +248,10 @@ class Application:
         width = self.player_panel.width - 5 - len(" {}/{}".format(t, d))
         whole = "\u2588" * int(frac_time * width)
         space = "\u2500" * (width - len(whole))
-        bar = whole + space
-        progress = "\u2595" + bar + "\u258F" + " {}/{}".format(t, d)
+        bar_string = whole + space
+        progress = "\u2595" + bar_string + "\u258F" + " {}/{}".format(t, d)
         s = CurseString(progress)
-        for i, _ in enumerate(bar):
+        for i, _ in enumerate(bar_string):
             if self.playing.check_skip(i * dur / width):
                 s.color(screen.COLOR_SEG, i, i + 1)
         content.append(s)
@@ -354,8 +354,7 @@ class Application:
                 self.play(self.playlist.next())
             self.playlist.get_next().fetch_url()
         else:
-            panel = self.content_panel
-            panel.select(Directions.DOWN)
+            self.content_panel.select(Directions.DOWN)
             self.play()
 
     def prev(self):
@@ -368,8 +367,7 @@ class Application:
                 else:
                     self.player.stop()
             else:
-                panel = self.content_panel
-                panel.select(Directions.UP)
+                self.content_panel.select(Directions.UP)
                 self.play()
 
         # else we start the same song
@@ -437,7 +435,6 @@ class Application:
     def quit(self):
         self.stop()
         self.player.quit()
-        return
 
     def resize(self):
         self.scr.resize()
