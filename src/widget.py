@@ -120,4 +120,4 @@ class Widget(panel.Panel):
 
 class PlaylistPanel(Widget):
     def __init__(self, *args, **kwargs):
-        super(PlaylistPanel, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)

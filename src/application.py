@@ -13,9 +13,88 @@ from gui.screen import Directions, CurseString, PanelDirections
 from folder import FolderList
 from playlist import PlaylistList
 
-from property import Property
+from property import Property, properties_list, NoneType
 
 log = logging.getLogger(__name__)
+
+
+def get_property(name):
+    return properties_list.find_property(name).get()
+
+
+class InfoPanel(Widget):
+    def __init__(self, *args, **kwargs):
+
+        super().__init__("Information", *args, **kwargs)
+        self.selectable = False
+
+    def update(self, draw_select=False):
+
+        selection = get_property("application").content_panel.get_selected()
+        content = []
+        content.append(CurseString(f"Title: {selection.title}"))
+        content.append(CurseString(f"Author: {selection.author}"))
+        content.append(CurseString(f"Id: {selection.id}"))
+        super().update(to_display=content)
+
+
+class OptionPanel(Widget):
+    def __init__(self, *args, **kwargs):
+
+        super().__init__("Options", *args, **kwargs)
+        self.selectable = False
+
+    def update(self, draw_select=False):
+
+        content = []
+        content.append(CurseString(f"Auto: {get_property('in_playlist')}"))
+        content.append(CurseString(f"Repeat: {get_property('repeat')}"))
+        content.append(CurseString(f"Shuffle: {get_property('shuffled')}"))
+        content.append(CurseString(f"Volume : {get_property('volume'):02d} / 100"))
+        content.append(
+            CurseString(f"Mode: {'Video' if get_property('video_mode') else 'Audio'}")
+        )
+        super().update(to_display=content)
+
+
+class PlayerPanel(Widget):
+    def __init__(self, *args, **kwargs):
+
+        super().__init__("Player Information", *args, **kwargs)
+        self.selectable = False
+
+    def update(self, draw_select=False):
+
+        playing = get_property("playing")
+        player = get_property("player")
+        title = playing.title
+        dur = player.duration
+
+        time_pos = player.time
+
+        t = time.strftime("%H:%M:%S", time.gmtime(time_pos))
+        d = time.strftime("%H:%M:%S", time.gmtime(dur))
+
+        t = t if time_pos else "00:00:00"
+        d = d if dur else "00:00:00"
+        content = [CurseString(f"{title} - {t}/{d}")]
+
+        # drawing progress bar
+        time_pos = time_pos if time_pos else 0
+        dur = dur if dur else 0
+        frac_time = time_pos / (dur + 1)
+        width = self.width - 5 - len(" {}/{}".format(t, d))
+        whole = "\u2588" * int(frac_time * width)
+        space = "\u2500" * (width - len(whole))
+        bar_string = whole + space
+        progress = "\u2595" + bar_string + "\u258F" + " {}/{}".format(t, d)
+        s = CurseString(progress)
+        for i, _ in enumerate(bar_string):
+            if playing.check_skip(i * dur / width):
+                s.color(screen.COLOR_SEG, i, i + 1)
+        content.append(s)
+
+        super().update(to_display=content)
 
 
 class Application:
@@ -36,8 +115,7 @@ class Application:
         self.content_panel.set_right_to(self.yt_playlist_panel)
         self.content_panel.set_right_to(self.local_playlist_panel)
 
-        self.player_panel = Widget(
-            "Player Information",
+        self.player_panel = PlayerPanel(
             0,
             0,
             100,
@@ -46,15 +124,12 @@ class Application:
             screen=self.scr,
         )
         self.player_panel.set_below_of(self.content_panel)
-        self.player_panel.selectable = False
 
-        self.option_panel = Widget("Options", 0, 0, 20, 20, screen=self.scr)
+        self.option_panel = OptionPanel(0, 0, 20, 20, screen=self.scr)
         self.option_panel.set_below_of(self.local_playlist_panel)
-        self.option_panel.selectable = False
 
-        self.information_panel = Widget("Informations", 0, 0, 20, 15, screen=self.scr)
+        self.information_panel = InfoPanel(0, 0, 20, 15, screen=self.scr)
         self.information_panel.set_below_of(self.option_panel)
-        self.information_panel.selectable = False
 
         self.yt_playlist_panel.source = PlaylistList()
         self.local_playlist_panel.source = PlaylistList()
@@ -82,26 +157,32 @@ class Application:
 
         # should the video be played alongside the audio
         self.video_mode = None  # avoid linting errors
-        self.__add_property("video_mode", False, self._change_video_mode)
+        self.__add_property("video_mode", False, on_change=self._change_video_mode)
+        self.player = None
+        self.__add_property("player", player.AudioPlayer(), base_type=player.Player)
         self.create_player()
-        self.playing = youtube.Video()
+        self.playing = None
+        self.__add_property("playing", youtube.Video())
 
         self.in_playlist = None
         self.__add_property("in_playlist", False)
         self.playlist = youtube.YoutubeList()
         self.playlist_index = 0
         self.repeat = None
-        self.__add_property("repeat", "No", self._change_repeat)
+        self.__add_property("repeat", "No", on_change=self._change_repeat)
         self.shuffled = None
-        self.__add_property("shuffled", False, self._change_shuffled)
+        self.__add_property("shuffled", False, on_change=self._change_shuffled)
 
         self.volume = None
-        self.__add_property("volume", 50, self._change_volume)
+        self.__add_property("volume", 50, on_change=self._change_volume)
         self.muted = None
         self.__add_property("muted", False, self._change_muted)
+        properties_list.add_property(Property("application", self))  # maybe overkill
 
-    def __add_property(self, name, value=None, on_change=None):
-        self.__dict__[name] = Property(name, value, on_change)
+    def __add_property(self, name, value, base_type=NoneType, on_change=None):
+        self.__dict__[name] = Property(
+            name, value, base_type=base_type, on_change=on_change
+        )
         self.property_list.append(name)
 
     def __set_property(self, name, value):
@@ -193,9 +274,9 @@ class Application:
             draw_select=self.current_panel == self.local_playlist_panel
         )
         self.content_panel.update(draw_select=self.current_panel == self.content_panel)
-        self.draw_player()
-        self.draw_options()
-        self.draw_info()
+        self.player_panel.update()
+        self.option_panel.update()
+        self.information_panel.update()
 
         # checking if there is something playing
         if (
@@ -209,54 +290,6 @@ class Application:
         self.draw_add_to_playlist()
 
         self.scr.update()
-
-    def draw_info(self):
-        selection = self.content_panel.get_selected()
-        content = []
-        content.append(CurseString(f"Title: {selection.title}"))
-        content.append(CurseString(f"Author: {selection.author}"))
-        content.append(CurseString(f"Id: {selection.id}"))
-        self.information_panel.update(to_display=content)
-
-    def draw_options(self):
-        content = []
-
-        content.append(CurseString(f"Auto: {self.in_playlist}"))
-        content.append(CurseString(f"Repeat: {self.repeat}"))
-        content.append(CurseString(f"Shuffle: {self.shuffled}"))
-        content.append(CurseString(f"Volume : {self.volume:02d} / 100"))
-        content.append(CurseString(f"Mode: {'Video' if self.video_mode else 'Audio'}"))
-        self.option_panel.update(to_display=content)
-
-    def draw_player(self):
-        title = self.playing.title
-        dur = self.player.duration
-
-        time_pos = self.player.time
-
-        t = time.strftime("%H:%M:%S", time.gmtime(time_pos))
-        d = time.strftime("%H:%M:%S", time.gmtime(dur))
-
-        t = t if time_pos else "00:00:00"
-        d = d if dur else "00:00:00"
-        content = [CurseString(f"{title} - {t}/{d}")]
-
-        # drawing progress bar
-        time_pos = time_pos if time_pos else 0
-        dur = dur if dur else 0
-        frac_time = time_pos / (dur + 1)
-        width = self.player_panel.width - 5 - len(" {}/{}".format(t, d))
-        whole = "\u2588" * int(frac_time * width)
-        space = "\u2500" * (width - len(whole))
-        bar_string = whole + space
-        progress = "\u2595" + bar_string + "\u258F" + " {}/{}".format(t, d)
-        s = CurseString(progress)
-        for i, _ in enumerate(bar_string):
-            if self.playing.check_skip(i * dur / width):
-                s.color(screen.COLOR_SEG, i, i + 1)
-        content.append(s)
-
-        self.player_panel.update(to_display=content)
 
     def draw_add_to_playlist(self):
 
@@ -389,7 +422,6 @@ class Application:
         self.playing = to_play
         # when nothing is playing, the volume might not get updated on the backend
         # therefore we update it manually each time something is played
-        # TODO not working or maybe it is
         self.increase_volume(0)
 
     def stop(self):

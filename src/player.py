@@ -7,7 +7,11 @@ class PlayerDeadError(Exception):
     pass
 
 
-class AudioPlayerMPD:
+class Player:
+    pass
+
+
+class AudioPlayerMPD(Player):
     def __init__(self):
 
         self.client = MPDClient()
@@ -74,7 +78,7 @@ class AudioPlayerMPD:
         return self.get_property("state", "") == "stop"
 
 
-class VideoPlayer:
+class VideoPlayer(Player):
     def __init__(self, video="auto"):
         self.player = MPV(video=video, ytdl=True)
 
