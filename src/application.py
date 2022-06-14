@@ -13,13 +13,15 @@ from gui.screen import Directions, CurseString, PanelDirections
 from folder import FolderList
 from playlist import PlaylistList
 
-from property import Property, properties_list, NoneType
+from property import Property, global_properties, NoneType, PropertyDoNotApplyChange
+
+from parser import parser
 
 log = logging.getLogger(__name__)
 
 
 def get_property(name):
-    return properties_list.find_property(name).get()
+    return global_properties.find_property(name).get()
 
 
 class InfoPanel(Widget):
@@ -145,7 +147,7 @@ class Application:
         self.search_panel = Widget("Search", 0, 0, 80, 12, screen=self.scr)
         self.in_search = False
         self.textbox = textbox.Textbox(0, 0, 80, 12, screen=self.scr)
-        self.command_field = textbox.Textbox(0, 10, 1000, 12, screen=self.scr)
+        self.command_field = textbox.Textbox(0, 0, 80, 3, screen=self.scr)
 
         self.add_to_playlist_panel = Widget(
             "Add to playlist", 0, 0, 20, 20, screen=self.scr
@@ -177,7 +179,7 @@ class Application:
         self.__add_property("volume", 50, on_change=self._change_volume)
         self.muted = None
         self.__add_property("muted", False, self._change_muted)
-        properties_list.add_property(Property("application", self))  # maybe overkill
+        global_properties.add_property(Property("application", self))  # maybe overkill
 
     def __add_property(self, name, value, base_type=NoneType, on_change=None):
         self.__dict__[name] = Property(
@@ -197,6 +199,8 @@ class Application:
     def _change_volume(self, value):
         if 0 <= value <= 100:
             self.player.set_volume(value)
+        else:
+            raise PropertyDoNotApplyChange
 
     def _change_repeat(self, value):
         self.player.set_repeat(value)
@@ -252,6 +256,7 @@ class Application:
         command = self.command_field.gather()
         if command:
             # TODO
+            parser.evaluate(command)
             log.info("command passed")
 
     def update(self):
@@ -281,7 +286,7 @@ class Application:
         # checking if there is something playing
         if (
             self.in_playlist and self.player.is_song_finished()
-        ):  # the current song has finished
+        ):  # the current song is finished
             self.next()
 
         if self.in_search:

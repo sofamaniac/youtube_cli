@@ -9,15 +9,20 @@ class AllProperties:
         for p in self.properties:
             if p.name == name:
                 return p
+        return None
 
     def add_property(self, prop):
         self.properties.append(prop)
 
 
-properties_list = AllProperties()
+global_properties = AllProperties()
 
 
 class PropertyTypeError(Exception):
+    pass
+
+
+class PropertyDoNotApplyChange(Exception):
     pass
 
 
@@ -30,7 +35,7 @@ class Property:
             self.base_type = base_type
         else:
             self.base_type = type(value)
-        properties_list.add_property(self)
+        global_properties.add_property(self)
 
     def set(self, new_value):
         """Set the value of the property to [new_value]. If [new_value] is of different type
@@ -38,9 +43,12 @@ class Property:
         If the [on_change] attribute was defined, it is called *before* the value of the
         property is changed."""
         if isinstance(new_value, self.base_type):
-            if self.on_change:
-                self.on_change(new_value)
-            self.value = new_value
+            try:
+                if self.on_change:
+                    self.on_change(new_value)
+                self.value = new_value
+            except PropertyDoNotApplyChange:
+                pass
             return self.value
         else:
             raise (
