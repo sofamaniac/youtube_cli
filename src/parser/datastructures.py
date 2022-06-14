@@ -205,10 +205,14 @@ class FunctionCall(Node):
         if fun:
             fun.get()(*args)
 
+    def __str__(self):
+        return f"{self.name}" + " ".join([str(a) for a in self.args])
+
 
 class Program(Node):
     def __init__(self, commands):
         self.commands = commands
+        super().__init__()
 
     def execute(self):
 
@@ -221,4 +225,18 @@ class Program(Node):
             c.set_scope(scope)
 
     def __str__(self):
-        "\n".join([str(c) for c in self.commands])
+        return "\n".join([str(c) for c in self.commands])
+
+
+class BinaryOp(Node):
+    def __init__(self, op):
+        self.op = op
+        self.x = None
+        self.y = None
+        super().__init__()
+
+    def execute(self):
+        self.op(self.x, self.y)
+
+    def __str__(self):
+        return f"{self.x} binop {self.y}"

@@ -33,7 +33,7 @@ tokens = list(reserved.values()) + [
     "PLUS",
     "MINUS",
     "TIMES",
-    "DIVID",
+    "DIVIDE",
     "MOD",
     "OR",
     "AND",
@@ -51,6 +51,19 @@ tokens = list(reserved.values()) + [
     "LSHIFT",
     "RSHIFT",
 ]
+t_PLUS = r"[ ]*\+[ ]*"
+t_MINUS = r"[ ]*-[ ]*"
+t_TIMES = r"[ ]*\*[ ]*"
+t_DIVIDE = r"[ ]*/[ ]*"
+t_MOD = r"[ ]*%[ ]*"
+t_OR = r"[ ]*\|\|[ ]*"
+t_AND = r"[ ]*&&[ ]*"
+t_NOT = r"[ ]*![ ]*"
+t_LE = r"[ ]*<=[ ]*"
+t_GE = r"[ ]*>=[ ]*"
+t_GT = r"[ ]*>[ ]*"
+t_EQ = r"[ ]*==[ ]*"
+t_NE = r"[ ]*!=[ ]*"
 
 t_ignore = "\t"  # Ignored chars
 
