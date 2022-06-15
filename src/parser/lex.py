@@ -29,6 +29,7 @@ tokens = list(reserved.values()) + [
     "RPAREN",
     "ASSIGN",
     "NEWLINE",
+    "DOT",
     # operators
     "PLUS",
     "MINUS",
@@ -51,6 +52,9 @@ tokens = list(reserved.values()) + [
     "LSHIFT",
     "RSHIFT",
 ]
+
+t_STRING = r"\"([^\\\n]|(\\.))*?\""
+t_ignore = "\t"  # Ignored chars
 t_PLUS = r"[ ]*\+[ ]*"
 t_MINUS = r"[ ]*-[ ]*"
 t_TIMES = r"[ ]*\*[ ]*"
@@ -64,11 +68,7 @@ t_GE = r"[ ]*>=[ ]*"
 t_GT = r"[ ]*>[ ]*"
 t_EQ = r"[ ]*==[ ]*"
 t_NE = r"[ ]*!=[ ]*"
-
-t_ignore = "\t"  # Ignored chars
-
 t_NAME = r"[a-zA-Z_][a-zA-Z0-9_]*"
-t_STRING = r"\"([^\\\n]|(\\.))*?\""
 t_CSEP = r"[ ]*;[ ]*"
 t_SPACE = r"[ ]+"
 t_ASSIGN = r"[ ]*=[ ]*"
@@ -76,6 +76,7 @@ t_BEGIN = r"[ ]*\{[ ]*"
 t_END = r"[ ]*\}[ ]*"
 t_LPAREN = r"[ ]*\([ ]*"
 t_RPAREN = r"[ ]*\)[ ]*"
+t_DOT = r"\."
 
 
 def t_INT(t):

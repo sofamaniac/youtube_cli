@@ -1,5 +1,8 @@
 from property import global_properties, AllProperties, Property
 
+READ = "read"
+WRITE = "write"
+
 
 class Scope:
     def __init__(self, parent=global_properties):
@@ -60,41 +63,81 @@ class VariableDecleration(Node):
         return f"let {self.name} = {self.value}"
 
 
-class VariableAssignment(Node):
-    def __init__(self, name: str, value: Node):
-
+class Variable(Node):
+    def __init__(self, name, value=None, mode=READ):
         self.name = name
+        self.mode = mode
         self.value = value
         super().__init__()
 
     def set_scope(self, scope):
-
         self.scope = scope
-        self.value.set_scope(scope)
+        if self.value:
+            self.value.set_scope(scope)
 
     def execute(self):
 
-        prop = self.scope.find_property(self.name)
-        value = self.value.execute()
-        return prop.set(value)
-
-    def __str__(self):
-        return f"{self.name} = {self.value}"
-
-
-class VariableRead(Node):
-    def __init__(self, name):
-
-        self.name = name
-        super().__init__()
-
-    def execute(self):
-
-        prop = self.scope.find_property(self.name)
+        prop = self.get()
+        if self.mode == WRITE:
+            value = self.value.execute()
+            return prop.set(value)
         return prop.get()
 
+    def get(self):
+        return self.scope.find_property(self.name)
+
     def __str__(self):
+        if self.mode == WRITE:
+            return f"{self.name} = {self.value}"
         return self.name
+
+
+class Attribute(Node):
+    def __init__(self, name, attribute, value=None, mode=READ):
+
+        self.name = name
+        self.attribute = attribute
+        self.value = value
+        self.mode = mode
+        super().__init__()
+
+    def set_scope(self, scope):
+        self.scope = scope
+        new_scope = Scope()
+        new_scope.add_property(Property(self.attribute.name, self))
+        self.attribute.set_scope(new_scope)
+        if self.value:
+            self.value.set_scope(scope)
+
+    def get(self):
+        prop = self.scope.find_property(self.name)
+        parent = prop.get()
+        if isinstance(parent, Attribute):
+            root = parent.get()
+            return root.__getattribute__(self.name)
+        return parent
+
+    def set(self, value):
+
+        if isinstance(self.attribute, Variable):
+            parent = self.get()
+            attribute = self.attribute.name
+            parent.__setattr__(attribute, value)
+            return value
+        return self.attribute.set(value)
+
+    def execute(self):
+
+        if self.mode == WRITE:
+            value = self.value.execute()
+            self.set(value)
+            return value
+        return self.get()
+
+    def __str__(self):
+        if self.mode == WRITE:
+            return f"{self.name}.{self.attribute} = {self.value}"
+        return f"{self.name}.{self.attribute}"
 
 
 class CodeBlock(Node):

@@ -30,7 +30,9 @@ class PropertyDoNotApplyChange(Exception):
 
 
 class Property:
-    def __init__(self, name, value, base_type=NoneType, on_change=None):
+    def __init__(
+        self, name, value, base_type=NoneType, on_change=None, custom_get=None
+    ):
         self.value = value
         self.name = name
         self.on_change = on_change
@@ -39,6 +41,7 @@ class Property:
         else:
             self.base_type = type(value)
         global_properties.add_property(self)
+        self.custom_get = custom_get
 
     def set(self, new_value):
         """Set the value of the property to [new_value]. If [new_value] is of different type
@@ -62,4 +65,6 @@ class Property:
 
     def get(self):
         """Returns the value of the property"""
+        if self.custom_get:
+            return self.custom_get()
         return self.value

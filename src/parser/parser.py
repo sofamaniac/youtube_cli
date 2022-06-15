@@ -6,7 +6,7 @@ program     : commandlist
 
 command     : ACTION
             | ACTION SPACE paramlist
-            | NAME ASSIGN param
+            | var ASSIGN param
             | SET SPACE NAME SPACE param
             | param
             | LET NAME ASSIGN param
@@ -25,9 +25,12 @@ constant    : STRING
             | INT
             | bool
 
-param       : NAME
+param       : var
             | LPAREN command RPAREN
             | constant
+
+var         : NAME
+            | NAME DOT var
 
 bool        : TRUE
             | FALSE
@@ -47,26 +50,7 @@ function    : FUN NAME arglist BEGIN program END
 arglist     : NAME SPACE NAME
             | NAME
 
-binop       : PLUS
-            | MINUS
-            | TIMES
-            | DIVID
-            | MOD
-            | OR
-            | AND
-            | NOT
-            | XOR
-            | LT
-            | LE
-            | GT
-            | GE
-            | EQ
-            | NE
-            | LOR
-            | LAND
-            | LNOT
-            | LSHIFT
-            | RSHIFT
+binop       : a whole bunch of things
 
 Remarks: SET cannot be a function since it does not
 its parameter must not be passed by name
@@ -143,17 +127,11 @@ def p_bool_false(p):
     p[0] = False
 
 
-def p_param_var(p):
-    """
-    param : NAME
-    """
-    p[0] = VariableRead(p[1])
-
-
 def p_param_command(p):
     """
     param : constant
           | LPAREN command RPAREN
+          | var
     """
     if len(p) < 3:
         p[0] = p[1]
@@ -225,16 +203,20 @@ def p_command_decl(p):
 
 def p_command_assign(p):
     """
-    command : NAME ASSIGN param
+    command : var ASSIGN param
     """
-    p[0] = VariableAssignment(p[1], p[3])
+    p[1].mode = WRITE
+    p[1].value = p[3]
+    p[0] = p[1]
 
 
 def p_command_set(p):
     """
-    command : SET SPACE NAME SPACE param
+    command : SET SPACE var SPACE param
     """
-    p[0] = VariableAssignment(p[3], p[5])
+    p[3].mode = WRITE
+    p[3].value = p[5]
+    p[0] = p[3]
 
 
 def p_command_action(p):
@@ -305,6 +287,20 @@ def p_command_list(p):
         p[0] = [p[1]]
     else:
         p[0] = [p[1], *p[3]]
+
+
+def p_var_name(p):
+    """
+    var : NAME
+    """
+    p[0] = Variable(p[1])
+
+
+def p_var_attr(p):
+    """
+    var : NAME DOT var
+    """
+    p[0] = Attribute(p[1], p[3])
 
 
 def p_binop_plus(p):
@@ -420,6 +416,7 @@ def parse(command):
 
 def evaluate(command):
     command = parse(command)
+    log.debug(str(command))
     if command:
         command.set_scope(global_properties)
         command.execute()
