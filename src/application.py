@@ -13,7 +13,13 @@ from gui.screen import Directions, CurseString, PanelDirections
 from folder import FolderList
 from playlist import PlaylistList
 
-from property import Property, global_properties, NoneType, PropertyDoNotApplyChange
+from property import (
+    Property,
+    PropertyObject,
+    global_properties,
+    NoneType,
+    PropertyDoNotApplyChange,
+)
 
 from parser import parser
 
@@ -99,11 +105,11 @@ class PlayerPanel(Widget):
         super().update(to_display=content)
 
 
-class Application:
+class Application(PropertyObject):
     """The core of the application"""
 
     def __init__(self, stdscr):
-        self.property_list = []
+        super().__init__()
         self.scr = screen.Screen(stdscr)
 
         self.yt_playlist_panel = PlaylistPanel(
@@ -159,42 +165,27 @@ class Application:
 
         # should the video be played alongside the audio
         self.video_mode = None  # avoid linting errors
-        self.__add_property("video_mode", False, on_change=self._change_video_mode)
+        self._add_property("video_mode", False, on_change=self._change_video_mode)
         self.player = None
-        self.__add_property("player", player.AudioPlayer(), base_type=player.Player)
+        self._add_property("player", player.AudioPlayer(), base_type=player.Player)
         self.create_player()
         self.playing = None
-        self.__add_property("playing", youtube.Video())
+        self._add_property("playing", youtube.Video())
 
         self.in_playlist = None
-        self.__add_property("in_playlist", False)
+        self._add_property("in_playlist", False)
         self.playlist = youtube.YoutubeList()
         self.playlist_index = 0
         self.repeat = None
-        self.__add_property("repeat", "No", on_change=self._change_repeat)
+        self._add_property("repeat", "No", on_change=self._change_repeat)
         self.shuffled = None
-        self.__add_property("shuffled", False, on_change=self._change_shuffled)
+        self._add_property("shuffled", False, on_change=self._change_shuffled)
 
         self.volume = None
-        self.__add_property("volume", 50, on_change=self._change_volume)
+        self._add_property("volume", 50, on_change=self._change_volume)
         self.muted = None
-        self.__add_property("muted", False, self._change_muted)
+        self._add_property("muted", False, self._change_muted)
         global_properties.add_property(Property("application", self))  # maybe overkill
-
-    def __add_property(self, name, value, base_type=NoneType, on_change=None):
-        self.__dict__[name] = Property(
-            name, value, base_type=base_type, on_change=on_change
-        )
-        self.property_list.append(name)
-
-    def __set_property(self, name, value):
-        if name in self.property_list:
-            self.__dict__[name].set(value)
-
-    def __getattribute__(self, name):
-        if name == "property_list" or not name in self.property_list:
-            return super().__getattribute__(name)
-        return self.__dict__[name].get()
 
     def _change_volume(self, value):
         if 0 <= value <= 100:
@@ -220,12 +211,6 @@ class Application:
     def _change_video_mode(self, _):
         self.stop()
         self.create_player()
-
-    def __setattr__(self, name, value):
-        if name == "property_list" or not name in self.property_list:
-            super().__setattr__(name, value)
-        else:
-            self.__set_property(name, value)
 
     def skip_segment(self):
         timestamp = self.player.time

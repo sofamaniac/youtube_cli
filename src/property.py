@@ -68,3 +68,31 @@ class Property:
         if self.custom_get:
             return self.custom_get()
         return self.value
+
+
+class PropertyObject:
+    """Class to inherit from when an object has properties"""
+
+    def __init__(self):
+        self.property_list = []
+
+    def _add_property(self, name, value, base_type=NoneType, on_change=None):
+        self.__dict__[name] = Property(
+            name, value, base_type=base_type, on_change=on_change
+        )
+        self.property_list.append(name)
+
+    def __set_property(self, name, value):
+        if name in self.property_list:
+            self.__dict__[name].set(value)
+
+    def __getattribute__(self, name):
+        if name == "property_list" or not name in self.property_list:
+            return super().__getattribute__(name)
+        return self.__dict__[name].get()
+
+    def __setattr__(self, name, value):
+        if name == "property_list" or not name in self.property_list:
+            super().__setattr__(name, value)
+        else:
+            self.__set_property(name, value)

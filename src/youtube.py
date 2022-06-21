@@ -3,7 +3,6 @@ import os
 import pickle
 import shlex
 from random import shuffle
-from playlist import *
 from threading import Thread
 import subprocess
 
@@ -14,6 +13,9 @@ import googleapiclient.errors
 import google.auth.exceptions
 
 import logging
+
+from playlist import *
+from property import PropertyObject, Property
 
 log = logging.getLogger(__name__)
 
@@ -127,10 +129,14 @@ youtube = Youtube()
 
 # === SponsorBlock === #
 import sponsorblock as sb
+from multiprocessing import Process, Queue, Manager
 
-useSponsorBlock = True
-sponsorBlockTimeout = 5  # timeout in seconds
-toSkip = ["sponsor", "selfpromo", "music_offtopic"]
+queue = Queue()
+
+
+class TimeoutException(Exception):
+    pass
+
 
 import jsonpickle
 
@@ -159,62 +165,66 @@ class SponsorBlockCache:
             return None
 
 
-class SponsorBlock:
+class SponsorBlock(PropertyObject):
+    """Class to handle sponsor block"""
+
     def __init__(self):
+        super().__init__()
         self.cache = SponsorBlockCache()
         self.client = sb.Client()
+        self.enableSponsorBlock = None
+        self._add_property("enableSponsorBlock", True)
+        self.timeoutSponsorBlock = 5  # timeout in seconds
+        self._add_property("timeoutSponsorBlock", 5)
+        self.toSkipSponsorBlock = ["sponsor", "selfpromo", "music_offtopic"]
+        self._add_property("toSkipSponsorBlock", self.toSkipSponsorBlock)
 
-    def get_skip_segments(self, video_id="", categories=toSkip):
+    def get_skip_segments(self, video_id=""):
+
+        if not self.enableSponsorBlock:
+            return []
 
         tmp = self.cache.query(video_id)
 
         if tmp:
             return tmp
         else:
-            block_list = self.client.get_skip_segments(
-                video_id=video_id, categories=categories
-            )
+            block_list = []
+            block_list = self.run_with_timeout(video_id)
             self.cache.add_entry(video_id, block_list)
             return block_list
 
+    def query_servers(self, video_id=""):
+        block_list = []
+        try:
+            block_list = self.client.get_skip_segments(
+                video_id=video_id, categories=self.toSkipSponsorBlock
+            )
+        except (
+            TimeoutException,
+            sb.errors.NotFoundException,
+            sb.errors.ServerException,
+            sb.errors.ServerException,
+        ) as _:
+            block_list = []
+        queue.put(block_list)
+
+    def run_with_timeout(self, video_id=""):
+        # First we ensure the queue we are using is empty
+        while not queue.empty():
+            queue.get()
+        p = Process(target=self.query_servers, kwargs={"video_id": video_id})
+        p.start()
+        p.join(self.timeoutSponsorBlock)
+        if p.is_alive():
+            p.terminate()
+            raise TimeoutException
+        else:
+            result = queue.get()
+            return result
+
 
 sponsorBlock = SponsorBlock()
-
-# ==================== #
-
-# === Timeout on functions === #
-# code found at https://stackoverflow.com/a/26664130
-from multiprocessing import Process, Queue, Manager
-
-queue = Queue()
-
-
-class TimeoutException(Exception):
-    pass
-
-
-def run_with_limited_time(func, args, kwargs, time):
-    """Runs a function with time limit
-
-    :param func: The function to run
-    :param args: The functions args, given as tuple
-    :param kwargs: The functions keywords, given as dict
-    :param time: The time limit in seconds
-    :return: True if the function ended successfully. False if it was terminated.
-    """
-
-    # First we ensure the queue we are using is empty
-    while not queue.empty():
-        queue.get()
-    p = Process(target=func, args=args, kwargs=kwargs)
-    p.start()
-    p.join(time)
-    if p.is_alive():
-        p.terminate()
-        raise TimeoutException
-    else:
-        result = queue.get()
-        return result
 
 
 # ============================= #
@@ -258,32 +268,15 @@ class Video(Playable):
         urls = subprocess.run(shlex.split(command), capture_output=True, text=True)
         urls = urls.stdout.splitlines()
         if urls:
-            if useSponsorBlock and not self.skipSegmentsDone:
-                self.get_skip_segment()
+            self.get_skip_segment()
             return urls[0]
         else:
             return ""
 
-    def __get_skip_segment(self):
-        try:
-            skipSegments = sponsorBlock.get_skip_segments(
-                video_id=self.id, categories=toSkip
-            )
-        except (
-            sb.errors.NotFoundException,
-            sb.errors.ServerException,
-            sb.errors.ServerException,
-        ) as _:
-            skipSegments = []
-        finally:
-            queue.put(skipSegments)
-
     def get_skip_segment(self):
         try:
             self.skipSegmentsDone = True
-            self.skipSegments = run_with_limited_time(
-                self.__get_skip_segment, (), {}, sponsorBlockTimeout
-            )
+            self.skipSegments = sponsorBlock.get_skip_segments(self.id)
         except (TimeoutException) as _:
             log.warning("SponsorBlock timed out")
             self.skipSegments = []

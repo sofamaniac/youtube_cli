@@ -22,6 +22,10 @@ class Scope:
 functions_list = Scope(parent=None)
 
 
+class CommandError(Exception):
+    pass
+
+
 class Node:
     def __init__(self):
         self.scope = None
@@ -78,6 +82,8 @@ class Variable(Node):
     def execute(self):
 
         prop = self.get()
+        if not prop:
+            raise CommandError(f"{self.name} not defined")
         if self.mode == WRITE:
             value = self.value.execute()
             return prop.set(value)
@@ -114,6 +120,8 @@ class Attribute(Node):
         parent = prop.get()
         if isinstance(parent, Attribute):
             root = parent.get()
+            if self.name not in root.__dict__:
+                raise CommandError()  # TODO proper message error
             return root.__getattribute__(self.name)
         return parent
 
@@ -122,6 +130,8 @@ class Attribute(Node):
         if isinstance(self.attribute, Variable):
             parent = self.get()
             attribute = self.attribute.name
+            if attribute not in parent.__dict__:
+                raise CommandError()  # TODO proper message
             parent.__setattr__(attribute, value)
             return value
         return self.attribute.set(value)
