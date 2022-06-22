@@ -80,7 +80,7 @@ t_DOT = r"\."
 
 
 def t_INT(t):
-    r"\d+"
+    r"\d+[ ]*"
     t.value = int(t.value)
     return t
 
@@ -92,7 +92,8 @@ def t_NEWLINE(t):
 
 
 def t_ACTION(t):
-    r"[a-zA-Z_]+"
+    r"[a-zA-Z_]+[ ]*"
+    t.value = t.value.rstrip()  # removing trailing spaces
     for r in reserved:
         if t.value == r:
             t.type = reserved[r]

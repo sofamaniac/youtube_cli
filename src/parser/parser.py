@@ -69,6 +69,15 @@ tokens = lex.tokens
 
 log = logging.getLogger(__name__)
 
+# defining precedence of operators
+# from lowest to highest
+precedence = (
+    ("right", "ASSIGN"),
+    ("left", "PLUS", "MINUS"),
+    ("left", "TIMES", "DIVIDE"),
+    ("left", "LPAREN", "RPAREN"),
+)
+
 # in order to compile the parser properly,
 # the program token must be the first
 def p_program_commands(p):
@@ -127,10 +136,10 @@ def p_bool_false(p):
     p[0] = False
 
 
-def p_param_command(p):
+def p_param_l_value(p):
     """
     param : constant
-          | LPAREN command RPAREN
+          | LPAREN l_val RPAREN
           | var
     """
     if len(p) < 3:
@@ -141,7 +150,7 @@ def p_param_command(p):
 
 def p_arglist(p):
     """
-    arglist : NAME SPACE arglist
+    arglist : NAME arglist
             | NAME
     """
     if len(p) < 3:
@@ -152,7 +161,7 @@ def p_arglist(p):
 
 def p_param_list(p):
     """
-    paramlist : param SPACE paramlist
+    paramlist : param paramlist
               | param
     """
     if len(p) < 3:
@@ -168,17 +177,33 @@ def p_function_decl(p):
     p[0] = FunctionDecleration(p[2], p[3], p[4])
 
 
+def p_begin(p):
+    """
+    begin : BEGIN NEWLINE
+          | NEWLINE begin
+    """
+    p[0] = p[1]
+
+
+def p_end(p):
+    """
+    end : END NEWLINE
+        | NEWLINE end
+    """
+    p[0] = p[1]
+
+
 def p_block(p):
     """
-    block : BEGIN commandlist END
+    block : begin commandlist end
     """
     p[0] = CodeBlock(p[2])
 
 
 def p_if_else(p):
     """
-    if : IF LPAREN command RPAREN block ELSE block
-       | IF LPAREN command RPAREN block
+    if : IF LPAREN l_val RPAREN block ELSE block
+       | IF LPAREN l_val RPAREN block
     """
     if len(p) < 8:
         else_block = None
@@ -189,90 +214,81 @@ def p_if_else(p):
 
 def p_while(p):
     """
-    while : WHILE LPAREN command RPAREN block
+    while : WHILE LPAREN l_val RPAREN block
     """
     p[0] = While(p[3], p[5])
 
 
-def p_command_decl(p):
+def p_var_decl(p):
     """
-    command : LET NAME ASSIGN param
+    var_decl : LET NAME ASSIGN param
     """
     p[0] = VariableDecleration(p[2], p[4])
 
 
-def p_command_assign(p):
+def p_var_assign(p):
     """
-    command : var ASSIGN param
+    var_access : var ASSIGN l_val
     """
     p[1].mode = WRITE
     p[1].value = p[3]
     p[0] = p[1]
 
 
-def p_command_set(p):
+def p_var_set(p):
     """
-    command : SET SPACE var SPACE param
+    var_access : SET var param
     """
-    p[3].mode = WRITE
-    p[3].value = p[5]
-    p[0] = p[3]
+    p[2].mode = WRITE
+    p[2].value = p[3]
+    p[0] = p[2]
 
 
-def p_command_action(p):
+def p_l_value(p):
     """
-    command : ACTION
-            | ACTION SPACE paramlist
+    l_val : param
+          | var_access
+    """
+    p[0] = p[1]
+
+
+def p_l_value_action(p):
+    """
+    l_val : ACTION
+          | ACTION paramlist
     """
     if len(p) < 3:
         p[0] = FunctionCall(p[1])
     else:
-        p[0] = FunctionCall(p[1], p[3])
+        p[0] = FunctionCall(p[1], p[2])
 
 
-def p_command_param(p):
+def p_l_value_binop(p):
     """
-    command : param
-    """
-    p[0] = p[1]
-
-
-def p_command_if(p):
-    """
-    command : if
-    """
-    p[0] = p[1]
-
-
-def p_command_while(p):
-    """
-    command : while
-    """
-    p[0] = p[1]
-
-
-def p_command_block(p):
-    """
-    command : block
-    """
-    p[0] = p[1]
-
-
-def p_command_binop(p):
-    """
-    command : param binop param
+    l_val : l_val binop l_val
     """
     p[2].x = p[1]
     p[2].y = p[3]
     p[0] = p[2]
 
 
-def p_command_uminus(p):
+def p_l_value_uminus(p):
     """
-    command : MINUS param
+    l_val : MINUS param
     """
     p[1].x = 0
     p[1].y = p[2]
+    p[0] = p[1]
+
+
+def p_command(p):
+    """
+    command : l_val
+            | var_decl
+            | if
+            | while
+            | block
+    """
     p[0] = p[1]
 
 
@@ -415,6 +431,9 @@ def parse(command):
 
 
 def evaluate(command):
+    if not command:
+        # handles an empty program
+        return
     command = parse(command)
     log.debug(str(command))
     if command:

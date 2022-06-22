@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from property import global_properties, AllProperties, Property
 
 READ = "read"
@@ -26,16 +27,22 @@ class CommandError(Exception):
     pass
 
 
-class Node:
+class Node(ABC):
     def __init__(self):
         self.scope = None
         pass
 
+    @abstractmethod
     def set_scope(self, scope):
         self.scope = scope
 
+    @abstractmethod
     def execute(self):
         pass
+
+    @abstractmethod
+    def __str__(self):
+        return ""
 
 
 class Constant(Node):
@@ -43,11 +50,14 @@ class Constant(Node):
         self.value = value
         super().__init__()
 
+    def set_scope(self, scope):
+        super().set_scope(scope)
+
     def execute(self):
         return self.value
 
     def __str__(self):
-        return str(self.value)
+        return f"Constant({self.value})"
 
 
 class VariableDecleration(Node):
@@ -64,7 +74,7 @@ class VariableDecleration(Node):
         return value
 
     def __str__(self):
-        return f"let {self.name} = {self.value}"
+        return f"VarDec({self.name},{self.value})"
 
 
 class Variable(Node):
@@ -75,7 +85,7 @@ class Variable(Node):
         super().__init__()
 
     def set_scope(self, scope):
-        self.scope = scope
+        super().set_scope(scope)
         if self.value:
             self.value.set_scope(scope)
 
@@ -93,9 +103,7 @@ class Variable(Node):
         return self.scope.find_property(self.name)
 
     def __str__(self):
-        if self.mode == WRITE:
-            return f"{self.name} = {self.value}"
-        return self.name
+        return f"VarAccess({self.name}, {self.mode}, {self.value})"
 
 
 class Attribute(Node):
@@ -108,7 +116,7 @@ class Attribute(Node):
         super().__init__()
 
     def set_scope(self, scope):
-        self.scope = scope
+        super().set_scope(scope)
         new_scope = Scope()
         new_scope.add_property(Property(self.attribute.name, self))
         self.attribute.set_scope(new_scope)
@@ -145,9 +153,7 @@ class Attribute(Node):
         return self.get()
 
     def __str__(self):
-        if self.mode == WRITE:
-            return f"{self.name}.{self.attribute} = {self.value}"
-        return f"{self.name}.{self.attribute}"
+        return f"AttrAccess({self.name}, {self.attribute}, {self.mode}, {self.value})"
 
 
 class CodeBlock(Node):
@@ -180,7 +186,7 @@ class IfElse(Node):
         super().__init__()
 
     def set_scope(self, scope):
-        self.scope = scope
+        super().set_scope(scope)
         self.condition.set_scope(scope)
         self.if_block.set_scope(scope)
         if self.else_block:
@@ -206,7 +212,7 @@ class While(Node):
         super().__init__()
 
     def set_scope(self, scope):
-        self.scope = scope
+        super().set_scope(scope)
         self.condition.set_scope(scope)
         self.loop.set_scope(scope)
 
@@ -231,18 +237,21 @@ class FunctionDecleration(Node):
         self.code.set_scope(scope)
 
     def run(self, *args):
-        if len(*args) != len(self.args):
+        if len(args) != len(self.args):
             raise Exception
-        scope = self.code.get_scope()
+        scope = self.code.scope
         if not scope:
             raise Exception
-        for name, value in zip(self.args, *args):
-            scope.add_property(name, value)
+        for name, value in zip(self.args, args):
+            scope.add_property(Property(name, value))
         self.code.set_scope(scope)
         self.code.execute()
 
     def execute(self):
         functions_list.add_property(Property(self.name, self.run))
+
+    def __str__(self):
+        return f"FunDecl({self.name}, {self.args}, {self.code})"
 
 
 class FunctionCall(Node):
@@ -252,6 +261,11 @@ class FunctionCall(Node):
         self.args = args
         super().__init__()
 
+    def set_scope(self, scope):
+        super().set_scope(scope)
+        for arg in self.args:
+            arg.set_scope(scope)
+
     def execute(self):
         fun = functions_list.find_property(self.name)
         args = [p.execute() for p in self.args]
@@ -259,7 +273,7 @@ class FunctionCall(Node):
             fun.get()(*args)
 
     def __str__(self):
-        return f"{self.name}" + " ".join([str(a) for a in self.args])
+        return f"FunCall({self.name}, {self.args})"
 
 
 class Program(Node):
@@ -273,7 +287,7 @@ class Program(Node):
             c.execute()
 
     def set_scope(self, scope):
-        self.scope = scope
+        super().set_scope(scope)
         for c in self.commands:
             c.set_scope(scope)
 
@@ -288,8 +302,13 @@ class BinaryOp(Node):
         self.y = None
         super().__init__()
 
+    def set_scope(self, scope):
+        super().set_scope(scope)
+        self.x.set_scope(scope)
+        self.y.set_scope(scope)
+
     def execute(self):
-        self.op(self.x, self.y)
+        return self.op(self.x.execute(), self.y.execute())
 
     def __str__(self):
-        return f"{self.x} binop {self.y}"
+        return f"BinOp({self.op}, {self.x}, {self.y})"

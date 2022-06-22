@@ -9,9 +9,11 @@ from keyconfig import KeyConfiguration
 # setting up logger
 import logging
 
+from config import *
+
 logging.basicConfig(
     level=logging.WARNING,
-    filename="youtube_cli.log",
+    filename=dirs.user_log_dir + "/youtube_cli.log",
     filemode="w",
     format="%(asctime)s:%(filename)10s:%(message)s",
 )

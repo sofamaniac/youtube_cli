@@ -69,6 +69,9 @@ class Property:
             return self.custom_get()
         return self.value
 
+    def __str__(self):
+        return self.name
+
 
 class PropertyObject:
     """Class to inherit from when an object has properties"""
