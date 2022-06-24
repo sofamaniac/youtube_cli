@@ -70,7 +70,6 @@ t_EQ = r"[ ]*==[ ]*"
 t_NE = r"[ ]*!=[ ]*"
 t_NAME = r"[a-zA-Z_][a-zA-Z0-9_]*"
 t_CSEP = r"[ ]*;[ ]*"
-t_SPACE = r"[ ]+"
 t_ASSIGN = r"[ ]*=[ ]*"
 t_BEGIN = r"[ ]*\{[ ]*"
 t_END = r"[ ]*\}[ ]*"
@@ -93,7 +92,7 @@ def t_NEWLINE(t):
 
 def t_ACTION(t):
     r"[a-zA-Z_]+[ ]*"
-    t.value = t.value.rstrip()  # removing trailing spaces
+    t.value = t.value.strip()  # removing trailing spaces
     for r in reserved:
         if t.value == r:
             t.type = reserved[r]

@@ -71,11 +71,14 @@ log = logging.getLogger(__name__)
 
 # defining precedence of operators
 # from lowest to highest
+# (inspired by C precedence and associativity)
 precedence = (
     ("right", "ASSIGN"),
+    ("left", "EQ", "NE"),
     ("left", "PLUS", "MINUS"),
     ("left", "TIMES", "DIVIDE"),
     ("left", "LPAREN", "RPAREN"),
+    ("left", "DOT"),
 )
 
 # in order to compile the parser properly,

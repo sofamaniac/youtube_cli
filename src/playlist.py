@@ -35,6 +35,7 @@ class Playlist:
         self.size = 0
         self.order = []
         self.title = ""
+        self.shuffled = False
 
     def __contains__(self, item: Playable) -> bool:
 
@@ -63,9 +64,11 @@ class Playlist:
     def shuffle(self):
         self.order = list(range(self.size))
         shuffle(self.order)
+        self.shuffled = True
 
     def unshuffle(self):
         self.order = list(range(self.size))
+        self.shuffled = False
 
     def next(self) -> Playable:
         if self.current_index >= self.size:

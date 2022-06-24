@@ -3,8 +3,9 @@ import os
 import pickle
 import shlex
 from random import shuffle
-from threading import Thread
+from threading import Thread, Lock
 import subprocess
+import time
 
 # === Google API === #
 import google_auth_oauthlib.flow
@@ -14,7 +15,7 @@ import google.auth.exceptions
 
 import logging
 
-from playlist import *
+from playlist import Playlist
 from property import PropertyObject, Property
 
 log = logging.getLogger(__name__)
@@ -45,9 +46,9 @@ class YoutubeAPIObject:
 class YoutubeVideoAPI(YoutubeAPIObject):
     def __init__(self, youtube):
         if youtube:
-            YoutubeAPIObject.__init__(self, youtube.videos)
+            super().__init__(youtube.videos)
         else:
-            YoutubeAPIObject.__init__(self, None)
+            super().__init__()
 
     def update(self, youtube):
         YoutubeAPIObject.update(self, youtube.videos)
@@ -56,9 +57,9 @@ class YoutubeVideoAPI(YoutubeAPIObject):
 class YoutubePlaylistItemAPI(YoutubeAPIObject):
     def __init__(self, youtube):
         if youtube:
-            YoutubeAPIObject.__init__(self, youtube.playlistItems)
+            super().__init__(youtube.playlistItems)
         else:
-            YoutubeAPIObject.__init__(self, None)
+            super().__init__()
 
     def update(self, youtube):
         YoutubeAPIObject.update(self, youtube.playlistItems)
@@ -67,9 +68,9 @@ class YoutubePlaylistItemAPI(YoutubeAPIObject):
 class YoutubePlaylistAPI(YoutubeAPIObject):
     def __init__(self, youtube):
         if youtube:
-            YoutubeAPIObject.__init__(self, youtube.playlists)
+            super().__init__(youtube.playlists)
         else:
-            YoutubeAPIObject.__init__(self, None)
+            super().__init__()
 
     def update(self, youtube):
         YoutubeAPIObject.update(self, youtube.playlists)
@@ -78,9 +79,9 @@ class YoutubePlaylistAPI(YoutubeAPIObject):
 class YoutubeSearchAPI(YoutubeAPIObject):
     def __init__(self, youtube):
         if youtube:
-            YoutubeAPIObject.__init__(self, youtube.search)
+            super().__init__(youtube.search)
         else:
-            YoutubeAPIObject.__init__(self, None)
+            super().__init__()
 
     def update(self, youtube):
         YoutubeAPIObject.update(self, youtube.search)
@@ -236,7 +237,7 @@ from time import time, sleep
 
 class Video(Playable):
     def __init__(self, id="", title="", description="", author="", playlistItemId=""):
-        Playable.__init__(self, title, author, id)
+        super().__init__(title, author, id)
         self.description = description
         self.playlistItemId = playlistItemId  # useful for editing playlist
         self.skipSegments = []
@@ -290,6 +291,7 @@ class Video(Playable):
 
 class YoutubeList(Playlist):
     def __init__(self):
+        super().__init__()
         self.current_index = 0
         self.next_page = None
         self.prev_page = None
@@ -374,8 +376,7 @@ class YoutubeList(Playlist):
 class YoutubePlaylist(YoutubeList):
     def __init__(self, id, title, nb_videos):
 
-        YoutubeList.__init__(self)
-
+        super().__init__()
         self.title = title
         self.id = id
         self.size = nb_videos
@@ -486,10 +487,23 @@ class YoutubePlaylist(YoutubeList):
 class LikedVideos(YoutubePlaylist):
     def __init__(self, title):
 
-        YoutubePlaylist.__init__(self, "Liked", title, 0)
+        self.is_loading = Lock()
+        super().__init__("Liked", title, 0)
         self.api_object = youtube.videos
 
+    def is_loaded(self):
+        return self.next_page is None
+
+    def load_all(self):
+        super().load_all()
+        self.order = [i for i in range(self.size)]
+        if self.shuffled:
+            self.shuffle()
+
     def load_next_page(self):
+        if self.is_loading.locked():
+            return
+        self.is_loading.acquire(blocking=True)
         to_request = "id, snippet, status, contentDetails"
         args = {
             "part": to_request,
@@ -510,13 +524,23 @@ class LikedVideos(YoutubePlaylist):
         self.size += nb_loaded
         self.nb_loaded += nb_loaded
         self.update_tokens(response)
+        self.is_loading.release()
+
+    def next(self):
+        self.current_index += 1
+        while self.current_index >= self.size and self.is_loaded():
+            self.load_next_page()
+        if self.current_index >= self.size and self.is_loaded():
+            return Playable()
+        shuffled_index = self.order[self.current_index]
+        return self.get_at_index(shuffled_index)
 
     def shuffle(self):
         self.load_all()
         YoutubePlaylist.shuffle(self)
 
     def get_max_index(self):
-        if self.next_page != None:
+        if not self.is_loaded():
             return 1e99
         else:
             return self.size - 1
@@ -538,15 +562,17 @@ class LikedVideos(YoutubePlaylist):
 
 class YoutubePlaylistList(YoutubeList):
     def __init__(self):
-        YoutubeList.__init__(self)
+        super().__init__()
         self.elements = [LikedVideos("Liked Videos")]
         self.nb_loaded = 1
         self.api_object = youtube.playlists
 
         self.load_next_page()
         self.load_all()
-        loader = Thread(target=self.load_all, daemon=True)
-        loader.start()
+
+        # we just load fully the liked videos playlist
+        loader_liked = Thread(target=self.elements[0].load_all, daemon=True)
+        loader_liked.start()
 
     def load_next_page(self):
         args = {
@@ -581,7 +607,7 @@ class YoutubePlaylistList(YoutubeList):
 class Search(YoutubePlaylist):
     def __init__(self, query):
 
-        YoutubeList.__init__(self)
+        super().__init__()
         self.query = query
         self.size = 1e99
         self.api_object = youtube.search
