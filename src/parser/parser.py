@@ -104,6 +104,13 @@ def p_program_rec(p):
     p[0] = Program(p[1].commands + p[2].commands)
 
 
+def p_unit(p):
+    """
+    unit : LPAREN RPAREN
+    """
+    p[0] = []
+
+
 def p_constant_str(p):
     """
     constant : STRING
@@ -257,13 +264,10 @@ def p_l_value(p):
 
 def p_l_value_action(p):
     """
-    l_val : ACTION
+    l_val : ACTION unit
           | ACTION paramlist
     """
-    if len(p) < 3:
-        p[0] = FunctionCall(p[1])
-    else:
-        p[0] = FunctionCall(p[1], p[2])
+    p[0] = FunctionCall(p[1], p[2])
 
 
 def p_l_value_binop(p):

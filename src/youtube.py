@@ -15,7 +15,7 @@ import google.auth.exceptions
 
 import logging
 
-from playlist import Playlist
+from playlist import Playlist, Playable
 from property import PropertyObject, Property
 
 log = logging.getLogger(__name__)
