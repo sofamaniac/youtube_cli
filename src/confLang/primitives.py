@@ -1,4 +1,4 @@
-from parser.datastructures import functions_list, global_properties, Property
+from confLang.datastructures import functions_list, global_properties, Property
 
 
 def add_primitive(name, function):

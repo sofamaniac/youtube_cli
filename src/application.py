@@ -21,7 +21,7 @@ from property import (
     PropertyDoNotApplyChange,
 )
 
-from parser import parser
+from confLang import parser
 
 log = logging.getLogger(__name__)
 

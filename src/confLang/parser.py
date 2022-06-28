@@ -58,11 +58,10 @@ its parameter must not be passed by name
 
 from ply.yacc import yacc
 import logging
-from parser import lex
-from parser import datastructures
-from parser.datastructures import *
-from parser import lex
-from parser import primitives
+from confLang import lex
+from confLang import datastructures
+from confLang.datastructures import *
+from confLang import primitives
 import operator as op
 
 tokens = lex.tokens

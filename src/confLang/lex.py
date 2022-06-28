@@ -1,7 +1,7 @@
 import ply.lex as lex
 import logging
-from parser import datastructures
-from parser.datastructures import functions_list
+from confLang import datastructures
+from confLang.datastructures import functions_list
 
 log = logging.getLogger(__name__)
 
