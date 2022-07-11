@@ -165,7 +165,9 @@ class Application(PropertyObject):
 
         # should the video be played alongside the audio
         self.video_mode = None  # avoid linting errors
-        self._add_property("video_mode", False, on_change=self._change_video_mode)
+        self._add_property(
+            "video_mode", False, post_change_hook=self._change_video_mode
+        )
         self.player = None
         self._add_property("player", player.AudioPlayer(), base_type=player.Player)
         self.create_player()
@@ -177,14 +179,14 @@ class Application(PropertyObject):
         self.playlist = youtube.YoutubeList()
         self.playlist_index = 0
         self.repeat = None
-        self._add_property("repeat", "No", on_change=self._change_repeat)
+        self._add_property("repeat", "No", pre_change_hook=self._change_repeat)
         self.shuffled = None
-        self._add_property("shuffled", False, on_change=self._change_shuffled)
+        self._add_property("shuffled", False, pre_change_hook=self._change_shuffled)
 
         self.volume = None
-        self._add_property("volume", 50, on_change=self._change_volume)
+        self._add_property("volume", 50, pre_change_hook=self._change_volume)
         self.muted = None
-        self._add_property("muted", False, self._change_muted)
+        self._add_property("muted", False, pre_change_hook=self._change_muted)
         global_properties.add_property(Property("application", self))  # maybe overkill
 
     def _change_volume(self, value):
@@ -208,9 +210,15 @@ class Application(PropertyObject):
         else:
             self.playlist.unshuffle()
 
-    def _change_video_mode(self, _):
+    def _change_video_mode(self):
+        timestamp = self.player.time
         self.stop()
         self.create_player()
+        if self.in_playlist or timestamp:
+            self.play()
+            while not self.player.duration:
+                time.sleep(0.1)
+            self.player.seek(timestamp, mode="absolute")
 
     def skip_segment(self):
         timestamp = self.player.time
@@ -442,7 +450,7 @@ class Application(PropertyObject):
     def toggle_mute(self):
         self.muted = not self.muted
 
-    def create_player(self):
+    def create_player(self, video=False):
         if self.video_mode:
             self.player = player.VideoPlayer()
         else:

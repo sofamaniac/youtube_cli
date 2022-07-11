@@ -117,8 +117,8 @@ class VideoPlayer(Player):
     def time(self):
         return self.player.time_pos
 
-    def seek(self, dt):
-        self.player.command("seek", f"{dt}", "relative")
+    def seek(self, dt, mode="relative"):
+        self.player.command("seek", f"{dt}", mode)
 
     def seek_percent(self, dt):
         self.player.command("seek", f"{dt}", "absolute-percent")

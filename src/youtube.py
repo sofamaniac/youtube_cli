@@ -242,26 +242,19 @@ class Video(Playable):
         self.playlistItemId = playlistItemId  # useful for editing playlist
         self.skipSegments = []
         self.skipSegmentsDone = False
-        self.url = ""
+        self.audio_url = ""
+        self.video_url = ""
 
     def fetch_url(self, video=False):
         thread = Thread(target=self.get_url, kwargs={"video": video}, daemon=True)
         thread.start()
 
-    def get_url(self, video=False):
-        """Return the url for the audio stream of the video"""
-
-        # TODO get expiration time of url, to check if still valid
-        if self.url:
-            parsed_url = urlparse(self.url)
-            expire = int(parse_qs(parsed_url.query)["expire"][0])
-            if expire < time():
-                return self.url
-
+    def url_by_mode(self, video=False):
         if video:
-            format = "best"
-        else:
-            format = "bestaudio/best"
+            return self.video_url
+        return self.audio_url
+
+    def _get_url(self, format="best"):
 
         sort = ""  # sort to be applied to the results
 
@@ -273,6 +266,22 @@ class Video(Playable):
             return urls[0]
         else:
             return ""
+
+    def get_url(self, video=False):
+        """Return the url for the audio stream of the video"""
+
+        url = self.url_by_mode(video)
+        if url:
+            # checking if url has expired
+            parsed_url = urlparse(url)
+            expire = int(parse_qs(parsed_url.query)["expire"][0])
+            if expire < time():
+                return url
+
+        self.video_url = self._get_url("best")
+        self.audio_url = self._get_url("bestaudio/best")
+
+        return self.url_by_mode(video)
 
     def get_skip_segment(self):
         try:
@@ -300,6 +309,8 @@ class YoutubeList(Playlist):
         self.elements = []
         self.size = 0
 
+        self.is_loading = Lock()
+
     def __contains__(self, item):
         if type(item) is Video:
             item = item.id
@@ -325,8 +336,15 @@ class YoutubeList(Playlist):
             log.warning("Error with request")
         return result
 
-    def load_next_page(self):
+    def _load_next_page(self):
         pass
+
+    def load_next_page(self):
+        if self.is_loading.locked():
+            return
+        self.is_loading.acquire(blocking=True)
+        self._load_next_page()
+        self.is_loading.release()
 
     def update_tokens(self, response):
         self.next_page = (
@@ -427,7 +445,7 @@ class YoutubePlaylist(YoutubeList):
                 result = result and "FR" in t["allowed"]
         return result
 
-    def load_next_page(self):
+    def _load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
         args = {
             "part": to_request,
@@ -500,10 +518,7 @@ class LikedVideos(YoutubePlaylist):
         if self.shuffled:
             self.shuffle()
 
-    def load_next_page(self):
-        if self.is_loading.locked():
-            return
-        self.is_loading.acquire(blocking=True)
+    def _load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
         args = {
             "part": to_request,
@@ -524,7 +539,6 @@ class LikedVideos(YoutubePlaylist):
         self.size += nb_loaded
         self.nb_loaded += nb_loaded
         self.update_tokens(response)
-        self.is_loading.release()
 
     def next(self):
         self.current_index += 1
@@ -574,7 +588,7 @@ class YoutubePlaylistList(YoutubeList):
         loader_liked = Thread(target=self.elements[0].load_all, daemon=True)
         loader_liked.start()
 
-    def load_next_page(self):
+    def _load_next_page(self):
         args = {
             "part": "id, snippet, contentDetails",
             "maxResults": MAX_RESULTS,
@@ -614,7 +628,7 @@ class Search(YoutubePlaylist):
 
         self.load_next_page()
 
-    def load_next_page(self):
+    def _load_next_page(self):
 
         args = {
             "part": "id, snippet, contentDetails",

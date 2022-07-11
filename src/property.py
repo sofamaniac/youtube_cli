@@ -31,11 +31,18 @@ class PropertyDoNotApplyChange(Exception):
 
 class Property:
     def __init__(
-        self, name, value, base_type=NoneType, on_change=None, custom_get=None
+        self,
+        name,
+        value,
+        base_type=NoneType,
+        pre_change_hook=None,
+        post_change_hook=None,
+        custom_get=None,
     ):
         self.value = value
         self.name = name
-        self.on_change = on_change
+        self.pre_change_hook = pre_change_hook
+        self.post_change_hook = post_change_hook
         if base_type != NoneType:
             self.base_type = base_type
         else:
@@ -47,12 +54,15 @@ class Property:
         """Set the value of the property to [new_value]. If [new_value] is of different type
         than the previous value, raises a PropertyTypeError.
         If the [on_change] attribute was defined, it is called *before* the value of the
-        property is changed."""
+        property is changed.
+        If [on_change_after] was defined, it is called *after* the value was set"""
         if isinstance(new_value, self.base_type):
             try:
-                if self.on_change:
-                    self.on_change(new_value)
+                if self.pre_change_hook:
+                    self.pre_change_hook(new_value)
                 self.value = new_value
+                if self.post_change_hook:
+                    self.post_change_hook()
             except PropertyDoNotApplyChange:
                 pass
             return self.value
@@ -79,10 +89,8 @@ class PropertyObject:
     def __init__(self):
         self.property_list = []
 
-    def _add_property(self, name, value, base_type=NoneType, on_change=None):
-        self.__dict__[name] = Property(
-            name, value, base_type=base_type, on_change=on_change
-        )
+    def _add_property(self, name, value, **kwargs):
+        self.__dict__[name] = Property(name, value, **kwargs)
         self.property_list.append(name)
 
     def __set_property(self, name, value):
