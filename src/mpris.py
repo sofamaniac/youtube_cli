@@ -1,0 +1,159 @@
+from typing import Optional
+from mpris_server.server import Server
+from mpris_server.events import EventAdapter
+from mpris_server.adapters import (
+    Metadata,
+    PlayState,
+    MprisAdapter,
+    Microseconds,
+    VolumeDecimal,
+    RateDecimal,
+    PlayerAdapter,
+    RootAdapter,
+)
+from mpris_server.base import URI, MIME_TYPES, DEFAULT_RATE, DbusObj, Track
+from mpris_server.mpris.metadata import MetadataObj
+from mpris_server.mpris.compat import get_track_id
+from application import Application
+
+
+class Adapter(MprisAdapter):
+    def __init__(self, app: Application):
+        self.app = app
+        super().__init__()
+
+    def can_go_next(self) -> bool:
+        return True
+
+    def can_go_previous(self) -> bool:
+        return self.app.in_playlist and self.app.playlist.current_index > 0
+
+    def can_play(self):
+        return True
+
+    def can_pause(self) -> bool:
+        return True
+
+    def can_seek(self) -> bool:
+        return True
+
+    def can_control(self) -> bool:
+        return True
+
+    def get_current_position(self) -> Microseconds:
+        return self.app.player.time
+
+    def next(self):
+        self.app.next()
+
+    def previous(self):
+        self.app.prev()
+
+    def pause(self):
+        self.app.pause()
+
+    def resume(self):
+        self.app.play()
+
+    def stop(self):
+        self.app.stop()
+
+    def play(self):
+        self.app.start()
+
+    def get_playstate(self) -> PlayState:
+        if self.app.player.is_playing():
+            return PlayState.PLAYING
+        else:
+            return PlayState.PAUSED
+
+    def seek(self, time: Microseconds, track_id: Optional[DbusObj] = None):
+        self.app.seek(time)
+
+    def open_uri(self, uri: str):
+        self.app.open_uri(uri)
+
+    def is_repeating(self) -> bool:
+        return self.app.repeat == "Song"
+
+    def is_playlist(self) -> bool:
+        return self.app.in_playlist
+
+    def get_rate(self) -> RateDecimal:
+        return 1
+
+    def set_rate(self, val: RateDecimal):
+        pass
+
+    def get_shuffle(self) -> bool:
+        return self.app.shuffled
+
+    def set_shuffle(self, val: bool):
+        self.app.shuffled = val
+
+    def get_art_url(self, track: int = None) -> str:
+        # return self.app.get_art_url(track)
+        pass
+
+    def get_volume(self) -> VolumeDecimal:
+        return self.app.volume
+
+    def set_volume(self, val: VolumeDecimal):
+        self.app.volume = val
+
+    def is_mute(self) -> bool:
+        return self.app.muted
+
+    def set_mute(self, val: bool):
+        self.app.muted = val
+
+    def get_stream_title(self) -> str:
+        return self.app.playing.title
+
+    def get_duration(self) -> Microseconds:
+        return self.app.player.duration
+
+    def metadata(self) -> Metadata:
+        current = self.app.playing
+        return MetadataObj(
+            track_id=get_track_id(current.title),
+            length=self.app.player.duration,
+            url=current.mpris_url(),
+            artists=["unknown"],
+            title=current.title,
+        )
+
+    def get_current_track(self) -> Track:
+        return Track()
+
+    def add_track(self, uri: str, after_track: DbusObj, set_as_current: bool):
+        pass
+
+    def can_edit_track(self) -> bool:
+        return False
+
+    def set_repeating(self, val: bool):
+        pass
+
+    def set_loop_status(self, val: str):
+        pass
+
+    def get_previous_track(self) -> Track:
+        pass
+
+    def get_next_track(self) -> Track:
+        pass
+
+
+from threading import Thread
+
+
+def initialize(app):
+    adapter = Adapter(app)
+    mpris = Server("youtube_cli", adapter=adapter)
+    mpris.publish()
+
+    app.event_handler = EventAdapter(root=mpris.root, player=mpris.player)
+
+    thread = Thread(target=mpris.loop, daemon=True)
+    thread.start()

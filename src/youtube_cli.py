@@ -11,6 +11,8 @@ import logging
 
 from config import *
 
+import mpris
+
 logging.basicConfig(
     level=logging.WARNING,
     filename=dirs.user_log_dir + "/youtube_cli.log",
@@ -25,6 +27,7 @@ def initialize(stdscr):
     config = KeyConfiguration(app)
     listener = Listener(app)
     listener.start()
+    mpris.initialize(app)
     return main(app, listener, config)
 
 

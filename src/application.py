@@ -111,6 +111,7 @@ class Application(PropertyObject):
     def __init__(self, stdscr):
         super().__init__()
         self.scr = screen.Screen(stdscr)
+        self.event_handler = None
 
         self.yt_playlist_panel = PlaylistPanel(
             "Youtube Playlists", 0, 0, 20, 20, screen=self.scr
@@ -421,6 +422,12 @@ class Application(PropertyObject):
         # when nothing is playing, the volume might not get updated on the backend
         # therefore we update it manually each time something is played
         self.increase_volume(0)
+
+    def start(self):
+        if not self.playing.id:  # nothing is playing
+            pass
+        else:
+            self.player.pause()
 
     def stop(self):
         self.player.stop()

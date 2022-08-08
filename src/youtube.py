@@ -245,6 +245,9 @@ class Video(Playable):
         self.audio_url = ""
         self.video_url = ""
 
+    def mpris_url(self):
+        return f"youtu.be/{self.id}"
+
     def fetch_url(self, video=False):
         thread = Thread(target=self.get_url, kwargs={"video": video}, daemon=True)
         thread.start()
