@@ -3,7 +3,6 @@
 import curses
 
 from application import Application
-from keylistener import Listener
 from keyconfig import KeyConfiguration
 
 # setting up logger
@@ -14,7 +13,7 @@ from config import *
 import mpris
 
 logging.basicConfig(
-    level=logging.WARNING,
+    level=logging.DEBUG,
     filename=dirs.user_log_dir + "/youtube_cli.log",
     filemode="w",
     format="%(asctime)s:%(filename)10s:%(message)s",
@@ -25,13 +24,11 @@ def initialize(stdscr):
     """Initialize the different component of the application"""
     app = Application(stdscr)
     config = KeyConfiguration(app)
-    listener = Listener(app)
-    listener.start()
     mpris.initialize(app)
-    return main(app, listener, config)
+    return main(app, config)
 
 
-def main(app, listener, config):
+def main(app, config):
     """Entry point of the program"""
     last_event = None
     while True:
@@ -42,12 +39,11 @@ def main(app, listener, config):
             config.check_action(char)
         last_event = char
         app.update()
-    end(listener, app)
+    end(app)
 
 
-def end(listener, app):
+def end(app):
     """Gracefully quit everything"""
-    listener.stop()
     app.quit()
 
 

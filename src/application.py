@@ -388,6 +388,7 @@ class Application(PropertyObject):
         else:
             self.content_panel.select(Directions.DOWN)
             self.play()
+        self.event_handler.on_app_event("next")
 
     def prev(self):
 
@@ -405,6 +406,7 @@ class Application(PropertyObject):
         # else we start the same song
         else:
             self.player.seek_percent(0)
+        self.event_handler.on_app_event("prev")
 
     def next_page(self):
         self.current_panel.next_page()
@@ -428,18 +430,22 @@ class Application(PropertyObject):
             pass
         else:
             self.player.pause()
+        self.event_handler.on_app_event("play")
 
     def stop(self):
         self.player.stop()
         self.playing = youtube.Video()
+        self.event_handler.on_app_event("stop")
 
     def pause(self):
         self.player.pause()
+        self.event_handler.on_app_event("pause")
 
     def toggle_repeat(self):
         values = ["No", "Song", "Playlist"]
         self.repeat = values[(values.index(self.repeat) + 1) % len(values)]
         self.player.set_repeat(self.repeat)
+        self.event_handler.on_app_event("repeat")
 
     def forward(self, dt):
         if not self.player.is_playing():
@@ -453,6 +459,7 @@ class Application(PropertyObject):
 
     def increase_volume(self, dv):
         self.volume += dv
+        self.event_handler.on_app_event("volume")
 
     def toggle_mute(self):
         self.muted = not self.muted
@@ -468,6 +475,7 @@ class Application(PropertyObject):
 
     def toggle_shuffle(self):
         self.shuffled = not self.shuffled
+        self.event_handler.on_app_event("shuffle")
 
     def quit(self):
         self.stop()

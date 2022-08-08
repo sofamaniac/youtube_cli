@@ -1,4 +1,5 @@
 from typing import Optional
+from threading import Thread
 from mpris_server.server import Server
 from mpris_server.events import EventAdapter
 from mpris_server.adapters import (
@@ -10,11 +11,15 @@ from mpris_server.adapters import (
     RateDecimal,
     PlayerAdapter,
     RootAdapter,
+    ActivePlaylist,
 )
 from mpris_server.base import URI, MIME_TYPES, DEFAULT_RATE, DbusObj, Track
 from mpris_server.mpris.metadata import MetadataObj
 from mpris_server.mpris.compat import get_track_id
 from application import Application
+import logging
+
+log = logging.getLogger(__name__)
 
 
 class Adapter(MprisAdapter):
@@ -41,7 +46,9 @@ class Adapter(MprisAdapter):
         return True
 
     def get_current_position(self) -> Microseconds:
-        return self.app.player.time
+        time = self.app.player.time
+        time = time if time else 0
+        return time * 10**6
 
     def next(self):
         self.app.next()
@@ -93,7 +100,7 @@ class Adapter(MprisAdapter):
 
     def get_art_url(self, track: int = None) -> str:
         # return self.app.get_art_url(track)
-        pass
+        return ""
 
     def get_volume(self) -> VolumeDecimal:
         return self.app.volume
@@ -139,21 +146,35 @@ class Adapter(MprisAdapter):
         pass
 
     def get_previous_track(self) -> Track:
-        pass
+        return Track()
 
     def get_next_track(self) -> Track:
-        pass
+        return Track()
+
+    def get_active_playlist(self) -> ActivePlaylist:
+        return (False, ("/", "", ""))
 
 
-from threading import Thread
+class CustomEventAdapter(EventAdapter):
+    def on_app_event(self, event: str):
+        # events = ["play", "pause", "stop", "prev", "next", "shuffle", "repeat", "volume"]
+
+        if event in ["pause", "play"]:
+            self.on_playpause()
+            log.info("PUTE")
+        elif event == "volume":
+            self.on_volume()
+            log.info("PUTE")
 
 
 def initialize(app):
     adapter = Adapter(app)
     mpris = Server("youtube_cli", adapter=adapter)
     mpris.publish()
+    log.info("MPRIS server published")
 
-    app.event_handler = EventAdapter(root=mpris.root, player=mpris.player)
+    app.event_handler = CustomEventAdapter(root=mpris.root, player=mpris.player)
 
     thread = Thread(target=mpris.loop, daemon=True)
     thread.start()
+    log.info("MPRIS thread started")
