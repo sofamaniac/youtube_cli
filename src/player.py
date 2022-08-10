@@ -1,6 +1,7 @@
 from mpd import MPDClient
 from mpv import MPV
 from mpv import ShutdownError as MPVDeadError
+from typing import Optional
 
 
 class PlayerDeadError(Exception):
@@ -22,9 +23,10 @@ class AudioPlayerMPD(Player):
         file_id = self.client.addid(url)
         self.client.playid(file_id)
 
-    def pause(self):
+    def pause(self, b: Optional[bool] = None):
         is_paused = self.client.status()["state"] == "pause"
-        self.client.pause(0 if is_paused else 1)
+        target = b if b is not None else is_paused
+        self.client.pause(0 if target else 1)
 
     def stop(self):
         self.client.stop()
@@ -88,8 +90,11 @@ class VideoPlayer(Player):
     def stop(self):
         self.player.stop()
 
-    def pause(self):
-        self.player.command("cycle", "pause")
+    def pause(self, b: Optional[bool] = None):
+        if b is not None:
+            self.player.pause = b
+        else:
+            self.player.pause = not self.player.pause
 
     def set_repeat(self, state):
         if state == "Song":

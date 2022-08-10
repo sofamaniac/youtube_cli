@@ -249,6 +249,7 @@ class Video(Playable):
         return f"youtu.be/{self.id}"
 
     def fetch_url(self, video=False):
+        log.info(f"Fetching url for video {self.title}({self.id})")
         thread = Thread(target=self.get_url, kwargs={"video": video}, daemon=True)
         thread.start()
 
@@ -283,6 +284,7 @@ class Video(Playable):
 
         self.video_url = self._get_url("best")
         self.audio_url = self._get_url("bestaudio/best")
+        log.info(f"obtained urls for {self.title}({self.id})")
 
         return self.url_by_mode(video)
 
@@ -533,6 +535,7 @@ class LikedVideos(YoutubePlaylist):
             response = self.request(youtube.videos.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while loading liked videos")
+            return
 
         idList = []
         for v in response["items"]:

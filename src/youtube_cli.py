@@ -13,7 +13,7 @@ from config import *
 import mpris
 
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     filename=dirs.user_log_dir + "/youtube_cli.log",
     filemode="w",
     format="%(asctime)s:%(filename)10s:%(message)s",

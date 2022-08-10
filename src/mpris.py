@@ -57,10 +57,10 @@ class Adapter(MprisAdapter):
         self.app.prev()
 
     def pause(self):
-        self.app.pause()
+        self.app.pause(True)
 
     def resume(self):
-        self.app.play()
+        self.app.pause(False)
 
     def stop(self):
         self.app.stop()
@@ -69,10 +69,9 @@ class Adapter(MprisAdapter):
         self.app.start()
 
     def get_playstate(self) -> PlayState:
-        if self.app.player.is_playing():
+        if self.app.is_playing():
             return PlayState.PLAYING
-        else:
-            return PlayState.PAUSED
+        return PlayState.PAUSED
 
     def seek(self, time: Microseconds, track_id: Optional[DbusObj] = None):
         self.app.seek(time)
@@ -161,10 +160,8 @@ class CustomEventAdapter(EventAdapter):
 
         if event in ["pause", "play"]:
             self.on_playpause()
-            log.info("PUTE")
         elif event == "volume":
             self.on_volume()
-            log.info("PUTE")
 
 
 def initialize(app):

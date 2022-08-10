@@ -23,6 +23,21 @@ from property import (
 
 from confLang import parser
 
+from enum import Enum, auto
+
+
+class PlayerStates(Enum):
+    PLAYING = auto()
+    PAUSED = auto()
+    STOPPED = auto()
+
+
+class RepeatStates(Enum):
+    DISABLED = auto()
+    SONG = auto()
+    PLAYLIST = auto()
+
+
 log = logging.getLogger(__name__)
 
 
@@ -189,6 +204,8 @@ class Application(PropertyObject):
         self.muted = None
         self._add_property("muted", False, pre_change_hook=self._change_muted)
         global_properties.add_property(Property("application", self))  # maybe overkill
+
+        self.state = PlayerStates.STOPPED
 
     def _change_volume(self, value):
         if 0 <= value <= 100:
@@ -424,12 +441,14 @@ class Application(PropertyObject):
         # when nothing is playing, the volume might not get updated on the backend
         # therefore we update it manually each time something is played
         self.increase_volume(0)
+        self.state = PlayerStates.PLAYING
+        self.player.pause(False)
 
     def start(self):
         if not self.playing.id:  # nothing is playing
             pass
         else:
-            self.player.pause()
+            self.play()
         self.event_handler.on_app_event("play")
 
     def stop(self):
@@ -437,8 +456,12 @@ class Application(PropertyObject):
         self.playing = youtube.Video()
         self.event_handler.on_app_event("stop")
 
-    def pause(self):
-        self.player.pause()
+    def pause(self, b=None):
+        self.player.pause(b)
+        if self.state == PlayerStates.PLAYING:
+            self.state = PlayerStates.PAUSED
+        else:
+            self.state = PlayerStates.PLAYING
         self.event_handler.on_app_event("pause")
 
     def toggle_repeat(self):
@@ -446,6 +469,9 @@ class Application(PropertyObject):
         self.repeat = values[(values.index(self.repeat) + 1) % len(values)]
         self.player.set_repeat(self.repeat)
         self.event_handler.on_app_event("repeat")
+
+    def is_playing(self):
+        return self.state == PlayerStates.PLAYING
 
     def forward(self, dt):
         if not self.player.is_playing():
