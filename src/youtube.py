@@ -191,7 +191,11 @@ class SponsorBlock(PropertyObject):
             return tmp
         else:
             block_list = []
-            block_list = self.run_with_timeout(video_id)
+            try:
+                block_list = self.run_with_timeout(video_id)
+            except (TimeoutException,) as e:
+                log.warning(f"SponsorBlock has timed out")
+                block_list = []
             self.cache.add_entry(video_id, block_list)
             return block_list
 
@@ -201,12 +205,8 @@ class SponsorBlock(PropertyObject):
             block_list = self.client.get_skip_segments(
                 video_id=video_id, categories=self.toSkipSponsorBlock
             )
-        except (
-            TimeoutException,
-            sb.errors.NotFoundException,
-            sb.errors.ServerException,
-            sb.errors.ServerException,
-        ) as _:
+        except (sb.errors.HTTPException,) as e:  # catches all sb-server related errors
+            log.warning(f"SponsorBlock has encountered an error ({e})")
             block_list = []
         queue.put(block_list)
 
@@ -289,12 +289,8 @@ class Video(Playable):
         return self.url_by_mode(video)
 
     def get_skip_segment(self):
-        try:
-            self.skipSegmentsDone = True
-            self.skipSegments = sponsorBlock.get_skip_segments(self.id)
-        except (TimeoutException) as _:
-            log.warning("SponsorBlock timed out")
-            self.skipSegments = []
+        self.skipSegmentsDone = True
+        self.skipSegments = sponsorBlock.get_skip_segments(self.id)
 
     def check_skip(self, time):
         for skip in self.skipSegments:
