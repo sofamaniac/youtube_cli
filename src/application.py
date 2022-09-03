@@ -11,7 +11,7 @@ from gui import screen, textbox, panel
 from gui.screen import Directions, CurseString, PanelDirections
 
 from folder import FolderList
-from playlist import PlaylistList
+from playlist import PlaylistList, Playable
 
 from property import (
     Property,
@@ -188,7 +188,7 @@ class Application(PropertyObject):
         self._add_property("player", player.AudioPlayer(), base_type=player.Player)
         self.create_player()
         self.playing = None
-        self._add_property("playing", youtube.Video())
+        self._add_property("playing", youtube.Video(), base_type=Playable)
 
         self.in_playlist = None
         self._add_property("in_playlist", False)

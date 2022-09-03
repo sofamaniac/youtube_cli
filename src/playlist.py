@@ -21,6 +21,12 @@ class Playable:
     def get_url(self, video=False) -> str:
         return self.title
 
+    def fetch_url(self, video=False) -> str:
+        return self.get_url(video)
+
+    def mpris_url(self) -> str:
+        return self.title
+
     def check_skip(self, time) -> bool:
         return False
 
