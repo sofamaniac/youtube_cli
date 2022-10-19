@@ -54,6 +54,8 @@ class InfoPanel(Widget):
     def update(self, draw_select=False):
 
         selection = get_property("application").content_panel.get_selected()
+        if selection is None:
+            return
         content = []
         content.append(CurseString(f"Title: {selection.title}"))
         content.append(CurseString(f"Author: {selection.author}"))

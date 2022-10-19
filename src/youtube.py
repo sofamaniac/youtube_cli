@@ -18,6 +18,8 @@ import logging
 from playlist import Playlist, Playable
 from property import PropertyObject, Property
 
+import globals as glob
+
 log = logging.getLogger(__name__)
 
 MAX_RESULTS = 50
@@ -28,16 +30,28 @@ class YoutubeAPIObject:
         self.element = element
 
     def list(self, **args):
-        return self.element().list(**args)
+        if self.element:
+            return self.element().list(**args)
+        else:
+            return None
 
     def insert(self, **args):
-        return self.element().insert(**args)
+        if self.element:
+            return self.element().insert(**args)
+        else:
+            return None
 
     def delete(self, **args):
-        return self.element().delete(**args)
+        if self.element:
+            return self.element().delete(**args)
+        else:
+            return None
 
     def rate(self, **args):
-        return self.element().rate(**args)
+        if self.element:
+            return self.element().rate(**args)
+        else:
+            return None
 
     def update(self, element):
         self.element = element
@@ -86,6 +100,20 @@ class YoutubeSearchAPI(YoutubeAPIObject):
     def update(self, youtube):
         YoutubeAPIObject.update(self, youtube.search)
 
+import socket
+def is_connected():
+  try:
+    # see if we can resolve the host name -- tells us if there is
+    # a DNS listening
+    REMOTE_SERVER = "one.one.one.one"
+    host = socket.gethostbyname(REMOTE_SERVER)
+    # connect to the host -- tells us if the host is actually reachable
+    s = socket.create_connection((host, 80), 2)
+    s.close()
+    return True
+  except Exception:
+     pass # we ignore any errors, returning False
+  return False
 
 class Youtube:
     def __init__(self):
@@ -95,10 +123,11 @@ class Youtube:
         self.videos = YoutubeVideoAPI(self.youtube)
         self.playlists = YoutubePlaylistAPI(self.youtube)
         self.playlist_items = YoutubePlaylistItemAPI(self.youtube)
-        self.get_authenticated_service()
+        if is_connected():
+            self.get_authenticated_service()
 
     def get_authenticated_service(self, refresh=False):
-        scopes = ["https://www.googleapis.com/auth/youtube"]
+        scopes = [ "https://www.googleapis.com/auth/youtube" ]
         data_path = "data/"
         client_secrets_file = data_path + "client_secret.json"
         api_service_name = "youtube"
@@ -131,9 +160,7 @@ youtube = Youtube()
 # === SponsorBlock === #
 import sponsorblock as sb
 from multiprocessing import Process, Queue, Manager
-
-queue = Queue()
-
+import asyncio
 
 class TimeoutException(Exception):
     pass
@@ -179,6 +206,7 @@ class SponsorBlock(PropertyObject):
         self._add_property("timeoutSponsorBlock", 5)
         self.toSkipSponsorBlock = ["sponsor", "selfpromo", "music_offtopic"]
         self._add_property("toSkipSponsorBlock", self.toSkipSponsorBlock)
+        self.running = False
 
     def get_skip_segments(self, video_id=""):
 
@@ -190,16 +218,11 @@ class SponsorBlock(PropertyObject):
         if tmp:
             return tmp
         else:
-            block_list = []
-            try:
-                block_list = self.run_with_timeout(video_id)
-            except (TimeoutException,) as e:
-                log.warning(f"SponsorBlock has timed out")
-                block_list = []
+            block_list = asyncio.run(self.run_with_timeout(video_id))
             self.cache.add_entry(video_id, block_list)
             return block_list
 
-    def query_servers(self, video_id=""):
+    async def query_servers(self, video_id=""):
         block_list = []
         try:
             block_list = self.client.get_skip_segments(
@@ -208,21 +231,13 @@ class SponsorBlock(PropertyObject):
         except (sb.errors.HTTPException,) as e:  # catches all sb-server related errors
             log.warning(f"SponsorBlock has encountered an error ({e})")
             block_list = []
-        queue.put(block_list)
+        finally:
+            self.block_list = block_list
+            return block_list
 
-    def run_with_timeout(self, video_id=""):
-        # First we ensure the queue we are using is empty
-        while not queue.empty():
-            queue.get()
-        p = Process(target=self.query_servers, kwargs={"video_id": video_id})
-        p.start()
-        p.join(self.timeoutSponsorBlock)
-        if p.is_alive():
-            p.terminate()
-            raise TimeoutException
-        else:
-            result = queue.get()
-            return result
+    async def run_with_timeout(self, video_id=""):
+        result = await asyncio.gather(self.query_servers(video_id))
+        return result[0]
 
 
 sponsorBlock = SponsorBlock()
@@ -248,10 +263,11 @@ class Video(Playable):
     def mpris_url(self):
         return f"youtu.be/{self.id}"
 
-    def fetch_url(self, video=False):
+    async def fetch_url(self, video=False):
         log.info(f"Fetching url for video {self.title}({self.id})")
         thread = Thread(target=self.get_url, kwargs={"video": video}, daemon=True)
         thread.start()
+        await asyncio.gather(self.get_url)
 
     def url_by_mode(self, video=False):
         if video:
@@ -282,8 +298,10 @@ class Video(Playable):
             if expire < time():
                 return url
 
-        self.video_url = self._get_url("best")
-        self.audio_url = self._get_url("bestaudio/best")
+        self.video_url, self.audio_url = (
+                self._get_url("best"),
+                self._get_url("bestaudio/best")
+                )
         log.info(f"obtained urls for {self.title}({self.id})")
 
         return self.url_by_mode(video)
@@ -330,7 +348,10 @@ class YoutubeList(Playlist):
 
     def request(self, who, **what):
         try:
-            result = who(**what).execute()
+            if who(**what) is not None:
+                result = who(**what).execute()
+            else:
+                return None
         except google.auth.exceptions.RefreshError as _:
             youtube.get_authenticated_service(refresh=True)
             result = who(**what).execute()
@@ -363,9 +384,11 @@ class YoutubeList(Playlist):
             self.load_next_page()
         if self.nb_loaded == 0:
             self.load_next_page()
-        if index >= self.nb_loaded:
+        if self.nb_loaded > index >= self.nb_loaded:
             log.warning("index greater than size")
             return self.elements[-1]
+        elif index >= self.nb_loaded:
+            return None
         return self.elements[index]
 
     def get_item_list(self, start, end):
@@ -533,6 +556,9 @@ class LikedVideos(YoutubePlaylist):
             log.critical("Error while loading liked videos")
             return
 
+        if not response:
+            return
+
         idList = []
         for v in response["items"]:
             idList.append((v["id"], ""))
@@ -601,6 +627,9 @@ class YoutubePlaylistList(YoutubeList):
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while loading list of playlists")
+
+        if not response:
+            return
 
         for p in response["items"]:
             self.elements.append(

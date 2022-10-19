@@ -54,8 +54,10 @@ class Playlist:
     def get_at_index(self, index: int):
         """If the index is greater than the number of elements in the list,
         does NOT raise an error but return the last element of the list instead"""
-        if index >= self.size:
+        if index >= self.size > 0:
             return self.elements[-1]
+        elif self.size == 0:
+            return None
         return self.elements[index]
 
     def get_item_list(self, start: int, end: int) -> list[Playable]:
