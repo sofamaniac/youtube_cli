@@ -528,5 +528,5 @@ class Application(PropertyObject):
 
     async def jump_to_current_playing(self):
         self.current_panel = self.content_panel
-        self.current_panel.jump_to_selection()
+        await self.current_panel.jump_to_selection()
         await self.update()
