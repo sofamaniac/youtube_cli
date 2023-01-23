@@ -65,7 +65,7 @@ class KeyConfiguration:
             code = ord(keycode)
             action = self.actions[code][0]
             args = self.actions[code][1:]
-            action(*args)
+            await action(*args)
 
     def add_action(self, key, action, args):
         """Add a binding of action(args) to [key]"""
