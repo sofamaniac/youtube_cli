@@ -50,31 +50,31 @@ class Adapter(MprisAdapter):
         time = time if time else 0
         return time * 10**6
 
-    def next(self):
-        self.app.next()
+    async def next(self):
+        await self.app.next()
 
-    def previous(self):
-        self.app.prev()
+    async def previous(self):
+        await self.app.prev()
 
-    def pause(self):
-        self.app.pause(True)
+    async def pause(self):
+        await self.app.pause(True)
 
-    def resume(self):
-        self.app.pause(False)
+    async def resume(self):
+        await self.app.pause(False)
 
-    def stop(self):
-        self.app.stop()
+    async def stop(self):
+        await self.app.stop()
 
-    def play(self):
-        self.app.start()
+    async def play(self):
+        await self.app.start()
 
     def get_playstate(self) -> PlayState:
         if self.app.is_playing():
             return PlayState.PLAYING
         return PlayState.PAUSED
 
-    def seek(self, time: Microseconds, track_id: Optional[DbusObj] = None):
-        self.app.seek(time)
+    async def seek(self, time: Microseconds, track_id: Optional[DbusObj] = None):
+        await self.app.seek(time)
 
     def open_uri(self, uri: str):
         self.app.open_uri(uri)

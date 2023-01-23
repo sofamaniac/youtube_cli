@@ -20,7 +20,7 @@ class Widget(panel.Panel):
         self.visible = True
         self.selectable = True
 
-    def update(self, draw_select=True, to_display=[]):
+    async def update(self, draw_select=True, to_display=[]):
         if not self.visible:
             return
 
@@ -34,7 +34,7 @@ class Widget(panel.Panel):
         self.title.draw_to_win(self.win, 0, 1, width)
 
         if not to_display and self.source:
-            to_display = self.get_content(off, page_size + off)
+            to_display = await self.get_content(off, page_size + off)
 
         if len(to_display) > page_size:
             to_display = to_display[:page_size]
@@ -54,7 +54,7 @@ class Widget(panel.Panel):
         self.visible = not self.visible
         self.clear()
 
-    def select(self, direction):
+    async def select(self, direction):
 
         if not self.selectable:
             return
@@ -65,13 +65,15 @@ class Widget(panel.Panel):
                 self.page -= 1
         elif direction == Directions.DOWN:
             self.selected += 1
-            if self.selected > self.source.get_max_index():
+            if self.selected > await self.source.get_max_index():
                 self.selected -= 1
             if self.selected >= off + self.get_page_size():
                 self.page += 1
 
-    def get_selected(self):
-        return self.source.get_at_index(self.selected)
+    async def get_selected(self):
+        if not self.source:
+            return None
+        return await self.source.get_at_index(self.selected)
 
     def jump_to_selection(self):
         self.selected = self.source.get_current_index()
@@ -84,16 +86,16 @@ class Widget(panel.Panel):
     def get_page_size(self):
         return self.win.getmaxyx()[0] - 2
 
-    def get_content(self, start, end):
-        content = self.source.get_item_list(start, end)
+    async def get_content(self, start, end):
+        content = await self.source.get_item_list(start, end)
         return [CurseString(str(c)) for c in content]
 
-    def next_page(self):
-        if self.selected + self.get_page_size() <= self.source.get_max_index():
+    async def next_page(self):
+        if self.selected + self.get_page_size() <= await self.source.get_max_index():
             self.page += 1
             self.selected = self.selected + self.get_page_size()
 
-    def prev_page(self):
+    async def prev_page(self):
         page_incr = max(0, self.page - 1) - self.page
         self.page += page_incr
         self.selected += self.get_page_size() * page_incr

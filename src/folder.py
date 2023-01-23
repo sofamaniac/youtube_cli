@@ -1,5 +1,6 @@
 from os import walk
 import os.path
+import asyncio
 
 import eyed3
 
@@ -22,9 +23,8 @@ class Folder(Playlist):
 
         self.path = path
         self.title = os.path.basename(path)
-        self.load_files()
 
-    def load_files(self):
+    async def load_files(self):
 
         self.elements = []
 
@@ -68,3 +68,7 @@ class FolderList(PlaylistList):
         for p in self.foldersPaths:
             self.elements.append(Folder(p))
         self.size = len(self.elements)
+
+    async def init(self):
+        for f in self.elements:
+            asyncio.create_task(f.load_files())

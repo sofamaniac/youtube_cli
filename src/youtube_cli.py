@@ -1,5 +1,6 @@
 """Entry point for youtube_cli"""
 
+import asyncio
 import curses
 
 from application import Application
@@ -12,6 +13,8 @@ from config import *
 
 import mpris
 
+from gui.screen import stdscr, curses_settings, reset_curses
+
 logging.basicConfig(
     level=logging.INFO,
     filename=dirs.user_log_dir + "/youtube_cli.log",
@@ -20,15 +23,17 @@ logging.basicConfig(
 )
 
 
-def initialize(stdscr):
+async def initialize(stdscr):
     """Initialize the different component of the application"""
+    curses_settings(stdscr)
     app = Application(stdscr)
+    await app.init()
     config = KeyConfiguration(app)
     mpris.initialize(app)
-    return main(app, config)
+    return await main(app, config)
 
 
-def main(app, config):
+async def main(app, config):
     """Entry point of the program"""
     last_event = None
     while True:
@@ -36,16 +41,14 @@ def main(app, config):
         if char == curses.KEY_RESIZE and last_event != curses.KEY_RESIZE:
             app.resize()
         else:
-            config.check_action(char)
+            await config.check_action(char)
         last_event = char
-        app.update()
-    end(app)
-
-
-def end(app):
-    """Gracefully quit everything"""
+        await app.update()
     app.quit()
 
 
 if __name__ == "__main__":
-    curses.wrapper(initialize)
+    try:
+        asyncio.run(initialize(stdscr))
+    finally:
+        reset_curses(stdscr)
