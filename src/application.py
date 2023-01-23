@@ -160,9 +160,6 @@ class Application(PropertyObject):
 
         self.yt_playlist_panel.source = PlaylistList()
         self.local_playlist_panel.source = PlaylistList()
-        folders = FolderList()
-        for f in folders.elements:
-            self.local_playlist_panel.source.add_playlist(f)
         self.current_panel = self.yt_playlist_panel
 
         self.search_panel = Widget("Search", 0, 0, 80, 12, screen=self.scr)
@@ -207,6 +204,10 @@ class Application(PropertyObject):
         self.state = PlayerStates.STOPPED
 
     async def init(self):
+        folders = FolderList()
+        await folders.init()
+        for f in folders.elements:
+            self.local_playlist_panel.source.add_playlist(f)
         youtubePlaylists = youtube.YoutubePlaylistList()
         await youtubePlaylists.init()
         for p in youtubePlaylists.elements:

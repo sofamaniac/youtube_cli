@@ -273,9 +273,6 @@ class Video(Playable):
     async def fetch_url(self, video=False):
         await self._fetch_url(video)
 
-    async def fetch_url_async(self, video=False):
-        await self._fetch_url(video)
-
     async def _fetch_url(self, video=False):
         log.info(f"Fetching url for video {self.title}({self.id})")
         await self.get_url(video)
@@ -287,11 +284,16 @@ class Video(Playable):
 
     async def _get_url(self, format="best"):
 
+        log.info(f"Fetching url for {self.title}")
+
         sort = ""  # sort to be applied to the results
 
         command = f"yt-dlp --no-warnings --format {format} {sort} --print urls --no-playlist https://youtu.be/{self.id}"
-        urls = subprocess.run(shlex.split(command), capture_output=True, text=True)
-        urls = urls.stdout.splitlines()
+        proc = await asyncio.create_subprocess_shell(
+            command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        urls, stderr = await proc.communicate()
+        urls = urls.decode().splitlines()
         if urls:
             await self.get_skip_segment()
             return urls[0]
@@ -311,7 +313,7 @@ class Video(Playable):
 
         self.video_url = await self._get_url("best")
         self.audio_url = await self._get_url("bestaudio/best")
-        log.info(f"obtained urls for {self.title}({self.id})")
+        log.info(f"obtained urls for {self.title} ({self.id})")
 
         return self.url_by_mode(video)
 
