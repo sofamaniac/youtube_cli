@@ -44,14 +44,11 @@ async def main(app, config):
             await config.check_action(char)
         last_event = char
         await app.update()
-    end(app)
-
-
-def end(app):
-    """Gracefully quit everything"""
-    reset_curses(stdscr)
     app.quit()
 
 
 if __name__ == "__main__":
-    asyncio.run(initialize(stdscr))
+    try:
+        asyncio.run(initialize(stdscr))
+    finally:
+        reset_curses(stdscr)

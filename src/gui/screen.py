@@ -86,6 +86,7 @@ def reset_curses(stdscr):
     curses.echo()
     curses.nocbreak()
     stdscr.keypad(False)
+    curses.endwin()
 
 
 class Screen:
