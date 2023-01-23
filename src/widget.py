@@ -76,7 +76,7 @@ class Widget(panel.Panel):
         return await self.source.get_at_index(self.selected)
 
     def jump_to_selection(self):
-        self.selected = self.source.get_current_index()
+        self.selected = await self.source.get_current_index()
         page_size = self.get_page_size()
         while self.page * page_size + page_size > self.selected:
             self.page -= 1
