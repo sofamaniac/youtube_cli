@@ -166,7 +166,7 @@ class CustomEventAdapter(EventAdapter):
 
 def initialize(app):
     adapter = Adapter(app)
-    mpris = Server("youtube_cli_dev", adapter=adapter)
+    mpris = Server("youtube_cli", adapter=adapter)
     mpris.publish()
     log.info("MPRIS server published")
 
