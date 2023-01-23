@@ -553,7 +553,7 @@ class LikedVideos(YoutubePlaylist):
         await super().load_all()
         self.order = [i for i in range(self.size)]
         if self.shuffled:
-            self.shuffle()
+            await self.shuffle()
 
     async def _load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
@@ -592,7 +592,7 @@ class LikedVideos(YoutubePlaylist):
 
     async def shuffle(self):
         await self.load_all()
-        YoutubePlaylist.shuffle(self)
+        await YoutubePlaylist.shuffle(self)
 
     async def get_max_index(self):
         if not self.is_loaded():
