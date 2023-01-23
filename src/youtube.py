@@ -2,7 +2,6 @@
 import os
 import pickle
 import shlex
-from random import shuffle
 from threading import Thread, Lock
 import subprocess
 import time
@@ -18,7 +17,6 @@ import logging
 from playlist import Playlist, Playable
 from property import PropertyObject, Property
 
-import globals as glob
 
 log = logging.getLogger(__name__)
 
@@ -100,20 +98,24 @@ class YoutubeSearchAPI(YoutubeAPIObject):
     def update(self, youtube):
         YoutubeAPIObject.update(self, youtube.search)
 
+
 import socket
+
+
 def is_connected():
-  try:
-    # see if we can resolve the host name -- tells us if there is
-    # a DNS listening
-    REMOTE_SERVER = "one.one.one.one"
-    host = socket.gethostbyname(REMOTE_SERVER)
-    # connect to the host -- tells us if the host is actually reachable
-    s = socket.create_connection((host, 80), 2)
-    s.close()
-    return True
-  except Exception:
-     pass # we ignore any errors, returning False
-  return False
+    try:
+        # see if we can resolve the host name -- tells us if there is
+        # a DNS listening
+        REMOTE_SERVER = "one.one.one.one"
+        host = socket.gethostbyname(REMOTE_SERVER)
+        # connect to the host -- tells us if the host is actually reachable
+        s = socket.create_connection((host, 80), timeout=2)
+        s.close()
+        return True
+    except Exception:
+        pass  # we ignore any errors, returning False
+    return False
+
 
 class Youtube:
     def __init__(self):
@@ -127,7 +129,7 @@ class Youtube:
             self.get_authenticated_service()
 
     def get_authenticated_service(self, refresh=False):
-        scopes = [ "https://www.googleapis.com/auth/youtube" ]
+        scopes = ["https://www.googleapis.com/auth/youtube"]
         data_path = "data/"
         client_secrets_file = data_path + "client_secret.json"
         api_service_name = "youtube"
@@ -151,6 +153,8 @@ class Youtube:
         self.playlists.update(self.youtube)
         self.playlist_items.update(self.youtube)
 
+        log.info("Successfully established connection to Youtube")
+
 
 youtube = Youtube()
 
@@ -161,6 +165,7 @@ youtube = Youtube()
 import sponsorblock as sb
 from multiprocessing import Process, Queue, Manager
 import asyncio
+
 
 class TimeoutException(Exception):
     pass
@@ -208,7 +213,7 @@ class SponsorBlock(PropertyObject):
         self._add_property("toSkipSponsorBlock", self.toSkipSponsorBlock)
         self.running = False
 
-    def get_skip_segments(self, video_id=""):
+    async def get_skip_segments(self, video_id=""):
 
         if not self.enableSponsorBlock:
             return []
@@ -218,7 +223,8 @@ class SponsorBlock(PropertyObject):
         if tmp:
             return tmp
         else:
-            block_list = asyncio.run(self.run_with_timeout(video_id))
+            block_list = await self.run_with_timeout(video_id)
+            log.info(f"block_list f{block_list}")
             self.cache.add_entry(video_id, block_list)
             return block_list
 
@@ -236,8 +242,8 @@ class SponsorBlock(PropertyObject):
             return block_list
 
     async def run_with_timeout(self, video_id=""):
-        result = await asyncio.gather(self.query_servers(video_id))
-        return result[0]
+        result = await self.query_servers(video_id)
+        return result
 
 
 sponsorBlock = SponsorBlock()
@@ -259,22 +265,27 @@ class Video(Playable):
         self.skipSegmentsDone = False
         self.audio_url = ""
         self.video_url = ""
+        self.segmentTask = None
 
     def mpris_url(self):
         return f"youtu.be/{self.id}"
 
     async def fetch_url(self, video=False):
+        await self._fetch_url(video)
+
+    async def fetch_url_async(self, video=False):
+        await self._fetch_url(video)
+
+    async def _fetch_url(self, video=False):
         log.info(f"Fetching url for video {self.title}({self.id})")
-        thread = Thread(target=self.get_url, kwargs={"video": video}, daemon=True)
-        thread.start()
-        await asyncio.gather(self.get_url)
+        await self.get_url(video)
 
     def url_by_mode(self, video=False):
         if video:
             return self.video_url
         return self.audio_url
 
-    def _get_url(self, format="best"):
+    async def _get_url(self, format="best"):
 
         sort = ""  # sort to be applied to the results
 
@@ -282,12 +293,12 @@ class Video(Playable):
         urls = subprocess.run(shlex.split(command), capture_output=True, text=True)
         urls = urls.stdout.splitlines()
         if urls:
-            self.get_skip_segment()
+            await self.get_skip_segment()
             return urls[0]
         else:
             return ""
 
-    def get_url(self, video=False):
+    async def get_url(self, video=False):
         """Return the url for the audio stream of the video"""
 
         url = self.url_by_mode(video)
@@ -298,19 +309,18 @@ class Video(Playable):
             if expire < time():
                 return url
 
-        self.video_url, self.audio_url = (
-                self._get_url("best"),
-                self._get_url("bestaudio/best")
-                )
+        self.video_url = await self._get_url("best")
+        self.audio_url = await self._get_url("bestaudio/best")
         log.info(f"obtained urls for {self.title}({self.id})")
 
         return self.url_by_mode(video)
 
-    def get_skip_segment(self):
+    async def get_skip_segment(self):
+        log.info(f"Gathering skip segments for {self.id}")
+        self.skipSegments = await sponsorBlock.get_skip_segments(self.id)
         self.skipSegmentsDone = True
-        self.skipSegments = sponsorBlock.get_skip_segments(self.id)
 
-    def check_skip(self, time):
+    async def check_skip(self, time):
         for skip in self.skipSegments:
             if skip.start <= time <= skip.end:
                 return skip.end
@@ -338,7 +348,7 @@ class YoutubeList(Playlist):
         for v in self.elements:
             if v.id == item:
                 return True
-        while self.next_page != None:
+        while self.next_page is not None:
             last_index = len(self.elements) - 1
             self.load_next_page()
             for v in self.elements[last_index:]:
@@ -358,14 +368,14 @@ class YoutubeList(Playlist):
             log.warning("Error with request")
         return result
 
-    def _load_next_page(self):
+    async def _load_next_page(self):
         pass
 
-    def load_next_page(self):
+    async def load_next_page(self):
         if self.is_loading.locked():
             return
         self.is_loading.acquire(blocking=True)
-        self._load_next_page()
+        await self._load_next_page()
         self.is_loading.release()
 
     def update_tokens(self, response):
@@ -376,14 +386,14 @@ class YoutubeList(Playlist):
             response["prevPageToken"] if "prevPageToken" in response else None
         )
 
-    def get_at_index(self, index):
+    async def get_at_index(self, index):
         """If the index is greater than the number of elements in the list,
         does NOT raise an error but return the last element of the list instead"""
 
-        while index > self.nb_loaded and self.next_page != None:
-            self.load_next_page()
+        while index > self.nb_loaded and self.next_page is not None:
+            await self.load_next_page()
         if self.nb_loaded == 0:
-            self.load_next_page()
+            await self.load_next_page()
         if self.nb_loaded > index >= self.nb_loaded:
             log.warning("index greater than size")
             return self.elements[-1]
@@ -391,27 +401,27 @@ class YoutubeList(Playlist):
             return None
         return self.elements[index]
 
-    def get_item_list(self, start, end):
+    async def get_item_list(self, start, end):
         while end + 1 > self.nb_loaded and self.next_page != None:
-            self.load_next_page()
+            await self.load_next_page()
         max_index = min(end, self.nb_loaded)
         return self.elements[start:max_index]
 
-    def load_all(self):
+    async def load_all(self):
         while self.next_page != None or self.nb_loaded == 0:
-            self.load_next_page()
+            await self.load_next_page()
         self.size = self.nb_loaded
 
-    def reload(self):
+    async def reload(self):
         self.nb_loaded = 0
         # self.size = 0  # not necessary I think
         self.elements = []
         self.next_page = None
         self.prev_page = None
 
-        self.load_next_page()
+        await self.load_next_page()
 
-    def get_max_index(self):
+    async def get_max_index(self):
         return self.nb_loaded - 1
 
 
@@ -425,7 +435,8 @@ class YoutubePlaylist(YoutubeList):
         self.order = [i for i in range(self.size)]  # used for playlist shuffling
         self.api_object = youtube.playlist_items
 
-        self.load_next_page()  # we load the first page
+    async def init(self):
+        await self.load_next_page()  # we load the first page
 
     def _add_videos(self, id_list):
 
@@ -469,7 +480,7 @@ class YoutubePlaylist(YoutubeList):
                 result = result and "FR" in t["allowed"]
         return result
 
-    def _load_next_page(self):
+    async def _load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
         args = {
             "part": to_request,
@@ -536,13 +547,13 @@ class LikedVideos(YoutubePlaylist):
     def is_loaded(self):
         return self.next_page is None
 
-    def load_all(self):
-        super().load_all()
+    async def load_all(self):
+        await super().load_all()
         self.order = [i for i in range(self.size)]
         if self.shuffled:
             self.shuffle()
 
-    def _load_next_page(self):
+    async def _load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
         args = {
             "part": to_request,
@@ -568,20 +579,20 @@ class LikedVideos(YoutubePlaylist):
         self.nb_loaded += nb_loaded
         self.update_tokens(response)
 
-    def next(self):
+    async def next(self):
         self.current_index += 1
         while self.current_index >= self.size and self.is_loaded():
             self.load_next_page()
         if self.current_index >= self.size and self.is_loaded():
             return Playable()
         shuffled_index = self.order[self.current_index]
-        return self.get_at_index(shuffled_index)
+        return await self.get_at_index(shuffled_index)
 
-    def shuffle(self):
-        self.load_all()
+    async def shuffle(self):
+        await self.load_all()
         YoutubePlaylist.shuffle(self)
 
-    def get_max_index(self):
+    async def get_max_index(self):
         if not self.is_loaded():
             return 1e99
         else:
@@ -609,14 +620,14 @@ class YoutubePlaylistList(YoutubeList):
         self.nb_loaded = 1
         self.api_object = youtube.playlists
 
-        self.load_next_page()
-        self.load_all()
+    async def init(self):
 
-        # we just load fully the liked videos playlist
-        loader_liked = Thread(target=self.elements[0].load_all, daemon=True)
-        loader_liked.start()
+        await self.load_next_page()
+        await self.load_all()
 
-    def _load_next_page(self):
+        await self.elements[0].load_all()
+
+    async def _load_next_page(self):
         args = {
             "part": "id, snippet, contentDetails",
             "maxResults": MAX_RESULTS,
@@ -642,10 +653,10 @@ class YoutubePlaylistList(YoutubeList):
         if self.next_page == None:
             self.size = self.nb_loaded
 
-    def shuffle(self):
+    async def shuffle(self):
         return
 
-    def unshuffle(self):
+    async def unshuffle(self):
         return
 
 
@@ -659,7 +670,7 @@ class Search(YoutubePlaylist):
 
         self.load_next_page()
 
-    def _load_next_page(self):
+    async def _load_next_page(self):
 
         args = {
             "part": "id, snippet, contentDetails",
@@ -684,8 +695,8 @@ class Search(YoutubePlaylist):
         if self.next_page == None:
             self.size = self.nb_loaded
 
-    def shuffle(self):
+    async def shuffle(self):
         return
 
-    def unshuffle(self):
+    async def unshuffle(self):
         return

@@ -1,5 +1,6 @@
 """Main component of the program, where most of the logic is handled"""
 
+import asyncio
 import time
 import logging
 
@@ -51,16 +52,16 @@ class InfoPanel(Widget):
         super().__init__("Information", *args, **kwargs)
         self.selectable = False
 
-    def update(self, draw_select=False):
+    async def update(self, draw_select=False):
 
-        selection = get_property("application").content_panel.get_selected()
+        selection = await get_property("application").content_panel.get_selected()
         if selection is None:
             return
         content = []
         content.append(CurseString(f"Title: {selection.title}"))
         content.append(CurseString(f"Author: {selection.author}"))
         content.append(CurseString(f"Id: {selection.id}"))
-        super().update(to_display=content)
+        await super().update(to_display=content)
 
 
 class OptionPanel(Widget):
@@ -69,7 +70,7 @@ class OptionPanel(Widget):
         super().__init__("Options", *args, **kwargs)
         self.selectable = False
 
-    def update(self, draw_select=False):
+    async def update(self, draw_select=False):
 
         content = []
         content.append(CurseString(f"Auto: {get_property('in_playlist')}"))
@@ -79,7 +80,7 @@ class OptionPanel(Widget):
         content.append(
             CurseString(f"Mode: {'Video' if get_property('video_mode') else 'Audio'}")
         )
-        super().update(to_display=content)
+        await super().update(to_display=content)
 
 
 class PlayerPanel(Widget):
@@ -88,7 +89,7 @@ class PlayerPanel(Widget):
         super().__init__("Player Information", *args, **kwargs)
         self.selectable = False
 
-    def update(self, draw_select=False):
+    async def update(self, draw_select=False):
 
         playing = get_property("playing")
         player = get_property("player")
@@ -115,11 +116,11 @@ class PlayerPanel(Widget):
         progress = "\u2595" + bar_string + "\u258F" + " {}/{}".format(t, d)
         s = CurseString(progress)
         for i, _ in enumerate(bar_string):
-            if playing.check_skip(i * dur / width):
+            if await playing.check_skip(i * dur / width):
                 s.color(screen.COLOR_SEG, i, i + 1)
         content.append(s)
 
-        super().update(to_display=content)
+        await super().update(to_display=content)
 
 
 class Application(PropertyObject):
@@ -159,14 +160,10 @@ class Application(PropertyObject):
 
         self.yt_playlist_panel.source = PlaylistList()
         self.local_playlist_panel.source = PlaylistList()
-        youtubePlaylists = youtube.YoutubePlaylistList()
-        for p in youtubePlaylists.elements:
-            self.yt_playlist_panel.source.add_playlist(p)
         folders = FolderList()
         for f in folders.elements:
             self.local_playlist_panel.source.add_playlist(f)
         self.current_panel = self.yt_playlist_panel
-        self.get_playlist()
 
         self.search_panel = Widget("Search", 0, 0, 80, 12, screen=self.scr)
         self.in_search = False
@@ -209,6 +206,13 @@ class Application(PropertyObject):
 
         self.state = PlayerStates.STOPPED
 
+    async def init(self):
+        youtubePlaylists = youtube.YoutubePlaylistList()
+        await youtubePlaylists.init()
+        for p in youtubePlaylists.elements:
+            self.yt_playlist_panel.source.add_playlist(p)
+        await self.get_playlist()
+
     def _change_volume(self, value):
         if 0 <= value <= 100:
             self.player.set_volume(value)
@@ -226,32 +230,32 @@ class Application(PropertyObject):
 
     def _change_shuffled(self, value):
         if value:
-            self.playlist.shuffle()
+            asyncio.gather(self.playlist.shuffle())
         else:
-            self.playlist.unshuffle()
+            asyncio.gather(self.playlist.unshuffle())
 
     def _change_video_mode(self):
         timestamp = self.player.time
-        self.stop()
+        asyncio.gather(self.stop())
         self.create_player()
         if self.in_playlist or timestamp:
-            self.play()
+            asyncio.gather(self.play())
             while not self.player.duration:
                 time.sleep(0.1)
             self.player.seek(timestamp, mode="absolute")
 
-    def skip_segment(self):
+    async def skip_segment(self):
         timestamp = self.player.time
         timestamp = timestamp if timestamp else 0
-        check = self.playing.check_skip(timestamp)
+        check = await self.playing.check_skip(timestamp)
         duration = self.player.duration
         if check and duration:
             jump = min(check, duration)
             self.player.seek(jump)
 
-    def search(self):
+    async def search(self):
         self.in_search = True
-        self.search_panel.update()
+        await self.search_panel.update()
         self.textbox.reset()
         self.textbox.edit(update=self.update)
         search_term = self.textbox.gather()
@@ -261,9 +265,9 @@ class Application(PropertyObject):
             self.current_panel = self.content_panel
         self.search_panel.clear()
         self.in_search = False
-        self.update()
+        await self.update()
 
-    def command(self):
+    async def command(self):
         self.command_field.reset()
         self.command_field.edit(update=self.update)
         command = self.command_field.gather()
@@ -272,7 +276,7 @@ class Application(PropertyObject):
             parser.evaluate(command)
             log.info("command passed")
 
-    def update(self):
+    async def update(self):
 
         # checking if player is still alive
         try:
@@ -282,39 +286,41 @@ class Application(PropertyObject):
             self.create_player()
 
         # checking for segments to skip
-        self.skip_segment()
+        await self.skip_segment()
 
         # Drawing all the windows
-        self.yt_playlist_panel.update(
+        await self.yt_playlist_panel.update(
             draw_select=self.current_panel == self.yt_playlist_panel
         )
-        self.local_playlist_panel.update(
+        await self.local_playlist_panel.update(
             draw_select=self.current_panel == self.local_playlist_panel
         )
-        self.content_panel.update(draw_select=self.current_panel == self.content_panel)
-        self.player_panel.update()
-        self.option_panel.update()
-        self.information_panel.update()
+        await self.content_panel.update(
+            draw_select=self.current_panel == self.content_panel
+        )
+        await self.player_panel.update()
+        await self.option_panel.update()
+        await self.information_panel.update()
 
         # checking if there is something playing
         if (
             self.in_playlist and self.player.is_song_finished()
         ):  # the current song is finished
-            self.next()
+            await self.next()
 
         if self.in_search:
-            self.search_panel.update()
+            await self.search_panel.update()
 
-        self.draw_add_to_playlist()
+        await self.draw_add_to_playlist()
 
         self.scr.update()
 
-    def draw_add_to_playlist(self):
+    async def draw_add_to_playlist(self):
 
         if not self.in_add_to_playlist:
             return
 
-        currSelection = self.content_panel.get_selected()
+        currSelection = await self.content_panel.get_selected()
         content = []
 
         for p in self.yt_playlist_panel.source.elements:
@@ -324,14 +330,14 @@ class Application(PropertyObject):
                 checkbox = "[ ]"
             content.append(CurseString(f"{checkbox} {p.title}"))
 
-        self.add_to_playlist_panel.update(to_display=content)
+        await self.add_to_playlist_panel.update(to_display=content)
 
-    def select(self, direction):
+    async def select(self, direction):
         do_update = False
         reset_pos = False
         if isinstance(direction, Directions):
             do_update = True
-            self.current_panel.select(direction)
+            await self.current_panel.select(direction)
         elif isinstance(direction, PanelDirections):
             tmp = self.current_panel.get_next_selectable_neighbour(direction)
             if tmp:
@@ -340,35 +346,35 @@ class Application(PropertyObject):
             reset_pos = tmp == self.content_panel
 
         if do_update and reset_pos and self.current_panel == self.content_panel:
-            self.get_playlist()
+            await self.get_playlist()
             self.content_panel.selected = 0
 
-    def set_playlist(self):
+    async def set_playlist(self):
         if not self.in_playlist:
             if isinstance(self.current_panel, PlaylistPanel):
-                self.playlist = self.current_panel.get_selected()
+                self.playlist = await self.current_panel.get_selected()
             else:
                 self.playlist = self.content_panel.source
             self.shuffled = self.shuffled  # force update
             self.playlist.current_index = self.content_panel.selected
             self.player.stop()
             self.in_playlist = True
-            self.play(self.playlist.get_current())
+            await self.play(await self.playlist.get_current())
         else:
             self.in_playlist = False
 
-    def get_playlist(self):
+    async def get_playlist(self):
         if isinstance(self.current_panel, PlaylistPanel):
-            self.content_panel.source = self.current_panel.get_selected()
+            self.content_panel.source = await self.current_panel.get_selected()
 
-    def add_to_playlist(self):
+    async def add_to_playlist(self):
         self.in_add_to_playlist = True
         self.add_to_playlist_panel.toggle_visible()
         self.current_panel = self.add_to_playlist_panel
 
-    def edit_playlist(self):
-        currSelection = self.content_panel.get_selected()
-        currPlaylist = self.add_to_playlist_panel.get_selected()
+    async def edit_playlist(self):
+        currSelection = await self.content_panel.get_selected()
+        currPlaylist = await self.add_to_playlist_panel.get_selected()
         if currSelection in currPlaylist:
             currPlaylist.remove(currSelection)
         else:
@@ -377,88 +383,90 @@ class Application(PropertyObject):
         self.add_to_playlist_panel.toggle_visible()
         self.current_panel = self.content_panel
 
-    def enter(self):
+    async def enter(self):
         if isinstance(self.current_panel, PlaylistPanel):
-            self.get_playlist()
+            await self.get_playlist()
             self.current_panel = self.content_panel
         elif self.current_panel == self.add_to_playlist_panel:
-            self.edit_playlist()
+            await self.edit_playlist()
         else:
             if self.in_playlist:
-                self.playlist.set_effective_index(self.content_panel.selected)
-            self.play()
+                await self.playlist.set_effective_index(self.content_panel.selected)
+            await self.play()
 
-    def escape(self):
+    async def escape(self):
         if self.in_add_to_playlist:
             self.in_add_to_playlist = False
             self.add_to_playlist_panel.toggle_visible()
             self.current_panel = self.content_panel
 
-    def reload(self):
-        self.content_panel.source.reload()
+    async def reload(self):
+        await self.content_panel.source.reload()
 
-    def next(self):
+    async def next(self):
         if self.in_playlist:
             if self.playlist.current_index > self.playlist.size:
                 self.player.stop()
             else:
-                self.play(self.playlist.next())
-            self.playlist.get_next().fetch_url()
+                new = await self.playlist.next()
+                next = await self.playlist.get_next()
+                await next.fetch_url()
+                await self.play(new)
         else:
-            self.content_panel.select(Directions.DOWN)
-            self.play()
+            await self.content_panel.select(Directions.DOWN)
+            await self.play()
         self.event_handler.on_app_event("next")
 
-    def prev(self):
+    async def prev(self):
 
         # if the song was started less than 10 seconds ago
         if self.player.time < 10:
             if self.in_playlist:
                 if self.playlist.current_index > 0:
-                    self.play(self.playlist.prev())
+                    await self.play(await self.playlist.prev())
                 else:
                     self.player.stop()
             else:
                 self.content_panel.select(Directions.UP)
-                self.play()
+                await self.play()
 
         # else we start the same song
         else:
             self.player.seek_percent(0)
         self.event_handler.on_app_event("prev")
 
-    def next_page(self):
-        self.current_panel.next_page()
+    async def next_page(self):
+        await self.current_panel.next_page()
 
-    def prev_page(self):
-        self.current_panel.prev_page()
+    async def prev_page(self):
+        await self.current_panel.prev_page()
 
-    def play(self, to_play=youtube.Video()):
-        selected = self.content_panel.get_selected()
+    async def play(self, to_play=youtube.Video()):
+        selected = await self.content_panel.get_selected()
         if not to_play.id and selected.id != self.playing.id:
             to_play = selected
-        url = to_play.get_url(self.video_mode)
+        url = await to_play.get_url(self.video_mode)
         self.player.play(url)
         self.playing = to_play
         # when nothing is playing, the volume might not get updated on the backend
         # therefore we update it manually each time something is played
-        self.increase_volume(0)
+        await self.increase_volume(0)
         self.state = PlayerStates.PLAYING
         self.player.pause(False)
 
-    def start(self):
+    async def start(self):
         if not self.playing.id:  # nothing is playing
             pass
         else:
-            self.play()
+            await self.play()
         self.event_handler.on_app_event("play")
 
-    def stop(self):
+    async def stop(self):
         self.player.stop()
         self.playing = youtube.Video()
         self.event_handler.on_app_event("stop")
 
-    def pause(self, b=None):
+    async def pause(self, b=None):
         self.player.pause(b)
         if self.state == PlayerStates.PLAYING:
             self.state = PlayerStates.PAUSED
@@ -466,7 +474,7 @@ class Application(PropertyObject):
             self.state = PlayerStates.PLAYING
         self.event_handler.on_app_event("pause")
 
-    def toggle_repeat(self):
+    async def toggle_repeat(self):
         values = ["No", "Song", "Playlist"]
         self.repeat = values[(values.index(self.repeat) + 1) % len(values)]
         self.player.set_repeat(self.repeat)
@@ -475,21 +483,21 @@ class Application(PropertyObject):
     def is_playing(self):
         return self.state == PlayerStates.PLAYING
 
-    def forward(self, dt):
+    async def forward(self, dt):
         if not self.player.is_playing():
             return
         self.player.seek(dt)
 
-    def seek_percent(self, percent):
+    async def seek_percent(self, percent):
         if not self.player.is_playing():
             return
         self.player.seek_percent(percent)
 
-    def increase_volume(self, dv):
+    async def increase_volume(self, dv):
         self.volume += dv
         self.event_handler.on_app_event("volume")
 
-    def toggle_mute(self):
+    async def toggle_mute(self):
         self.muted = not self.muted
 
     def create_player(self, video=False):
@@ -498,10 +506,10 @@ class Application(PropertyObject):
         else:
             self.player = player.AudioPlayer()
 
-    def toggle_video(self):
+    async def toggle_video(self):
         self.video_mode = not self.video_mode
 
-    def toggle_shuffle(self):
+    async def toggle_shuffle(self):
         self.shuffled = not self.shuffled
         self.event_handler.on_app_event("shuffle")
 
@@ -517,7 +525,7 @@ class Application(PropertyObject):
         self.information_panel.resize()
         self.option_panel.resize()
 
-    def jump_to_current_playing(self):
+    async def jump_to_current_playing(self):
         self.current_panel = self.content_panel
         self.current_panel.jump_to_selection()
-        self.update()
+        await self.update()

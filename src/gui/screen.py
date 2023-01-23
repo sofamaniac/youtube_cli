@@ -70,6 +70,23 @@ COLOR_SEG = 3
 GREY = 8
 DARK_GREY = 9
 
+stdscr = curses.initscr()
+
+
+def curses_settings(stdscr):
+
+    curses.start_color()
+    curses.noecho()
+    curses.cbreak()
+    stdscr.keypad(True)
+
+
+def reset_curses(stdscr):
+
+    curses.echo()
+    curses.nocbreak()
+    stdscr.keypad(False)
+
 
 class Screen:
     def __init__(self, stdscr):
