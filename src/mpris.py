@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional
 from threading import Thread
 from mpris_server.server import Server
@@ -50,31 +51,31 @@ class Adapter(MprisAdapter):
         time = time if time else 0
         return time * 10**6
 
-    async def next(self):
-        await self.app.next()
+    def next(self):
+        asyncio.run(self.app.next())
 
-    async def previous(self):
-        await self.app.prev()
+    def previous(self):
+        asyncio.run(self.app.prev())
 
-    async def pause(self):
-        await self.app.pause(True)
+    def pause(self):
+        asyncio.run(self.app.pause(True))
 
-    async def resume(self):
-        await self.app.pause(False)
+    def resume(self):
+        asyncio.run(self.app.pause(False))
 
-    async def stop(self):
-        await self.app.stop()
+    def stop(self):
+        asyncio.run(self.app.stop())
 
-    async def play(self):
-        await self.app.start()
+    def play(self):
+        asyncio.run(self.app.start())
 
     def get_playstate(self) -> PlayState:
         if self.app.is_playing():
             return PlayState.PLAYING
         return PlayState.PAUSED
 
-    async def seek(self, time: Microseconds, track_id: Optional[DbusObj] = None):
-        await self.app.seek(time)
+    def seek(self, time: Microseconds, track_id: Optional[DbusObj] = None):
+        asyncio.run(self.app.seek(time))
 
     def open_uri(self, uri: str):
         self.app.open_uri(uri)
