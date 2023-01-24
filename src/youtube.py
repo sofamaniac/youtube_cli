@@ -331,8 +331,7 @@ class YoutubePlaylistList(YoutubeList):
 
     async def init(self):
 
-        await self.get_liked_videos()
-        await self.load_next_page()
+        await asyncio.gather(self.get_liked_videos(), self.load_next_page())
         await self.load_all()
 
     async def get_liked_videos(self):
@@ -352,10 +351,11 @@ class YoutubePlaylistList(YoutubeList):
             return
 
         for p in response["items"]:
-            self.elements.append(
+            self.elements.insert(
+                0,
                 LikedVideos(
                     p["id"], p["snippet"]["title"], p["contentDetails"]["itemCount"]
-                )
+                ),
             )
 
     async def _load_next_page(self):
