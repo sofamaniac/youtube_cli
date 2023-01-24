@@ -374,8 +374,9 @@ class Application(PropertyObject):
         self.current_panel = self.add_to_playlist_panel
 
     async def edit_playlist(self):
-        currSelection = await self.content_panel.get_selected()
-        currPlaylist = await self.add_to_playlist_panel.get_selected()
+        currSelection, currPlaylist = await asyncio.gather(
+            self.content_panel.get_selected(), self.add_to_playlist_panel.get_selected()
+        )
         if currSelection in currPlaylist:
             currPlaylist.remove(currSelection)
         else:
@@ -409,10 +410,11 @@ class Application(PropertyObject):
             if self.playlist.current_index > self.playlist.size:
                 self.player.stop()
             else:
-                new = await self.playlist.next()
-                next = await self.playlist.get_next()
-                await next.fetch_url()
-                await self.play(new)
+                (
+                    new,
+                    next,
+                ) = await asyncio.gather(self.playlist.next(), self.playlist.get_next())
+                await asyncio.gather(next.fetch_url(), self.play(new))
         else:
             await self.content_panel.select(Directions.DOWN)
             await self.play()
@@ -528,5 +530,4 @@ class Application(PropertyObject):
 
     async def jump_to_current_playing(self):
         self.current_panel = self.content_panel
-        await self.current_panel.jump_to_selection()
-        await self.update()
+        await asyncio.gather(self.current_panel.jump_to_selection(), self.update())

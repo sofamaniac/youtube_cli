@@ -271,9 +271,6 @@ class Video(Playable):
         return f"youtu.be/{self.id}"
 
     async def fetch_url(self, video=False):
-        await self._fetch_url(video)
-
-    async def _fetch_url(self, video=False):
         log.info(f"Fetching url for video {self.title}({self.id})")
         await self.get_url(video)
 
@@ -289,13 +286,15 @@ class Video(Playable):
         sort = ""  # sort to be applied to the results
 
         command = f"yt-dlp --no-warnings --format {format} {sort} --print urls --no-playlist https://youtu.be/{self.id}"
+        log.info(f"Running {command}")
         proc = await asyncio.create_subprocess_shell(
             command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
-        urls, stderr = await proc.communicate()
+        [urls, stderr], _ = await asyncio.gather(
+            proc.communicate(), self.get_skip_segment()
+        )
         urls = urls.decode().splitlines()
         if urls:
-            await self.get_skip_segment()
             return urls[0]
         else:
             return ""
@@ -311,9 +310,10 @@ class Video(Playable):
             if expire < time():
                 return url
 
-        self.video_url = await self._get_url("best")
-        self.audio_url = await self._get_url("bestaudio/best")
-        log.info(f"obtained urls for {self.title} ({self.id})")
+        self.video_url, self.audio_url = await asyncio.gather(
+            self._get_url("best"), self._get_url("bestaudio/best")
+        )
+        log.info(f"Obtained urls for {self.title} ({self.id})")
 
         return self.url_by_mode(video)
 
@@ -584,7 +584,7 @@ class LikedVideos(YoutubePlaylist):
     async def next(self):
         self.current_index += 1
         while self.current_index >= self.size and self.is_loaded():
-            self.load_next_page()
+            await self.load_next_page()
         if self.current_index >= self.size and self.is_loaded():
             return Playable()
         shuffled_index = self.order[self.current_index]

@@ -95,18 +95,22 @@ class Adapter(MprisAdapter):
     def get_shuffle(self) -> bool:
         return self.app.shuffled
 
-    def set_shuffle(self, val: bool):
+    async def _set_shuffle(self, val: bool):
         self.app.shuffled = val
+
+    def set_shuffle(self, val: bool):
+        asyncio.run(self._set_shuffle(val))
 
     def get_art_url(self, track: int = None) -> str:
         # return self.app.get_art_url(track)
         return ""
 
+    # according to mpris doc, val is a float between 0 and 1
     def get_volume(self) -> VolumeDecimal:
-        return self.app.volume
+        return self.app.volume / 100
 
     def set_volume(self, val: VolumeDecimal):
-        self.app.volume = val
+        self.app.volume = int(max(0, val * 100))
 
     def is_mute(self) -> bool:
         return self.app.muted
