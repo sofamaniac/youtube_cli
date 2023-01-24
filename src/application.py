@@ -205,11 +205,10 @@ class Application(PropertyObject):
 
     async def init(self):
         folders = FolderList()
-        await folders.init()
+        youtubePlaylists = youtube.YoutubePlaylistList()
+        await asyncio.gather(folders.init(), youtubePlaylists.init())
         for f in folders.elements:
             self.local_playlist_panel.source.add_playlist(f)
-        youtubePlaylists = youtube.YoutubePlaylistList()
-        await youtubePlaylists.init()
         for p in youtubePlaylists.elements:
             self.yt_playlist_panel.source.add_playlist(p)
         await self.get_playlist()

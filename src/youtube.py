@@ -153,11 +153,11 @@ class YoutubeList(Playlist):
             await self.load_next_page()
         if self.nb_loaded == 0:
             await self.load_next_page()
-        if self.nb_loaded > index >= self.nb_loaded:
+        if self.next_page is None:
+            self.size = self.nb_loaded
+        if index >= min(self.size, self.nb_loaded):
             log.warning("index greater than size")
             return self.elements[-1]
-        elif index >= self.nb_loaded:
-            return None
         return self.elements[index]
 
     async def get_item_list(self, start, end):
@@ -249,14 +249,18 @@ class YoutubePlaylist(YoutubeList):
         }
         try:
             response = self.request(self.api_object.list, **args)
-        except googleapiclient.errors.HttpError:
+        except googleapiclient.errors.HttpError as e:
             log.critical("Error when querying playlist")
+            raise e
 
         idList = []
         for v in response["items"]:
             idList.append((v["snippet"]["resourceId"]["videoId"], v["id"]))
         self.nb_loaded += self._add_videos(idList)
         self.update_tokens(response)
+        if self.next_page is None:
+            self.size = self.nb_loaded
+            self.removeMax()
 
     def add(self, video):
         args = {
@@ -297,75 +301,22 @@ class YoutubePlaylist(YoutubeList):
 
 
 class LikedVideos(YoutubePlaylist):
-    def __init__(self, title):
+    def __init__(self, id, title, nb_videos):
 
-        super().__init__("Liked", title, 0)
-        self.api_object = youtube.videos
-
-    def is_loaded(self):
-        return self.next_page is None
-
-    async def load_all(self):
-        await super().load_all()
-        self.order = [i for i in range(self.size)]
-        if self.shuffled:
-            await self.shuffle()
-
-    async def _load_next_page(self):
-        to_request = "id, snippet, status, contentDetails"
-        args = {
-            "part": to_request,
-            "myRating": "like",
-            "maxResults": MAX_RESULTS,
-            "pageToken": self.next_page,
-        }
-        try:
-            response = self.request(youtube.videos.list, **args)
-        except googleapiclient.errors.HttpError:
-            log.critical("Error while loading liked videos")
-            return
-
-        if not response:
-            return
-
-        idList = []
-        for v in response["items"]:
-            idList.append((v["id"], ""))
-        nb_loaded = self._add_videos(idList)
-
-        self.size += nb_loaded
-        self.nb_loaded += nb_loaded
-        self.update_tokens(response)
-
-    async def next(self):
-        self.current_index += 1
-        while self.current_index >= self.size and self.is_loaded():
-            await self.load_next_page()
-        if self.current_index >= self.size and self.is_loaded():
-            return Playable()
-        shuffled_index = self.order[self.current_index]
-        return await self.get_at_index(shuffled_index)
-
-    async def shuffle(self):
-        await self.load_all()
-        await YoutubePlaylist.shuffle(self)
-
-    async def get_max_index(self):
-        if not self.is_loaded():
-            return 1e99
-        else:
-            return self.size - 1
+        super().__init__("LL", title, nb_videos)
+        # we have to use a different endpoint to like videos
+        self.api_object_modif = youtube.videos
 
     def add(self, video):
         try:
-            self.request(self.api_object.rate, id=video.id, rating="like")
+            self.request(self.api_object_modif.rate, id=video.id, rating="like")
         except googleapiclient.errors.HttpError:
             log.critical("Error while adding videos to liked videos")
         self.reload()  # we refresh the content
 
     def remove(self, video):
         try:
-            self.request(self.api_object.rate, id=video.id, rating="none")
+            self.request(self.api_object_modif.rate, id=video.id, rating="none")
         except googleapiclient.errors.HttpError:
             log.critical("Error while removing like from video")
         self.reload()  # we refresh the content
@@ -374,16 +325,38 @@ class LikedVideos(YoutubePlaylist):
 class YoutubePlaylistList(YoutubeList):
     def __init__(self):
         super().__init__()
-        self.elements = [LikedVideos("Liked Videos")]
+        self.elements = []
         self.nb_loaded = 1
         self.api_object = youtube.playlists
 
     async def init(self):
 
+        await self.get_liked_videos()
         await self.load_next_page()
         await self.load_all()
 
-        await self.elements[0].load_all()
+    async def get_liked_videos(self):
+        args = {
+            "part": "id, snippet, contentDetails",
+            "maxResults": MAX_RESULTS,
+            "id": "LL",
+            "pageToken": self.next_page,
+        }
+        response = []
+        try:
+            response = self.request(self.api_object.list, **args)
+        except googleapiclient.errors.HttpError:
+            log.critical("Error while loading list of playlists")
+
+        if not response:
+            return
+
+        for p in response["items"]:
+            self.elements.append(
+                LikedVideos(
+                    p["id"], p["snippet"]["title"], p["contentDetails"]["itemCount"]
+                )
+            )
 
     async def _load_next_page(self):
         args = {
