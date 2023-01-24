@@ -1,6 +1,5 @@
 import curses
 from enum import Enum
-import sys
 import locale
 import wcwidth
 import _curses

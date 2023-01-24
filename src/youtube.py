@@ -1,259 +1,22 @@
 # -*- coding: utf-8 -*-
-import os
-import pickle
-import shlex
-from threading import Thread, Lock
-import subprocess
-import time
-
-# === Google API === #
-import google_auth_oauthlib.flow
-import googleapiclient.discovery
-import googleapiclient.errors
-import google.auth.exceptions
-
 import logging
-
-from playlist import Playlist, Playable
-from property import PropertyObject, Property
-
-
-log = logging.getLogger(__name__)
-
-MAX_RESULTS = 50
-
-
-class YoutubeAPIObject:
-    def __init__(self, element=None):
-        self.element = element
-
-    def list(self, **args):
-        if self.element:
-            return self.element().list(**args)
-        else:
-            return None
-
-    def insert(self, **args):
-        if self.element:
-            return self.element().insert(**args)
-        else:
-            return None
-
-    def delete(self, **args):
-        if self.element:
-            return self.element().delete(**args)
-        else:
-            return None
-
-    def rate(self, **args):
-        if self.element:
-            return self.element().rate(**args)
-        else:
-            return None
-
-    def update(self, element):
-        self.element = element
-
-
-class YoutubeVideoAPI(YoutubeAPIObject):
-    def __init__(self, youtube):
-        if youtube:
-            super().__init__(youtube.videos)
-        else:
-            super().__init__()
-
-    def update(self, youtube):
-        YoutubeAPIObject.update(self, youtube.videos)
-
-
-class YoutubePlaylistItemAPI(YoutubeAPIObject):
-    def __init__(self, youtube):
-        if youtube:
-            super().__init__(youtube.playlistItems)
-        else:
-            super().__init__()
-
-    def update(self, youtube):
-        YoutubeAPIObject.update(self, youtube.playlistItems)
-
-
-class YoutubePlaylistAPI(YoutubeAPIObject):
-    def __init__(self, youtube):
-        if youtube:
-            super().__init__(youtube.playlists)
-        else:
-            super().__init__()
-
-    def update(self, youtube):
-        YoutubeAPIObject.update(self, youtube.playlists)
-
-
-class YoutubeSearchAPI(YoutubeAPIObject):
-    def __init__(self, youtube):
-        if youtube:
-            super().__init__(youtube.search)
-        else:
-            super().__init__()
-
-    def update(self, youtube):
-        YoutubeAPIObject.update(self, youtube.search)
-
-
-import socket
-
-
-def is_connected():
-    try:
-        # see if we can resolve the host name -- tells us if there is
-        # a DNS listening
-        REMOTE_SERVER = "one.one.one.one"
-        host = socket.gethostbyname(REMOTE_SERVER)
-        # connect to the host -- tells us if the host is actually reachable
-        s = socket.create_connection((host, 80), timeout=2)
-        s.close()
-        return True
-    except Exception:
-        pass  # we ignore any errors, returning False
-    return False
-
-
-class Youtube:
-    def __init__(self):
-
-        self.youtube = None
-        self.search = YoutubeSearchAPI(self.youtube)
-        self.videos = YoutubeVideoAPI(self.youtube)
-        self.playlists = YoutubePlaylistAPI(self.youtube)
-        self.playlist_items = YoutubePlaylistItemAPI(self.youtube)
-        if is_connected():
-            self.get_authenticated_service()
-
-    def get_authenticated_service(self, refresh=False):
-        scopes = ["https://www.googleapis.com/auth/youtube"]
-        data_path = "data/"
-        client_secrets_file = data_path + "client_secret.json"
-        api_service_name = "youtube"
-        api_version = "v3"
-        path = data_path + "CREDENTIALS_PICKLE_FILE"
-        if not refresh and os.path.exists(path):
-            with open(path, "rb") as f:
-                credentials = pickle.load(f)
-        else:
-            flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
-                client_secrets_file, scopes
-            )
-            credentials = flow.run_local_server()
-            with open(path, "wb") as f:
-                pickle.dump(credentials, f)
-        self.youtube = googleapiclient.discovery.build(
-            api_service_name, api_version, credentials=credentials
-        )
-        self.search.update(self.youtube)
-        self.videos.update(self.youtube)
-        self.playlists.update(self.youtube)
-        self.playlist_items.update(self.youtube)
-
-        log.info("Successfully established connection to Youtube")
-
-
-youtube = Youtube()
-
-# ================== #
-
-
-# === SponsorBlock === #
-import sponsorblock as sb
-from multiprocessing import Process, Queue, Manager
 import asyncio
-
-
-class TimeoutException(Exception):
-    pass
-
-
-import jsonpickle
-
-
-class SponsorBlockCache:
-    def __init__(self, path="data/sponsorBlock.cache"):
-
-        self.path = path
-        with open(path, "r") as f:
-            self.data = jsonpickle.decode(f.read())
-
-    def add_entry(self, video_id, block_list):
-
-        if video_id in self.data and self.data[video_id] == block_list:
-            return
-
-        self.data[video_id] = block_list
-        with open(self.path, "w") as f:
-            f.write(jsonpickle.encode(self.data))
-
-    def query(self, video_id):
-
-        if video_id in self.data:
-            return self.data[video_id]
-        else:
-            return None
-
-
-class SponsorBlock(PropertyObject):
-    """Class to handle sponsor block"""
-
-    def __init__(self):
-        super().__init__()
-        self.cache = SponsorBlockCache()
-        self.client = sb.Client()
-        self.enableSponsorBlock = None
-        self._add_property("enableSponsorBlock", True)
-        self.timeoutSponsorBlock = 5  # timeout in seconds
-        self._add_property("timeoutSponsorBlock", 5)
-        self.toSkipSponsorBlock = ["sponsor", "selfpromo", "music_offtopic"]
-        self._add_property("toSkipSponsorBlock", self.toSkipSponsorBlock)
-        self.running = False
-
-    async def get_skip_segments(self, video_id=""):
-
-        if not self.enableSponsorBlock:
-            return []
-
-        tmp = self.cache.query(video_id)
-
-        if tmp:
-            return tmp
-        else:
-            block_list = await self.run_with_timeout(video_id)
-            log.info(f"block_list f{block_list}")
-            self.cache.add_entry(video_id, block_list)
-            return block_list
-
-    async def query_servers(self, video_id=""):
-        block_list = []
-        try:
-            block_list = self.client.get_skip_segments(
-                video_id=video_id, categories=self.toSkipSponsorBlock
-            )
-        except (sb.errors.HTTPException,) as e:  # catches all sb-server related errors
-            log.warning(f"SponsorBlock has encountered an error ({e})")
-            block_list = []
-        finally:
-            self.block_list = block_list
-            return block_list
-
-    async def run_with_timeout(self, video_id=""):
-        result = await self.query_servers(video_id)
-        return result
-
-
-sponsorBlock = SponsorBlock()
-
-
-# ============================= #
 
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
-from time import time, sleep
+from time import time
+import google.auth.exceptions
+import googleapiclient.errors
+
+from playlist import Playlist, Playable
+from sponsorblockWrapper import SponsorBlock
+from youtube_api import *
+
+log = logging.getLogger(__name__)
+
+youtube = Youtube()
+MAX_RESULTS = 50
+sponsorBlock = SponsorBlock()
 
 
 class Video(Playable):
@@ -340,8 +103,6 @@ class YoutubeList(Playlist):
         self.elements = []
         self.size = 0
 
-        self.is_loading = Lock()
-
     def __contains__(self, item):
         if type(item) is Video:
             item = item.id
@@ -364,7 +125,7 @@ class YoutubeList(Playlist):
                 result = who(**what).execute()
             else:
                 return None
-        except google.auth.exceptions.RefreshError as _:
+        except google.auth.exceptions.RefreshError:
             youtube.get_authenticated_service(refresh=True)
             result = who(**what).execute()
             log.warning("Error with request")
@@ -374,11 +135,7 @@ class YoutubeList(Playlist):
         pass
 
     async def load_next_page(self):
-        if self.is_loading.locked():
-            return
-        self.is_loading.acquire(blocking=True)
         await self._load_next_page()
-        self.is_loading.release()
 
     def update_tokens(self, response):
         self.next_page = (
@@ -404,13 +161,13 @@ class YoutubeList(Playlist):
         return self.elements[index]
 
     async def get_item_list(self, start, end):
-        while end + 1 > self.nb_loaded and self.next_page != None:
+        while end + 1 > self.nb_loaded and self.next_page is not None:
             await self.load_next_page()
         max_index = min(end, self.nb_loaded)
         return self.elements[start:max_index]
 
     async def load_all(self):
-        while self.next_page != None or self.nb_loaded == 0:
+        while self.next_page is not None or self.nb_loaded == 0:
             await self.load_next_page()
         self.size = self.nb_loaded
 
@@ -434,7 +191,7 @@ class YoutubePlaylist(YoutubeList):
         self.title = title
         self.id = id
         self.size = nb_videos
-        self.order = [i for i in range(self.size)]  # used for playlist shuffling
+        self.order = [i for i in range(self.size)]  # used for shuffling
         self.api_object = youtube.playlist_items
 
     async def init(self):
@@ -542,7 +299,6 @@ class YoutubePlaylist(YoutubeList):
 class LikedVideos(YoutubePlaylist):
     def __init__(self, title):
 
-        self.is_loading = Lock()
         super().__init__("Liked", title, 0)
         self.api_object = youtube.videos
 
@@ -652,7 +408,7 @@ class YoutubePlaylistList(YoutubeList):
             )
         self.update_tokens(response)
         self.nb_loaded += len(response["items"])
-        if self.next_page == None:
+        if self.next_page is None:
             self.size = self.nb_loaded
 
     async def shuffle(self):
@@ -694,7 +450,7 @@ class Search(YoutubePlaylist):
         self.nb_loaded += self._add_videos(id_list)
         self.update_tokens(response)
 
-        if self.next_page == None:
+        if self.next_page is None:
             self.size = self.nb_loaded
 
     async def shuffle(self):
