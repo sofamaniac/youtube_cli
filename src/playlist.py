@@ -21,7 +21,7 @@ class Playable:
     async def get_url(self, video=False) -> str:
         return self.title
 
-    async def fetch_url(self, video=False) -> str:
+    async def load_url(self, video=False) -> str:
         return self.get_url(video)
 
     async def mpris_url(self) -> str:

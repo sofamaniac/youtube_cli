@@ -1,9 +1,9 @@
 appdirs==1.4.4
+dbus_next==0.2.3
 eyed3==0.9.7
-google_api_python_client==2.73.0
+google_api_python_client==2.74.0
 google_auth_oauthlib==0.4.6
 jsonpickle==2.2.0
-mpris_server==0.4.2
 ply==3.11
 protobuf==4.21.12
 python-mpv==1.0.1

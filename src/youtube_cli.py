@@ -11,7 +11,7 @@ import logging
 
 from config import *
 
-import mpris
+import dbus
 
 from gui.screen import stdscr, curses_settings, reset_curses
 
@@ -29,7 +29,8 @@ async def initialize(stdscr):
     app = Application(stdscr)
     await app.init()
     config = KeyConfiguration(app)
-    mpris.initialize(app)
+    # mpris.initialize(app)
+    await dbus.init(app)
     return await main(app, config)
 
 

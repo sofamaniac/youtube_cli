@@ -15,34 +15,34 @@ log = logging.getLogger(__name__)
 
 class YoutubeAPIObject:
     def __init__(self, element=None):
-        self.element = element
+        self.endpoint = element
 
     def list(self, **args):
-        if self.element:
-            return self.element().list(**args)
+        if self.endpoint:
+            return self.endpoint().list(**args)
         else:
             return None
 
     def insert(self, **args):
-        if self.element:
-            return self.element().insert(**args)
+        if self.endpoint:
+            return self.endpoint().insert(**args)
         else:
             return None
 
     def delete(self, **args):
-        if self.element:
-            return self.element().delete(**args)
+        if self.endpoint:
+            return self.endpoint().delete(**args)
         else:
             return None
 
     def rate(self, **args):
-        if self.element:
-            return self.element().rate(**args)
+        if self.endpoint:
+            return self.endpoint().rate(**args)
         else:
             return None
 
-    def update(self, element):
-        self.element = element
+    def update(self, endpoint):
+        self.endpoint = endpoint
 
 
 class YoutubeVideoAPI(YoutubeAPIObject):
@@ -96,10 +96,11 @@ def is_connected():
         REMOTE_SERVER = "one.one.one.one"
         host = socket.gethostbyname(REMOTE_SERVER)
         # connect to the host -- tells us if the host is actually reachable
-        s = socket.create_connection((host, 80), timeout=2)
+        s = socket.create_connection((host, 80), timeout=1)
         s.close()
         return True
     except Exception:
+        log.warning("No internet connection")
         pass  # we ignore any errors, returning False
     return False
 

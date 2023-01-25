@@ -250,8 +250,13 @@ class Application(PropertyObject):
         check = await self.playing.check_skip(timestamp)
         duration = self.player.duration
         if check and duration:
-            jump = min(check, duration)
-            self.player.seek(jump)
+            # do not jump if close to the end
+            # and if segment goes to end of video
+            # jump a few seconds before the end
+            # to avoid problem when going to next song
+            if duration - timestamp > 3:
+                jump = min(check, duration - 3)
+                self.player.seek(jump, mode="absolute")
 
     async def search(self):
         self.in_search = True
@@ -288,19 +293,21 @@ class Application(PropertyObject):
         # checking for segments to skip
         await self.skip_segment()
 
-        # Drawing all the windows
-        await self.yt_playlist_panel.update(
-            draw_select=self.current_panel == self.yt_playlist_panel
+        await asyncio.gather(
+            # Drawing all the windows
+            self.yt_playlist_panel.update(
+                draw_select=self.current_panel == self.yt_playlist_panel
+            ),
+            self.local_playlist_panel.update(
+                draw_select=self.current_panel == self.local_playlist_panel
+            ),
+            self.content_panel.update(
+                draw_select=self.current_panel == self.content_panel
+            ),
+            self.player_panel.update(),
+            self.option_panel.update(),
+            self.information_panel.update(),
         )
-        await self.local_playlist_panel.update(
-            draw_select=self.current_panel == self.local_playlist_panel
-        )
-        await self.content_panel.update(
-            draw_select=self.current_panel == self.content_panel
-        )
-        await self.player_panel.update()
-        await self.option_panel.update()
-        await self.information_panel.update()
 
         # checking if there is something playing
         if (
@@ -409,11 +416,10 @@ class Application(PropertyObject):
             if self.playlist.current_index > self.playlist.size:
                 self.player.stop()
             else:
-                (
-                    new,
-                    next,
-                ) = await asyncio.gather(self.playlist.next(), self.playlist.get_next())
-                await asyncio.gather(next.fetch_url(), self.play(new))
+                (new, next) = await asyncio.gather(
+                    self.playlist.next(), self.playlist.get_next()
+                )
+                await asyncio.gather(next.load_url(), self.play(new))
         else:
             await self.content_panel.select(Directions.DOWN)
             await self.play()
@@ -470,7 +476,7 @@ class Application(PropertyObject):
 
     async def pause(self, b=None):
         self.player.pause(b)
-        if self.state == PlayerStates.PLAYING:
+        if self.state == PlayerStates.PLAYING or b:
             self.state = PlayerStates.PAUSED
         else:
             self.state = PlayerStates.PLAYING

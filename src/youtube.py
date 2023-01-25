@@ -33,8 +33,7 @@ class Video(Playable):
     def mpris_url(self):
         return f"youtu.be/{self.id}"
 
-    async def fetch_url(self, video=False):
-        log.info(f"Fetching url for video {self.title}({self.id})")
+    async def load_url(self, video=False):
         await self.get_url(video)
 
     def url_by_mode(self, video=False):
@@ -44,8 +43,6 @@ class Video(Playable):
 
     async def _get_url(self, format="best"):
 
-        log.info(f"Fetching url for {self.title}")
-
         sort = ""  # sort to be applied to the results
 
         command = f"yt-dlp --no-warnings --format {format} {sort} --print urls --no-playlist https://youtu.be/{self.id}"
@@ -53,9 +50,7 @@ class Video(Playable):
         proc = await asyncio.create_subprocess_shell(
             command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
         )
-        [urls, stderr], _ = await asyncio.gather(
-            proc.communicate(), self.get_skip_segment()
-        )
+        [urls, stderr] = await proc.communicate()
         urls = urls.decode().splitlines()
         if urls:
             return urls[0]
@@ -65,6 +60,9 @@ class Video(Playable):
     async def get_url(self, video=False):
         """Return the url for the audio stream of the video"""
 
+        if self.id == "":
+            return ""
+
         url = self.url_by_mode(video)
         if url:
             # checking if url has expired
@@ -73,14 +71,21 @@ class Video(Playable):
             if expire < time():
                 return url
 
-        self.video_url, self.audio_url = await asyncio.gather(
-            self._get_url("best"), self._get_url("bestaudio/best")
+        log.info(f"Fetching url for {self.title} ({self.id})")
+
+        self.video_url, self.audio_url, _ = await asyncio.gather(
+            self._get_url("best"),
+            self._get_url("bestaudio/best"),
+            self.get_skip_segment(),
         )
         log.info(f"Obtained urls for {self.title} ({self.id})")
 
         return self.url_by_mode(video)
 
     async def get_skip_segment(self):
+        if self.id == "":
+            self.skipSegments = []
+            return
         log.info(f"Gathering skip segments for {self.id}")
         self.skipSegments = await sponsorBlock.get_skip_segments(self.id)
         self.skipSegmentsDone = True
@@ -155,6 +160,8 @@ class YoutubeList(Playlist):
             await self.load_next_page()
         if self.next_page is None:
             self.size = self.nb_loaded
+        if self.size == 0:  # might happen if no internet
+            return Video()
         if index >= min(self.size, self.nb_loaded):
             log.warning("index greater than size")
             return self.elements[-1]
@@ -197,7 +204,7 @@ class YoutubePlaylist(YoutubeList):
     async def init(self):
         await self.load_next_page()  # we load the first page
 
-    def _add_videos(self, id_list):
+    async def _add_videos(self, id_list):
 
         to_request = "id, snippet, status, contentDetails"
         video_id_list = [v[0] for v in id_list]
@@ -206,6 +213,7 @@ class YoutubePlaylist(YoutubeList):
             "id": ",".join(video_id_list),
         }
         try:
+            await asyncio.sleep(0)
             response = self.request(youtube.videos.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while adding videos to playlist")
@@ -248,6 +256,7 @@ class YoutubePlaylist(YoutubeList):
             "pageToken": self.next_page,
         }
         try:
+            await asyncio.sleep(0)
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError as e:
             log.critical("Error when querying playlist")
@@ -256,7 +265,7 @@ class YoutubePlaylist(YoutubeList):
         idList = []
         for v in response["items"]:
             idList.append((v["snippet"]["resourceId"]["videoId"], v["id"]))
-        self.nb_loaded += self._add_videos(idList)
+        self.nb_loaded += await self._add_videos(idList)
         self.update_tokens(response)
         if self.next_page is None:
             self.size = self.nb_loaded
@@ -343,6 +352,7 @@ class YoutubePlaylistList(YoutubeList):
         }
         response = []
         try:
+            await asyncio.sleep(0)
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while loading list of playlists")
@@ -366,6 +376,7 @@ class YoutubePlaylistList(YoutubeList):
             "pageToken": self.next_page,
         }
         try:
+            await asyncio.sleep(0)
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while loading list of playlists")
@@ -412,6 +423,7 @@ class Search(YoutubePlaylist):
         }
 
         try:
+            await asyncio.sleep(0)
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while searching for videos")
@@ -420,7 +432,7 @@ class Search(YoutubePlaylist):
         for v in response["items"]:
             id_list.append((v["id"]["videoId"], ""))
 
-        self.nb_loaded += self._add_videos(id_list)
+        self.nb_loaded += await self._add_videos(id_list)
         self.update_tokens(response)
 
         if self.next_page is None:
