@@ -1,8 +1,8 @@
 """Module providing basic panel components for the program"""
 
 import curses
-from gui.screen import CurseString, Directions, PanelDirections
-from gui import screen, panel
+from tui.screen import CurseString, Directions, PanelDirections
+from tui import screen, panel
 
 
 class Widget(panel.Panel):

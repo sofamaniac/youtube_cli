@@ -13,7 +13,7 @@ from config import *
 
 import dbus
 
-from gui.screen import stdscr, curses_settings, reset_curses
+from tui.screen import stdscr, curses_settings, reset_curses
 
 logging.basicConfig(
     level=logging.INFO,

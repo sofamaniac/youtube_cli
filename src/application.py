@@ -8,8 +8,8 @@ import youtube
 import player
 
 from widget import Widget, PlaylistPanel
-from gui import screen, textbox, panel
-from gui.screen import Directions, CurseString, PanelDirections
+from tui import screen, textbox, panel
+from tui.screen import Directions, CurseString, PanelDirections
 
 from folder import FolderList
 from playlist import PlaylistList, Playable

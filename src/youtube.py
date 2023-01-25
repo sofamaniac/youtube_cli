@@ -5,6 +5,7 @@ import asyncio
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 from time import time
+from threading import Lock
 import google.auth.exceptions
 import googleapiclient.errors
 
@@ -108,6 +109,8 @@ class YoutubeList(Playlist):
         self.elements = []
         self.size = 0
 
+        self.is_loading = Lock()
+
     def __contains__(self, item):
         if type(item) is Video:
             item = item.id
@@ -136,11 +139,11 @@ class YoutubeList(Playlist):
             log.warning("Error with request")
         return result
 
-    async def _load_next_page(self):
+    def _load_next_page(self):
         pass
 
-    async def load_next_page(self):
-        await self._load_next_page()
+    def load_next_page(self):
+        self._load_next_page()
 
     def update_tokens(self, response):
         self.next_page = (
@@ -154,10 +157,18 @@ class YoutubeList(Playlist):
         """If the index is greater than the number of elements in the list,
         does NOT raise an error but return the last element of the list instead"""
 
-        while index > self.nb_loaded and self.next_page is not None:
-            await self.load_next_page()
+        if index < self.nb_loaded:
+            return self.elements[index]
+        while (
+            index > self.nb_loaded
+            and self.next_page is not None
+            and not self.is_loading.locked()
+        ):
+            self.load_next_page()
+        if self.is_loading.locked():
+            return Video()
         if self.nb_loaded == 0:
-            await self.load_next_page()
+            self.load_next_page()
         if self.next_page is None:
             self.size = self.nb_loaded
         if self.size == 0:  # might happen if no internet
@@ -169,14 +180,21 @@ class YoutubeList(Playlist):
 
     async def get_item_list(self, start, end):
         while end + 1 > self.nb_loaded and self.next_page is not None:
-            await self.load_next_page()
+            self.load_next_page()
         max_index = min(end, self.nb_loaded)
         return self.elements[start:max_index]
 
-    async def load_all(self):
+    def load_all(self):
+        self.is_loading.acquire()
         while self.next_page is not None or self.nb_loaded == 0:
-            await self.load_next_page()
+            self._load_next_page()
+        log.info("PHERE")
         self.size = self.nb_loaded
+        self.is_loading.release()
+
+    async def load_all_async(self):
+        loop = asyncio.get_running_loop()
+        loop.run_in_executor(None, self.load_all())
 
     async def reload(self):
         self.nb_loaded = 0
@@ -185,7 +203,7 @@ class YoutubeList(Playlist):
         self.next_page = None
         self.prev_page = None
 
-        await self.load_next_page()
+        self.load_next_page()
 
     async def get_max_index(self):
         return self.nb_loaded - 1
@@ -200,11 +218,12 @@ class YoutubePlaylist(YoutubeList):
         self.size = nb_videos
         self.order = [i for i in range(self.size)]  # used for shuffling
         self.api_object = youtube.playlist_items
+        self.is_loading = Lock()
 
     async def init(self):
-        await self.load_next_page()  # we load the first page
+        self.load_next_page()  # we load the first page
 
-    async def _add_videos(self, id_list):
+    def _add_videos(self, id_list):
 
         to_request = "id, snippet, status, contentDetails"
         video_id_list = [v[0] for v in id_list]
@@ -213,7 +232,6 @@ class YoutubePlaylist(YoutubeList):
             "id": ",".join(video_id_list),
         }
         try:
-            await asyncio.sleep(0)
             response = self.request(youtube.videos.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while adding videos to playlist")
@@ -221,6 +239,7 @@ class YoutubePlaylist(YoutubeList):
         nb_added = 0
         for i, v in enumerate(response["items"]):
             if not self.check_video_availability(v):
+                log.warning(f"Video unavailable {v['snippet']['title']}")
                 self.removeMax()
                 continue
             self.elements.append(
@@ -247,7 +266,7 @@ class YoutubePlaylist(YoutubeList):
                 result = result and "FR" in t["allowed"]
         return result
 
-    async def _load_next_page(self):
+    def _load_next_page(self):
         to_request = "id, snippet, status, contentDetails"
         args = {
             "part": to_request,
@@ -256,7 +275,6 @@ class YoutubePlaylist(YoutubeList):
             "pageToken": self.next_page,
         }
         try:
-            await asyncio.sleep(0)
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError as e:
             log.critical("Error when querying playlist")
@@ -265,11 +283,19 @@ class YoutubePlaylist(YoutubeList):
         idList = []
         for v in response["items"]:
             idList.append((v["snippet"]["resourceId"]["videoId"], v["id"]))
-        self.nb_loaded += await self._add_videos(idList)
+        self.nb_loaded += self._add_videos(idList)
         self.update_tokens(response)
         if self.next_page is None:
+            log.info(f"{self.size}, {self.nb_loaded}")
             self.size = self.nb_loaded
             self.removeMax()
+
+    def load_next_page(self):
+        if self.is_loading.locked():
+            return
+        self.is_loading.acquire()
+        self._load_next_page()
+        self.is_loading.release()
 
     def add(self, video):
         args = {
@@ -340,8 +366,14 @@ class YoutubePlaylistList(YoutubeList):
 
     async def init(self):
 
+        loop = asyncio.get_running_loop()
         await asyncio.gather(self.get_liked_videos(), self.load_next_page())
-        await self.load_all()
+        self.load_all()
+        # await asyncio.gather(*[p.init() for p in self.elements])
+        loop.run_in_executor(None, self.elements[0].load_all)
+
+    async def load_next_page(self):
+        self._load_next_page()
 
     async def get_liked_videos(self):
         args = {
@@ -368,7 +400,7 @@ class YoutubePlaylistList(YoutubeList):
                 ),
             )
 
-    async def _load_next_page(self):
+    def _load_next_page(self):
         args = {
             "part": "id, snippet, contentDetails",
             "maxResults": MAX_RESULTS,
@@ -376,7 +408,6 @@ class YoutubePlaylistList(YoutubeList):
             "pageToken": self.next_page,
         }
         try:
-            await asyncio.sleep(0)
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while loading list of playlists")
@@ -393,6 +424,7 @@ class YoutubePlaylistList(YoutubeList):
         self.update_tokens(response)
         self.nb_loaded += len(response["items"])
         if self.next_page is None:
+            log.info("HERE")
             self.size = self.nb_loaded
 
     async def shuffle(self):
@@ -412,7 +444,7 @@ class Search(YoutubePlaylist):
 
         self.load_next_page()
 
-    async def _load_next_page(self):
+    def _load_next_page(self):
 
         args = {
             "part": "id, snippet, contentDetails",
@@ -423,7 +455,6 @@ class Search(YoutubePlaylist):
         }
 
         try:
-            await asyncio.sleep(0)
             response = self.request(self.api_object.list, **args)
         except googleapiclient.errors.HttpError:
             log.critical("Error while searching for videos")
@@ -432,7 +463,7 @@ class Search(YoutubePlaylist):
         for v in response["items"]:
             id_list.append((v["id"]["videoId"], ""))
 
-        self.nb_loaded += await self._add_videos(id_list)
+        self.nb_loaded += self._add_videos(id_list)
         self.update_tokens(response)
 
         if self.next_page is None:

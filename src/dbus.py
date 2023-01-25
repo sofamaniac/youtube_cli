@@ -277,13 +277,12 @@ class EventHandler:
 
     def on_playpause(self):
         self.player.emit_properties_changed(
-            {"PlaybackStatus": self.player.PlaybackStatus()}
+            {"PlaybackStatus": self.player.PlaybackStatus}
         )
 
 
 async def init(app):
     bus = await MessageBus().connect()
-    name = "youtube_cli_dev"
     root = RootInterface(app)
     player = PlayerInterface(app)
     tracklist = TracklistInterface(app)

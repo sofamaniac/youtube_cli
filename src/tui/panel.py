@@ -1,4 +1,4 @@
-from gui import screen
+from tui import screen
 import curses
 
 RELATIVE_MODE = "relative"  # in % of the screen dimensions

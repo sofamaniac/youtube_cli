@@ -10,6 +10,9 @@ import logging
 
 import socket
 
+import google_auth_httplib2
+import httplib2
+
 log = logging.getLogger(__name__)
 
 
@@ -113,6 +116,7 @@ class Youtube:
         self.videos = YoutubeVideoAPI(self.youtube)
         self.playlists = YoutubePlaylistAPI(self.youtube)
         self.playlist_items = YoutubePlaylistItemAPI(self.youtube)
+        self.credentials = None  # dirty
         if is_connected():
             self.get_authenticated_service()
 
@@ -125,16 +129,22 @@ class Youtube:
         path = data_path + "CREDENTIALS_PICKLE_FILE"
         if not refresh and os.path.exists(path):
             with open(path, "rb") as f:
-                credentials = pickle.load(f)
+                self.credentials = pickle.load(f)
         else:
             flow = google_auth_oauthlib.flow.InstalledAppFlow.from_client_secrets_file(
                 client_secrets_file, scopes
             )
-            credentials = flow.run_local_server()
+            self.credentials = flow.run_local_server()
             with open(path, "wb") as f:
-                pickle.dump(credentials, f)
+                pickle.dump(self.credentials, f)
+        authorized_http = google_auth_httplib2.AuthorizedHttp(
+            self.credentials, http=httplib2.Http()
+        )
         self.youtube = googleapiclient.discovery.build(
-            api_service_name, api_version, credentials=credentials
+            api_service_name,
+            api_version,  # credentials=self.credentials
+            requestBuilder=self.build_request,
+            http=authorized_http,
         )
         self.search.update(self.youtube)
         self.videos.update(self.youtube)
@@ -142,3 +152,9 @@ class Youtube:
         self.playlist_items.update(self.youtube)
 
         log.info("Successfully established connection to Youtube")
+
+    def build_request(self, http, *args, **kwargs):
+        new_http = google_auth_httplib2.AuthorizedHttp(
+            self.credentials, http=httplib2.Http()
+        )
+        return googleapiclient.http.HttpRequest(new_http, *args, **kwargs)

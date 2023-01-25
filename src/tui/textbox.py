@@ -2,7 +2,7 @@
 import curses
 import curses.ascii
 import _curses
-from gui import panel
+from tui import panel
 
 
 class Textbox(panel.Panel):

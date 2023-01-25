@@ -1,7 +1,7 @@
 """This module provide a class that links keyboard event to actions"""
 
 import curses
-from gui.screen import Directions, PanelDirections
+from tui.screen import Directions, PanelDirections
 
 
 class KeyConfiguration:
@@ -28,7 +28,6 @@ class KeyConfiguration:
             "d": [app.increase_volume, -5],
             "n": [app.next_page],
             "p": [app.prev_page],
-            "\n": [app.enter],
             "a": [app.set_playlist],
             "r": [app.toggle_repeat],
             "y": [app.toggle_shuffle],
@@ -47,6 +46,7 @@ class KeyConfiguration:
             "_": [app.seek_percent, 80],
             "ç": [app.seek_percent, 90],
             ":": [app.command],
+            "\n": [app.enter],
             curses.KEY_LEFT: [app.forward, -5],
             curses.KEY_RIGHT: [app.forward, 5],
             curses.ascii.ESC: [app.escape],
