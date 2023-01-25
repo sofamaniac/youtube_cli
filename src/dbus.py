@@ -284,8 +284,8 @@ class EventHandler:
 async def init(app):
     bus = await MessageBus().connect()
     name = "youtube_cli_dev"
-    root = RootInterface(name, app)
-    player = PlayerInterface(name, app)
+    root = RootInterface(app)
+    player = PlayerInterface(app)
     tracklist = TracklistInterface(app)
     playlist = PlaylistsInterface(app)
     app.event_handler = EventHandler(root, player, tracklist, playlist)
