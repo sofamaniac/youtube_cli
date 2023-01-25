@@ -24,19 +24,8 @@ from property import (
 
 from confLang import parser
 
-from enum import Enum, auto
 
-
-class PlayerStates(Enum):
-    PLAYING = auto()
-    PAUSED = auto()
-    STOPPED = auto()
-
-
-class RepeatStates(Enum):
-    DISABLED = auto()
-    SONG = auto()
-    PLAYLIST = auto()
+from constants import PlayerStates, Event
 
 
 log = logging.getLogger(__name__)
@@ -423,7 +412,7 @@ class Application(PropertyObject):
         else:
             await self.content_panel.select(Directions.DOWN)
             await self.play()
-        self.event_handler.on_app_event("next")
+        self.event_handler.on_app_event(Event.NEXT)
 
     async def prev(self):
 
@@ -441,7 +430,7 @@ class Application(PropertyObject):
         # else we start the same song
         else:
             self.player.seek_percent(0)
-        self.event_handler.on_app_event("prev")
+        self.event_handler.on_app_event(Event.PREV)
 
     async def next_page(self):
         await self.current_panel.next_page()
@@ -467,26 +456,27 @@ class Application(PropertyObject):
             pass
         else:
             await self.play()
-        self.event_handler.on_app_event("play")
+        self.event_handler.on_app_event(Event.PLAY)
 
     async def stop(self):
         self.player.stop()
         self.playing = youtube.Video()
-        self.event_handler.on_app_event("stop")
+        self.event_handler.on_app_event(Event.STOP)
 
     async def pause(self, b=None):
         self.player.pause(b)
         if self.state == PlayerStates.PLAYING or b:
             self.state = PlayerStates.PAUSED
+            self.event_handler.on_app_event(Event.PAUSE)
         else:
             self.state = PlayerStates.PLAYING
-        self.event_handler.on_app_event("pause")
+            self.event_handler.on_app_event(Event.PLAY)
 
     async def toggle_repeat(self):
         values = ["No", "Song", "Playlist"]
         self.repeat = values[(values.index(self.repeat) + 1) % len(values)]
         self.player.set_repeat(self.repeat)
-        self.event_handler.on_app_event("repeat")
+        self.event_handler.on_app_event(Event.REPEAT)
 
     def is_playing(self):
         return self.state == PlayerStates.PLAYING
@@ -503,7 +493,7 @@ class Application(PropertyObject):
 
     async def increase_volume(self, dv):
         self.volume += dv
-        self.event_handler.on_app_event("volume")
+        self.event_handler.on_app_event(Event.VOLUME)
 
     async def toggle_mute(self):
         self.muted = not self.muted
@@ -519,7 +509,7 @@ class Application(PropertyObject):
 
     async def toggle_shuffle(self):
         self.shuffled = not self.shuffled
-        self.event_handler.on_app_event("shuffle")
+        self.event_handler.on_app_event(Event.SHUFFLE)
 
     def quit(self):
         self.stop()

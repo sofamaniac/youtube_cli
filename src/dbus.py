@@ -2,14 +2,11 @@ from dbus_next.aio import MessageBus
 from dbus_next.service import ServiceInterface, method, dbus_property, signal
 from dbus_next import Variant, DBusError, PropertyAccess
 import asyncio
-
-from application import PlayerStates
+from constants import APP_NAME, PlayerStates, Event
 
 import logging
 
 log = logging.getLogger(__name__)
-
-APP_NAME = "youtube_cli"
 
 
 class RootInterface(ServiceInterface):
@@ -93,12 +90,12 @@ class PlayerInterface(ServiceInterface):
         self._app.seek(int(position) / 1e6, mode="absolute")
 
     @method()
-    def OpenUri(uri: "s"):
+    def OpenUri(self, uri: "s"):
         pass
 
     @signal()
-    def Seeked(position: "x"):
-        return position
+    def Seeked(self) -> "x":
+        return self.Position
 
     @dbus_property(PropertyAccess.READ)
     def PlaybackStatus(self) -> "s":
@@ -264,21 +261,37 @@ class EventHandler:
         self.player = player
         self.tracklist = tracklist
         self.playlists = playlists
+        self._app = self.player._app
 
     def on_app_event(self, event):
-        # events = ["prev", "next", "shuffle", "repeat", "volume"]
-        if event in ["pause", "play", "stop"]:
+        # events = ["prev", "next"]
+        if event in [Event.PAUSE, Event.PLAY, Event.STOP]:
             self.on_playpause()
-        elif event == "volume":
+        elif event == Event.VOLUME:
             self.on_volume()
+        elif event == Event.SHUFFLE:
+            self.on_shuffle()
+        elif event == Event.REPEAT:
+            self.on_loop()
+        elif event in [Event.PREV, Event.NEXT]:
+            self.on_change_track()
 
     def on_volume(self):
-        self.player.emit_properties_changed({"Volume": self.player._app.volume})
+        self.player.emit_properties_changed({"Volume": self._app.volume})
 
     def on_playpause(self):
         self.player.emit_properties_changed(
             {"PlaybackStatus": self.player.PlaybackStatus}
         )
+
+    def on_loop(self):
+        self.player.emit_properties_changed({"LoopStatus": self.player.LoopStatus})
+
+    def on_shuffle(self):
+        self.player.emit_properties_changed({"Shuffle": self.player.Shuffle})
+
+    def on_change_track(self):
+        self.player.emit_properties_changed({"Metadata": self.player.Metadata})
 
 
 async def init(app):
