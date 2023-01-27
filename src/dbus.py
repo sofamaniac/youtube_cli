@@ -60,7 +60,7 @@ class PlayerInterface(ServiceInterface):
 
     @method()
     async def Previous(self):
-        await self._app.previous()
+        await self._app.prev()
 
     @method()
     async def Pause(self):
