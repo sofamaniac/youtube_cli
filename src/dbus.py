@@ -140,7 +140,7 @@ class PlayerInterface(ServiceInterface):
         duration = int(duration * 1e6) if duration else 0
         return {
             "mpris:trackid": Variant("o", "/org/mpris/MediaPlayer2/youtube_cli"),
-            "mpris:duration": Variant("x", duration),
+            "mpris:length": Variant("x", duration),
             "xesam:title": Variant("s", current.title),
             "xesam:url": Variant("s", url),
         }
